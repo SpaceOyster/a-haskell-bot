@@ -4,16 +4,16 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bcfa52cdea260f0f1cf5793fd9d530279ed3071d80e27b62a2bb59cb88896251
+-- hash: ca30295a9d35bcd7f17ce4e29943dbbaf7186f2e6875b546ba8ff2e82477f297
 
 name:           a-haskell-bot
 version:        0.1.0.0
-description:    Please see the README on GitHub at <https://github.com/githubuser/a-haskell-bot#readme>
-homepage:       https://github.com/githubuser/a-haskell-bot#readme
-bug-reports:    https://github.com/githubuser/a-haskell-bot/issues
-author:         Author name here
-maintainer:     example@example.com
-copyright:      2021 Author name here
+description:    Please see the README on GitHub at <https://github.com/SpaceOyster/a-haskell-bot#readme>
+homepage:       https://github.com/spaceoyster/a-haskell-bot#readme
+bug-reports:    https://github.com/spaceoyster/a-haskell-bot/issues
+author:         Ilia S.
+maintainer:     i.m.sid@disroot.org
+copyright:      2021 Ilia S.
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
@@ -23,7 +23,7 @@ extra-source-files:
 
 source-repository head
   type: git
-  location: https://github.com/githubuser/a-haskell-bot
+  location: https://github.com/spaceoyster/a-haskell-bot
 
 library
   exposed-modules:
@@ -33,7 +33,11 @@ library
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
+    , bytestring
+    , http-client
+    , http-client-tls
   default-language: Haskell2010
 
 executable a-haskell-bot-exe
@@ -45,7 +49,11 @@ executable a-haskell-bot-exe
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       a-haskell-bot
+    , aeson
     , base >=4.7 && <5
+    , bytestring
+    , http-client
+    , http-client-tls
   default-language: Haskell2010
 
 test-suite a-haskell-bot-test
@@ -58,5 +66,9 @@ test-suite a-haskell-bot-test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       a-haskell-bot
+    , aeson
     , base >=4.7 && <5
+    , bytestring
+    , http-client
+    , http-client-tls
   default-language: Haskell2010
