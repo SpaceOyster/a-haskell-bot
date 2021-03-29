@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ca30295a9d35bcd7f17ce4e29943dbbaf7186f2e6875b546ba8ff2e82477f297
+-- hash: 8490fe44c198aa98df9ac7d654dec1e5baba32a11029d93d1409b3a21afdc5c5
 
 name:           a-haskell-bot
 version:        0.1.0.0
@@ -27,6 +27,7 @@ source-repository head
 
 library
   exposed-modules:
+      API.Telegram
       Lib
   other-modules:
       Paths_a_haskell_bot
@@ -36,6 +37,7 @@ library
       aeson
     , base >=4.7 && <5
     , bytestring
+    , exceptions
     , http-client
     , http-client-tls
   default-language: Haskell2010
@@ -52,6 +54,7 @@ executable a-haskell-bot-exe
     , aeson
     , base >=4.7 && <5
     , bytestring
+    , exceptions
     , http-client
     , http-client-tls
   default-language: Haskell2010
@@ -69,6 +72,7 @@ test-suite a-haskell-bot-test
     , aeson
     , base >=4.7 && <5
     , bytestring
+    , exceptions
     , http-client
     , http-client-tls
   default-language: Haskell2010
