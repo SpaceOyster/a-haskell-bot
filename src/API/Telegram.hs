@@ -1,5 +1,6 @@
 module API.Telegram where
 
+import API.Telegram.Types
 import Control.Exception (handle)
 import Control.Monad ((=<<))
 import Control.Monad.Catch (MonadThrow(..))
