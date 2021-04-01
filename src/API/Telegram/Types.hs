@@ -1,8 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DeriveAnyClass #-}
 
 module API.Telegram.Types where
 
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
+import GHC.Generics
 
 data Status =
     Status
@@ -10,12 +13,4 @@ data Status =
         , error_code :: Int
         , description :: String
         }
-    deriving (Show)
-
-instance FromJSON Status where
-    parseJSON =
-        withObject "error" $ \o -> do
-            ok' <- o .: "ok"
-            error_code' <- o .: "error_code"
-            description' <- o .: "description"
-            return $ Status ok' error_code' description'
+    deriving (Show, Generic, ToJSON, FromJSON)
