@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module API.Telegram.Types where
 
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
