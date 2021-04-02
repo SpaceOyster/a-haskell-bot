@@ -4,6 +4,7 @@ import API.Telegram.Types
 import Control.Exception (handle)
 import Control.Monad ((=<<))
 import Control.Monad.Catch (MonadThrow(..))
+import Data.Aeson (FromJSON(..), ToJSON(..), decode, encode)
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Network.HTTP.Client
