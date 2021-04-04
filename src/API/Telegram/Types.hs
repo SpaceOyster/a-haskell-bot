@@ -14,6 +14,16 @@ data Update =
     }
   deriving (Show, Generic, FromJSON)
 
+data Message =
+  Message
+    { message_id :: Integer
+    , from :: Maybe User
+    , chat :: Maybe Chat
+    , date :: Integer
+    , text :: Maybe String
+    }
+  deriving (Show, Generic, FromJSON)
+
 data Response
     = Error
           { error_code :: Int
