@@ -24,6 +24,12 @@ data Message =
     }
   deriving (Show, Generic, FromJSON)
 
+data User =
+  User
+    { id :: Integer
+    }
+  deriving (Show, Generic, FromJSON)
+
 data Response
     = Error
           { error_code :: Int
