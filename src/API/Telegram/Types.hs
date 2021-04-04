@@ -7,6 +7,13 @@ module API.Telegram.Types where
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
 import GHC.Generics
 
+data Update =
+  Update
+    { update_id :: Integer
+    , message :: Maybe Message
+    }
+  deriving (Show, Generic, FromJSON)
+
 data Response
     = Error
           { error_code :: Int
