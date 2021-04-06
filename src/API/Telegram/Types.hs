@@ -34,6 +34,11 @@ data MessageCopy =
     }
   deriving (Show, Generic, ToJSON)
 
+copyMessage :: Message -> MessageCopy
+copyMessage Message {message_id, chat} =
+  let chId = chat_id (chat :: Chat)
+   in MessageCopy {chat_id = chId, from_chat_id = chId, message_id = message_id}
+
 data User =
   User
     { id :: Integer
