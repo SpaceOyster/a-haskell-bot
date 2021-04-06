@@ -20,7 +20,7 @@ data Message =
   Message
     { message_id :: Integer
     , from :: Maybe User
-    , chat :: Maybe Chat
+    , chat :: Chat
     , date :: Integer
     , text :: Maybe String
     }
