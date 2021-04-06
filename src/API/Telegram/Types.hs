@@ -12,7 +12,7 @@ import GHC.Generics
 data Update =
   Update
     { update_id :: Integer
-    , message :: Maybe Message
+    , message :: Message -- TODO it's actually optional
     }
   deriving (Show, Generic, FromJSON)
 

@@ -9,6 +9,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (FromJSON(..), ToJSON(..), decode, encode)
 import qualified Data.ByteString.Char8 as S8
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Maybe (fromJust, fromMaybe)
 import Network.HTTP.Client
     ( HttpException(..)
     , Manager(..)
@@ -36,30 +37,30 @@ getUpdates manager = do
     res <- httpLbs req manager
     return $ responseBody res
 
-copyMessage :: Manager -> Integer -> Integer -> Integer -> IO L8.ByteString
-copyMessage manager toChat fromChat mesId = do
+echoMessage :: Manager -> Message -> IO L8.ByteString
+echoMessage manager msg = do
     apiKey <- getEnv "TG_API"
     req <- makeRequest apiKey "copyMessage"
     let req' =
             req
                 { method = "POST"
-                , requestBody =
-                      RequestBodyBS $
-                      S8.pack $
-                      "{\"chat_id\":" ++
-                      show toChat ++
-                      ",\"from_chat_id\":" ++
-                      show fromChat ++ ",\"message_id\":" ++ show mesId ++ "}"
+                , requestBody = RequestBodyLBS $ encode $ copyMessage msg
                 , requestHeaders =
                       [("Content-Type", "application/json; charset=utf-8")]
                 }
     res <- httpLbs req' manager
     return $ responseBody res
 
-testMakeRequest = do
+testGetUpdates = do
     man <- newManager tlsManagerSettings
     getUpdates man
 
-testSendCopy toChat fromChat mesId = do
+testSendCopy msg = do
     man <- newManager tlsManagerSettings
-    copyMessage man toChat fromChat mesId
+    echoMessage man msg
+
+echoAll = do
+    man <- newManager tlsManagerSettings
+    res <- getUpdates man
+    let resp = decode res :: Maybe Response
+    mapM testSendCopy $ message <$> result (fromJust resp)
