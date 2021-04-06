@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
 
 module API.Telegram.Types where
 
@@ -24,6 +25,14 @@ data Message =
     , text :: Maybe String
     }
   deriving (Show, Generic, FromJSON)
+
+data MessageCopy =
+  MessageCopy
+    { chat_id :: Integer
+    , from_chat_id :: Integer
+    , message_id :: Integer
+    }
+  deriving (Show, Generic, ToJSON)
 
 data User =
   User
