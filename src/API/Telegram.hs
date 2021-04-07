@@ -26,6 +26,16 @@ import Network.HTTP.Client
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import System.Environment (getEnv)
 
+data Config =
+    Config
+        { apiKey :: String
+        }
+
+parseConfig :: IO Config
+parseConfig = do
+    key <- getEnv "TG_API"
+    return $ Config {apiKey = key}
+
 makeRequest :: MonadThrow m => String -> String -> m Request
 makeRequest key method =
     parseRequest $ "https://api.telegram.org/bot" ++ key ++ "/" ++ method
