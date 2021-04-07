@@ -48,21 +48,18 @@ parseConfig = do
     key <- getEnv "TG_API"
     return $ Config {apiKey = key}
 
-makeRequest :: MonadThrow m => String -> String -> m Request
-makeRequest key method =
-    parseRequest $ "https://api.telegram.org/bot" ++ key ++ "/" ++ method
+makeRequest :: MonadThrow m => Handle -> String -> m Request
+makeRequest handle method = parseRequest $ baseURL handle ++ method
 
-getUpdates :: Manager -> IO L8.ByteString
-getUpdates manager = do
-    apiKey <- getEnv "TG_API"
-    req <- makeRequest apiKey "getUpdates"
-    res <- httpLbs req manager
+getUpdates :: Handle -> IO L8.ByteString
+getUpdates handle = do
+    req <- makeRequest handle "getUpdates"
+    res <- httpLbs req $ manager handle
     return $ responseBody res
 
-echoMessage :: Manager -> Message -> IO L8.ByteString
-echoMessage manager msg = do
-    apiKey <- getEnv "TG_API"
-    req <- makeRequest apiKey "copyMessage"
+echoMessage :: Handle -> Message -> IO L8.ByteString
+echoMessage handle msg = do
+    req <- makeRequest handle "copyMessage"
     let req' =
             req
                 { method = "POST"
@@ -70,19 +67,22 @@ echoMessage manager msg = do
                 , requestHeaders =
                       [("Content-Type", "application/json; charset=utf-8")]
                 }
-    res <- httpLbs req' manager
+    res <- httpLbs req' $ manager handle
     return $ responseBody res
 
 testGetUpdates = do
-    man <- newManager tlsManagerSettings
-    getUpdates man
+    config <- parseConfig
+    handle <- new config
+    getUpdates handle
 
 testSendCopy msg = do
-    man <- newManager tlsManagerSettings
-    echoMessage man msg
+    config <- parseConfig
+    handle <- new config
+    echoMessage handle msg
 
 echoAll = do
-    man <- newManager tlsManagerSettings
-    res <- getUpdates man
+    config <- parseConfig
+    handle <- new config
+    res <- getUpdates handle
     let resp = decode res :: Maybe Response
     mapM testSendCopy $ message <$> result (fromJust resp)
