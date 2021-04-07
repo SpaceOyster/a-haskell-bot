@@ -5,8 +5,11 @@
 
 module API.Telegram.Types where
 
+import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
 import Data.Aeson.Types (Value)
+import qualified Exceptions as Priority
+import Exceptions (BotException(..))
 import GHC.Generics
 
 data Update =
@@ -71,3 +74,12 @@ instance FromJSON Response where
       if ok
         then Result <$> o .: "result"
         else Error <$> o .: "error_code" <*> o .: "description"
+
+-- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
+-- otherwise
+getResult :: (MonadThrow m) => Response -> m [Update]
+getResult res =
+  case res of
+    Error {error_code, description} ->
+      throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
+    Result {result} -> return result
