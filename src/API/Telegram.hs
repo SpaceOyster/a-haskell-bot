@@ -31,6 +31,18 @@ data Config =
         { apiKey :: String
         }
 
+data Handle =
+    Handle
+        { manager :: Manager
+        , baseURL :: String
+        }
+
+new :: Config -> IO Handle
+new cfg = do
+    man <- newManager tlsManagerSettings
+    let bURL = "https://api.telegram.org/bot" ++ (apiKey cfg) ++ "/"
+    return $ Handle {manager = man, baseURL = bURL}
+
 parseConfig :: IO Config
 parseConfig = do
     key <- getEnv "TG_API"
