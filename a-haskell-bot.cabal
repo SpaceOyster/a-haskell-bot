@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 2d49cdfb54271c779ed19e164226b206b7ead58756da43ef4d6ca9fc0b261d43
+-- hash: 538cb70682ec6c249022e1e69a1c97b9adaf9e11b5441e101f25a2590055d74e
 
 name:           a-haskell-bot
 version:        0.1.0.0
@@ -29,7 +29,9 @@ library
   exposed-modules:
       API.Telegram
       API.Telegram.Types
+      Exceptions
       Lib
+      Utils
   other-modules:
       Paths_a_haskell_bot
   hs-source-dirs:

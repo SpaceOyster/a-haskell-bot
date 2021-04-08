@@ -11,6 +11,7 @@ import Data.Aeson.Types (Value)
 import qualified Exceptions as Priority
 import Exceptions (BotException(..))
 import GHC.Generics
+import Utils
 
 data Update =
   Update
