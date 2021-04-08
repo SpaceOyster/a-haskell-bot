@@ -16,6 +16,8 @@ data Priority
 
 data BotException =
     Ex Priority String
-    deriving (Show)
 
 instance Exception BotException
+
+instance Show BotException where
+    show (Ex priority description) = "[" ++ show priority ++ "] " ++ description
