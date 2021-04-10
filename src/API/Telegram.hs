@@ -84,6 +84,12 @@ echoAll handle = do
     let resp = decode res :: Maybe Response
     mapM (echoMessage handle) $ message <$> result (fromJust resp)
 
+reactToUpdate :: Handle -> Update -> IO L8.ByteString
+reactToUpdate handle update = echoMessage handle $ message update
+
+reactToUpdates :: Handle -> [Update] -> IO [L8.ByteString]
+reactToUpdates handle updates = mapM (reactToUpdate handle) updates
+
 testGetUpdates = withHandle getUpdates
 
 testSendCopy msg = withHandle (`echoMessage` msg)
