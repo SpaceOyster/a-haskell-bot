@@ -22,7 +22,8 @@ import Network.HTTP.Client
     , newManager
     , parseRequest
     , responseBody
-    , responseStatus , withResponse
+    , responseStatus
+    , withResponse
     )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import System.Environment (getEnv)
@@ -58,9 +59,8 @@ getUpdates handle = do
     req <- makeRequest handle "getUpdates"
     res <- httpLbs req $ manager handle
     let json = responseBody res
-    res' <- throwDecode json 
+    res' <- throwDecode json
     getResult res'
-    
 
 echoMessage :: Handle -> Message -> IO L8.ByteString
 echoMessage handle msg = do
@@ -91,6 +91,12 @@ reactToUpdate handle update = echoMessage handle $ message update
 
 reactToUpdates :: Handle -> [Update] -> IO [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
+
+doBotThing :: Handle -> IO [L8.ByteString]
+doBotThing handle = getUpdates handle >>= reactToUpdates handle
+
+botLoop :: Handle -> IO [L8.ByteString]
+botLoop handle = undefined
 
 testGetUpdates = withHandle getUpdates
 
