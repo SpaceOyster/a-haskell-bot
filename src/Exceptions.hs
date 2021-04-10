@@ -8,11 +8,11 @@ module Exceptions where
 import Control.Monad.Catch (Exception(..))
 
 data Priority
-    = Debug
-    | Info
+    = Info
     | Warning
     | Error
-    deriving (Eq, Show)
+    | Debug 
+    deriving (Eq, Enum, Show)
 
 data BotException =
     Ex Priority String
