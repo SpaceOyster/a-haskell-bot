@@ -6,6 +6,7 @@ module Exceptions where
 -- import Exceptions (BotException(..))
 -- @
 import Control.Monad.Catch (Exception(..))
+import Data.Typeable (Typeable)
 
 data Priority
     = Info
@@ -16,6 +17,7 @@ data Priority
 
 data BotException =
     Ex Priority String
+    deriving (Typeable)
 
 instance Exception BotException
 
