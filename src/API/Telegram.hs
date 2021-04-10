@@ -22,11 +22,11 @@ import Network.HTTP.Client
     , newManager
     , parseRequest
     , responseBody
-    , responseStatus
-    , withResponse
+    , responseStatus , withResponse
     )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import System.Environment (getEnv)
+import Utils (throwDecode)
 
 data Config =
     Config
@@ -72,19 +72,17 @@ echoMessage handle msg = do
     res <- httpLbs req' $ manager handle
     return $ responseBody res
 
-testGetUpdates = do
+withHandle :: (Handle -> IO a) -> IO a
+withHandle io = do
     config <- parseConfig
     handle <- new config
-    getUpdates handle
+    io handle
 
-testSendCopy msg = do
-    config <- parseConfig
-    handle <- new config
-    echoMessage handle msg
+testGetUpdates = withHandle getUpdates
 
-echoAll = do
-    config <- parseConfig
-    handle <- new config
+testSendCopy msg = withHandle (`echoMessage` msg)
+
+echoAll = withHandle $ \handle -> do
     res <- getUpdates handle
     let resp = decode res :: Maybe Response
-    mapM testSendCopy $ message <$> result (fromJust resp)
+    mapM (echoMessage handle) $ message <$> result (fromJust resp)
