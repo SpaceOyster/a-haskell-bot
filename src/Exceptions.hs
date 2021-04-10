@@ -16,7 +16,7 @@ data Priority
     deriving (Eq, Enum, Show)
 
 data BotException =
-    Ex Priority String
+    Ex Priority !String
     deriving (Typeable)
 
 instance Exception BotException
