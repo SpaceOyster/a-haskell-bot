@@ -53,11 +53,14 @@ parseConfig = do
 makeRequest :: MonadThrow m => Handle -> String -> m Request
 makeRequest handle method = parseRequest $ baseURL handle ++ method
 
-getUpdates :: Handle -> IO L8.ByteString
+getUpdates :: Handle -> IO [Update]
 getUpdates handle = do
     req <- makeRequest handle "getUpdates"
     res <- httpLbs req $ manager handle
-    return $ responseBody res
+    let json = responseBody res
+    res' <- throwDecode json 
+    getResult res'
+    
 
 echoMessage :: Handle -> Message -> IO L8.ByteString
 echoMessage handle msg = do
@@ -80,9 +83,8 @@ withHandle io = do
 
 echoAll :: Handle -> IO [L8.ByteString]
 echoAll handle = do
-    res <- getUpdates handle
-    let resp = decode res :: Maybe Response
-    mapM (echoMessage handle) $ message <$> result (fromJust resp)
+    updates <- getUpdates handle -- add error handling
+    mapM (echoMessage handle) $ message <$> updates
 
 reactToUpdate :: Handle -> Update -> IO L8.ByteString
 reactToUpdate handle update = echoMessage handle $ message update
