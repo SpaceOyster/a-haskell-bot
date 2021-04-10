@@ -78,11 +78,12 @@ withHandle io = do
     handle <- new config
     io handle
 
-testGetUpdates = withHandle getUpdates
-
-testSendCopy msg = withHandle (`echoMessage` msg)
-
-echoAll = withHandle $ \handle -> do
+echoAll :: Handle -> IO [L8.ByteString]
+echoAll handle = do
     res <- getUpdates handle
     let resp = decode res :: Maybe Response
     mapM (echoMessage handle) $ message <$> result (fromJust resp)
+
+testGetUpdates = withHandle getUpdates
+
+testSendCopy msg = withHandle (`echoMessage` msg)
