@@ -1,6 +1,9 @@
 module Main where
 
-import Lib
+import qualified API.Telegram as Telegram
+import qualified Bot
 
 main :: IO ()
-main = someFunc
+main = do
+  telegramConfig <- Telegram.parseConfig
+  Bot.loop =<< Telegram.new telegramConfig

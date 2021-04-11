@@ -7,8 +7,8 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 doBotThing :: Handle -> IO [L8.ByteString]
 doBotThing handle = getUpdates handle >>= reactToUpdates handle
 
-botLoop :: Handle -> IO ()
-botLoop handle = do
+loop :: Handle -> IO ()
+loop handle = do
     doBotThing handle
     threadDelay 5000000
-    botLoop handle
+    loop handle
