@@ -87,7 +87,3 @@ reactToUpdate handle update = echoMessage handle $ message update
 
 reactToUpdates :: Handle -> [Update] -> IO [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
-
-testGetUpdates = withHandle getUpdates
-
-testSendCopy msg = withHandle (`echoMessage` msg)
