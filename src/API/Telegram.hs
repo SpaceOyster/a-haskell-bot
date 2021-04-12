@@ -48,7 +48,7 @@ parseConfig = do
     return $ Config {apiKey = key}
 
 makeRequest :: MonadThrow m => Handle -> String -> m Request
-makeRequest handle method = parseRequest $ baseURL handle ++ method
+makeRequest handle apiMethod = parseRequest $ baseURL handle ++ apiMethod
 
 getUpdates :: Handle -> IO [Update]
 getUpdates handle = do
