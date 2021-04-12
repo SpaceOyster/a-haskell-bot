@@ -39,7 +39,7 @@ data Handle =
 new :: Config -> IO Handle
 new cfg = do
     man <- newManager tlsManagerSettings
-    let bURL = "https://api.telegram.org/bot" ++ (apiKey cfg) ++ "/"
+    let bURL = "https://api.telegram.org/bot" ++ apiKey cfg ++ "/"
     return $ Handle {manager = man, baseURL = bURL}
 
 parseConfig :: IO Config
