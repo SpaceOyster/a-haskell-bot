@@ -34,16 +34,16 @@ data Config =
         { apiKey :: String
         }
 
-data Handle =
+data Handle m =
     Handle
         { manager :: Manager
         , baseURL :: String
         , getRequest :: ByteString -> Request
         , postRequest :: ByteString -> RequestBody -> Request
-        , sendRequest :: Request -> IO (HTTP.Response L8.ByteString)
+        , sendRequest :: Request -> m (HTTP.Response L8.ByteString)
         }
 
-new :: Config -> IO Handle
+new :: Config -> IO (Handle IO)
 new cfg = do
     man <- newManager tlsManagerSettings
     let bURL = "https://api.telegram.org/bot" ++ apiKey cfg ++ "/"
@@ -74,7 +74,7 @@ parseConfig = do
     key <- getEnv "TG_API"
     return $ Config {apiKey = key}
 
-getUpdates :: Handle -> IO [Update]
+getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
     let req = getRequest handle "getUpdates"
     res <- sendRequest handle req
@@ -82,7 +82,7 @@ getUpdates handle = do
     res' <- throwDecode json
     getResult res'
 
-echoMessage :: Handle -> Message -> IO L8.ByteString
+echoMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 echoMessage handle msg = do
     let req =
             postRequest handle "copyMessage" .
@@ -91,19 +91,19 @@ echoMessage handle msg = do
     res <- sendRequest handle req
     return $ responseBody res
 
-withHandle :: (Handle -> IO a) -> IO a
+withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
     config <- parseConfig
     handle <- new config
     io handle
 
-echoAll :: Handle -> IO [L8.ByteString]
+echoAll :: (MonadThrow m) => Handle m -> m [L8.ByteString]
 echoAll handle = do
     updates <- getUpdates handle -- add error handling
     mapM (echoMessage handle) $ message <$> updates
 
-reactToUpdate :: Handle -> Update -> IO L8.ByteString
+reactToUpdate :: (Monad m) => Handle m -> Update -> m L8.ByteString
 reactToUpdate handle update = echoMessage handle $ message update
 
-reactToUpdates :: Handle -> [Update] -> IO [L8.ByteString]
+reactToUpdates :: (Monad m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
