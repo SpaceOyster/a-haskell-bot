@@ -4,7 +4,7 @@ module HTTP where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Network.HTTP.Client as HTTP
+import Network.HTTP.Client
     ( Manager
     , Request(..)
     , RequestBody(..)
@@ -24,9 +24,9 @@ data Config =
 
 data Handle m =
     Handle
-        { getRequest :: ByteString -> HTTP.Request
-        , postRequest :: ByteString -> HTTP.RequestBody -> HTTP.Request
-        , sendRequest :: HTTP.Request -> m (HTTP.Response L8.ByteString)
+        { getRequest :: ByteString -> Request
+        , postRequest :: ByteString -> RequestBody -> Request
+        , sendRequest :: Request -> m (Response L8.ByteString)
         }
 
 parseConfig :: IO Config
