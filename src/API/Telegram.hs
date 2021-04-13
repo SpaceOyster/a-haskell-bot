@@ -8,14 +8,39 @@ import Control.Monad.Catch (MonadThrow)
 import Data.Aeson (encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
-import HTTP
+import Data.Function ((&))
+import qualified HTTP
 import Network.HTTP.Client as HTTP (RequestBody(..), responseBody)
+import System.Environment (getEnv)
 import Utils (throwDecode)
+
+data Config =
+    Config
+        { key :: String
+        , baseURL :: String
+        }
+
+data Handle m =
+    Handle
+        { http :: HTTP.Handle m
+        }
+
+new :: Config -> IO (Handle IO)
+new cfg = do
+    let httpConfig = HTTP.Config {HTTP.baseURL = baseURL cfg}
+    httpHandle <- HTTP.new httpConfig
+    return $ Handle {http = httpHandle}
+
+parseConfig :: IO Config
+parseConfig = do
+    k <- getEnv "TG_API"
+    let bURL = "https://api.telegram.org/bot" ++ k ++ "/"
+    return $ Config {key = k, baseURL = bURL}
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
-    let req = getRequest handle "getUpdates"
-    res <- sendRequest handle req
+    let req = handle & http & HTTP.getRequest $ "getUpdates"
+    res <- handle & http & HTTP.sendRequest $ req
     let json = responseBody res
     res' <- throwDecode json
     getResult res'
@@ -23,10 +48,10 @@ getUpdates handle = do
 echoMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 echoMessage handle msg = do
     let req =
-            postRequest handle "copyMessage" .
+            (handle & http & HTTP.postRequest $ "copyMessage") .
             RequestBodyLBS . encode . copyMessage $
             msg
-    res <- sendRequest handle req
+    res <- handle & http & HTTP.sendRequest $ req
     return $ responseBody res
 
 withHandle :: (Handle IO -> IO a) -> IO a

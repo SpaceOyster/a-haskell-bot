@@ -30,10 +30,7 @@ data Handle m =
         }
 
 parseConfig :: IO Config
-parseConfig = do
-    key <- getEnv "TG_API"
-    let bURL = "https://api.telegram.org/bot" ++ key ++ "/"
-    return $ Config {baseURL = bURL}
+parseConfig = undefined
 
 new :: Config -> IO (Handle IO)
 new cfg = do
