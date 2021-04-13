@@ -4,26 +4,19 @@ module API.Telegram where
 
 import API.Telegram.Types
 
-import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (FromJSON(..), ToJSON(..), decode, encode)
+import Control.Monad.Catch (MonadThrow)
+import Data.Aeson (encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Maybe (fromJust, fromMaybe)
 import Network.HTTP.Client as HTTP
-    ( HttpException(..)
-    , Manager(..)
+    ( Manager
     , Request(..)
     , RequestBody(..)
-    , Response(..)
-    , brRead
-    , defaultRequest
+    , Response
     , httpLbs
     , newManager
-    , parseRequest
     , parseRequest_
     , responseBody
-    , responseStatus
-    , withResponse
     )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import System.Environment (getEnv)
@@ -36,11 +29,11 @@ data Config =
 
 data Handle m =
     Handle
-        { manager :: Manager
+        { manager :: HTTP.Manager
         , baseURL :: String
-        , getRequest :: ByteString -> Request
-        , postRequest :: ByteString -> RequestBody -> Request
-        , sendRequest :: Request -> m (HTTP.Response L8.ByteString)
+        , getRequest :: ByteString -> HTTP.Request
+        , postRequest :: ByteString -> HTTP.RequestBody -> HTTP.Request
+        , sendRequest :: HTTP.Request -> m (HTTP.Response L8.ByteString)
         }
 
 new :: Config -> IO (Handle IO)
