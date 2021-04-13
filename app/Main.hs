@@ -2,8 +2,9 @@ module Main where
 
 import qualified API.Telegram as Telegram
 import qualified Bot
+import HTTP
 
 main :: IO ()
 main = do
-  telegramConfig <- Telegram.parseConfig
-  Bot.loop =<< Telegram.new telegramConfig
+  telegramConfig <- HTTP.parseConfig
+  Bot.loop =<< HTTP.new telegramConfig
