@@ -5,9 +5,11 @@
 
 module API.Telegram.Types where
 
+import Control.Monad (guard)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
 import Data.Aeson.Types (Value)
+import Data.Function ((&))
 import qualified Exceptions as Priority
 import Exceptions (BotException(..))
 import GHC.Generics
@@ -29,6 +31,15 @@ data Message =
     , text :: Maybe String
     }
   deriving (Show, Generic, FromJSON)
+
+isCommand :: String -> Bool
+isCommand = (== '/') . head
+
+getCommand :: Message -> Maybe String
+getCommand msg = do
+  t <- msg & text
+  guard (isCommand t)
+  return . takeWhile (/= ' ') . tail $ t
 
 data MessageCopy =
   MessageCopy
