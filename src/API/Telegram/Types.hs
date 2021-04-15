@@ -32,13 +32,17 @@ data Message =
     }
   deriving (Show, Generic, FromJSON)
 
-isCommand :: String -> Bool
-isCommand = (== '/') . head
+isCommand :: Message -> Bool
+isCommand msg =
+  maybe False ((== '/') . head) $ do
+    t <- text msg
+    guard (not $ null t)
+    return t
 
 getCommand :: Message -> Maybe String
 getCommand msg = do
+  guard (isCommand msg)
   t <- msg & text
-  guard (isCommand t)
   return . takeWhile (/= ' ') . tail $ t
 
 data BotCommand =
