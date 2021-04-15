@@ -43,6 +43,7 @@ library
     , exceptions
     , http-client
     , http-client-tls
+    , containers
   default-language: Haskell2010
 
 executable a-haskell-bot-exe
@@ -60,6 +61,7 @@ executable a-haskell-bot-exe
     , exceptions
     , http-client
     , http-client-tls
+    , containers
   default-language: Haskell2010
 
 test-suite a-haskell-bot-test
@@ -78,4 +80,5 @@ test-suite a-haskell-bot-test
     , exceptions
     , http-client
     , http-client-tls
+    , containers
   default-language: Haskell2010
