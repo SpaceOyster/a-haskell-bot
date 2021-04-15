@@ -41,6 +41,13 @@ getCommand msg = do
   guard (isCommand t)
   return . takeWhile (/= ' ') . tail $ t
 
+data BotCommand =
+  BotCommand
+    { command :: String
+    , description :: String
+    }
+  deriving (Show, Generic, FromJSON, ToJSON, Eq, Ord)
+
 data MessageCopy =
   MessageCopy
     { chat_id :: Integer
