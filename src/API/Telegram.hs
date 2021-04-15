@@ -68,14 +68,27 @@ echoAll handle = do
     mapM (echoMessage handle) $ message <$> updates
 
 reactToUpdate :: (Monad m) => Handle m -> Update -> m L8.ByteString
-reactToUpdate handle update = echoMessage handle $ message update
+reactToUpdate handle update = do
+    let msg = message update
+    if isCommand msg && isKnownCommand msg
+        then reactToCommand handle msg
+        else reactToMessage handle msg
+
+reactToCommand :: Handle m -> Message -> m L8.ByteString
+reactToCommand = undefined
+
+reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
+reactToMessage = echoMessage
 
 reactToUpdates :: (Monad m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
 
+isKnownCommand :: Message -> Bool
+isKnownCommand msg = maybe False (`elem` commandsList) $ getCommand msg
+
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
-commands :: (MonadThrow m) => Map BotCommand (a -> m L8.ByteString)
+commands :: Map BotCommand (a -> m L8.ByteString)
 commands =
     fromList $
     [ ( BotCommand
@@ -88,3 +101,6 @@ commands =
             }
       , undefined)
     ]
+
+commandsList :: [String]
+commandsList = command <$> keys commands
