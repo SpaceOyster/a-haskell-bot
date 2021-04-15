@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module API.Telegram where
 
@@ -9,6 +10,7 @@ import Data.Aeson (encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
+import Data.Map (Map, fromList, keys)
 import qualified HTTP
 import Network.HTTP.Client as HTTP (RequestBody(..), responseBody)
 import System.Environment (getEnv)
@@ -70,3 +72,19 @@ reactToUpdate handle update = echoMessage handle $ message update
 
 reactToUpdates :: (Monad m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
+
+-- | command has to be between 1-32 chars long
+-- description hat to be between 3-256 chars long
+commands :: (MonadThrow m) => Map BotCommand (a -> m L8.ByteString)
+commands =
+    fromList $
+    [ ( BotCommand
+            {command = "start", description = "Start interacting with bot"}
+      , undefined)
+    , (BotCommand {command = "help", description = "Show help text"}, undefined)
+    , ( BotCommand
+            { command = "repeat"
+            , description = "Set number of message repeats to make"
+            }
+      , undefined)
+    ]
