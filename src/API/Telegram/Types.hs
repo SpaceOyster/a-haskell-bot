@@ -45,6 +45,9 @@ getCommand msg = do
   t <- msg & text
   return . takeWhile (/= ' ') . tail $ t
 
+getCommandThrow :: (MonadThrow m) => Message -> m String
+getCommandThrow msg = undefined
+
 data BotCommand =
   BotCommand
     { command :: String
