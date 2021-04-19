@@ -10,7 +10,7 @@ import Data.Aeson (encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
-import Data.Map (Map, fromList, keys)
+import Data.Map (Map, fromList, keys, lookup, mapKeys)
 import qualified HTTP
 import Network.HTTP.Client as HTTP (RequestBody(..), responseBody)
 import System.Environment (getEnv)
@@ -67,40 +67,52 @@ echoAll handle = do
     updates <- getUpdates handle -- add error handling
     mapM (echoMessage handle) $ message <$> updates
 
-reactToUpdate :: (Monad m) => Handle m -> Update -> m L8.ByteString
+reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m L8.ByteString
 reactToUpdate handle update = do
     let msg = message update
     if isCommand msg && isKnownCommand msg
         then reactToCommand handle msg
         else reactToMessage handle msg
 
-reactToCommand :: Handle m -> Message -> m L8.ByteString
-reactToCommand = undefined
+reactToCommand :: (MonadThrow m) => Handle m -> Message -> m L8.ByteString
+reactToCommand handle msg = do
+    cmd <- getCommandThrow msg
+    action <- getActionThrow cmd
+    runAction action handle msg
 
 reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 reactToMessage = echoMessage
 
-reactToUpdates :: (Monad m) => Handle m -> [Update] -> m [L8.ByteString]
+reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
 
 isKnownCommand :: Message -> Bool
 isKnownCommand msg = maybe False (`elem` commandsList) $ getCommand msg
 
+newtype Action m =
+    Action
+        { runAction :: (Handle m -> Message -> m L8.ByteString)
+        }
+
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
-commands :: Map BotCommand (a -> m L8.ByteString)
+commands :: (Monad m) => Map BotCommand (Action m)
 commands =
     fromList $
     [ ( BotCommand
             {command = "start", description = "Start interacting with bot"}
-      , undefined)
-    , (BotCommand {command = "help", description = "Show help text"}, undefined)
+      , Action echoMessage)
+    , ( BotCommand {command = "help", description = "Show help text"}
+      , Action echoMessage)
     , ( BotCommand
             { command = "repeat"
             , description = "Set number of message repeats to make"
             }
-      , undefined)
+      , Action echoMessage)
     ]
 
+getActionThrow :: (MonadThrow m) => String -> m (Action n)
+getActionThrow = do
+    undefined
 commandsList :: [String]
-commandsList = command <$> keys commands
+commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
