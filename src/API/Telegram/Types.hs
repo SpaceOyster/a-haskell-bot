@@ -32,6 +32,14 @@ data Message =
     }
   deriving (Show, Generic, FromJSON)
 
+getTextThrow :: (MonadThrow m) => Message -> m String
+getTextThrow Message {message_id, text} =
+  case text of
+    Just t -> return t
+    Nothing ->
+      throwM $
+      Ex Priority.Info $ "Message " ++ show message_id ++ " has no text"
+
 isCommand :: Message -> Bool
 isCommand msg =
   maybe False ((== '/') . head) $ do
