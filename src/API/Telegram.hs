@@ -86,8 +86,8 @@ reactToMessage = echoMessage
 reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
 
-isKnownCommand :: Message -> Bool
-isKnownCommand msg = maybe False (`elem` commandsList) $ getCommand msg
+isKnownCommand :: String -> Bool
+isKnownCommand s = s `elem` commandsList
 
 newtype Action m =
     Action
