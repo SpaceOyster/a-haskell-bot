@@ -112,8 +112,11 @@ commands =
       , Action echoMessage)
     ]
 
-getActionThrow :: (MonadThrow m) => String -> m (Action n)
-getActionThrow = do
-    undefined
+getActionThrow :: (MonadThrow m) => String -> m (Action m)
+getActionThrow cmd =
+    case Map.lookup cmd $ command `mapKeys` commands of
+        Just a -> return a
+        Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
+
 commandsList :: [String]
 commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
