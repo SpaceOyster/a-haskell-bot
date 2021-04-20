@@ -10,7 +10,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
 import Data.Aeson.Types (Value)
 import Data.Function ((&))
-import qualified Exceptions as Priority
+import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import GHC.Generics
 import Utils
