@@ -5,7 +5,7 @@
 
 module API.Telegram.Types where
 
-import Control.Monad (guard)
+import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
 import Data.Aeson.Types (Value)
@@ -45,7 +45,12 @@ isCommand "" = False
 isCommand s = (== '/') . head $ s
 
 getCommandThrow :: (MonadThrow m) => Message -> m String
-getCommandThrow msg = undefined
+getCommandThrow msg@(Message {message_id}) = do
+  t <- getTextThrow msg
+  unless (isCommand t) $
+    throwM $
+    Ex Priority.Info $ "Message " ++ show message_id ++ " is not a command"
+  return . takeWhile (/= ' ') . tail $ t
 
 data BotCommand =
   BotCommand
