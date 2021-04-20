@@ -70,7 +70,8 @@ echoAll handle = do
 reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m L8.ByteString
 reactToUpdate handle update = do
     let msg = message update
-    if isCommand msg && isKnownCommand msg
+    t <- getCommandThrow msg
+    if isCommand t && isKnownCommand t
         then reactToCommand handle msg
         else reactToMessage handle msg
 
