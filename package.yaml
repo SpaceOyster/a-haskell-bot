@@ -27,6 +27,8 @@ dependencies:
 - aeson
 - exceptions
 - containers
+- scientific
+- text
 
 library:
   source-dirs: src
