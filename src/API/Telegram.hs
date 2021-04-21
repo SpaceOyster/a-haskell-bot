@@ -7,13 +7,16 @@ import API.Telegram.Types
 
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (encode)
+import Data.Aeson (Value(..), encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.Map as Map (Map, fromList, keys, lookup, mapKeys)
+import Data.Scientific (scientific)
+import Data.Text (pack)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
+import GHC.Exts as Exts (fromList)
 import qualified HTTP
 import Network.HTTP.Client as HTTP (RequestBody(..), responseBody)
 import System.Environment (getEnv)
@@ -123,3 +126,16 @@ getActionThrow cmd =
 
 commandsList :: [String]
 commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
+
+sendMessage :: (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
+sendMessage handle chatId msg = do
+    let json =
+            encode . Object . Exts.fromList $
+            [ ("chat_id", Number $ scientific chatId 0)
+            , ("text", String $ pack msg)
+            ]
+        req =
+            (handle & http & HTTP.postRequest $ "sendMessage") . RequestBodyLBS $
+            json
+    res <- handle & http & HTTP.sendRequest $ req
+    return $ responseBody res
