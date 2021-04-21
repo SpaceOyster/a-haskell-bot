@@ -45,7 +45,7 @@ isCommand "" = False
 isCommand s = (== '/') . head $ s
 
 getCommandThrow :: (MonadThrow m) => Message -> m String
-getCommandThrow msg@(Message {message_id}) = do
+getCommandThrow msg@Message {message_id} = do
   t <- getTextThrow msg
   unless (isCommand t) $
     throwM $
