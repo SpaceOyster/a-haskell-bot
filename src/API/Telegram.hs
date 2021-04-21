@@ -5,12 +5,15 @@ module API.Telegram where
 
 import API.Telegram.Types
 
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad (replicateM)
+import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (encode)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
-import Data.Map (Map, fromList, keys, lookup, mapKeys)
+import Data.Map as Map (Map, fromList, keys, lookup, mapKeys)
+import qualified Exceptions as Priority (Priority(..))
+import Exceptions (BotException(..))
 import qualified HTTP
 import Network.HTTP.Client as HTTP (RequestBody(..), responseBody)
 import System.Environment (getEnv)
@@ -70,7 +73,7 @@ echoAll handle = do
 reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m L8.ByteString
 reactToUpdate handle update = do
     let msg = message update
-    t <- getCommandThrow msg
+    t <- getTextThrow msg
     if isCommand t && isKnownCommand t
         then reactToCommand handle msg
         else reactToMessage handle msg
@@ -88,7 +91,7 @@ reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
 
 isKnownCommand :: String -> Bool
-isKnownCommand s = s `elem` commandsList
+isKnownCommand s = tail s `elem` commandsList
 
 newtype Action m =
     Action
