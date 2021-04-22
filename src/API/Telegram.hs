@@ -7,7 +7,7 @@ import API.Telegram.Types
 
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (Value(..), encode)
+import Data.Aeson (Value(..), (.=), encode, object, toJSON)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
@@ -149,5 +149,30 @@ sendMessage handle chatId msg = do
         req =
             (handle & http & HTTP.postRequest $ "sendMessage") . RequestBodyLBS $
             json
+    res <- handle & http & HTTP.sendRequest $ req
+    return $ responseBody res
+
+repeatKeyboard :: InlineKeyboardMarkup
+repeatKeyboard =
+    InlineKeyboardMarkup
+        [ [button 1, button 2, button 3]
+        , [button 4, button 5, button 6]
+        , [button 7, button 8, button 9]
+        ]
+  where
+    button x = InlineKeyboardButton {text = show x, callback_data = show x}
+
+sendInlineKeyboard ::
+       (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
+sendInlineKeyboard handle chatId msg = do
+    let json =
+            object
+                [ "chat_id" .= chatId
+                , "text" .= msg
+                , "reply_markup" .= repeatKeyboard
+                ]
+        req =
+            (handle & http & HTTP.postRequest $ "sendMessage") . RequestBodyLBS $
+            encode json
     res <- handle & http & HTTP.sendRequest $ req
     return $ responseBody res
