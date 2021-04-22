@@ -25,6 +25,7 @@ data Config =
         , baseURL :: String
         , helpMessage :: String
         , greeting :: String
+        , repeatPrompt :: String
         }
 
 data Handle m =
@@ -32,15 +33,14 @@ data Handle m =
         { http :: HTTP.Handle m
         , helpMessage :: String
         , greeting :: String
+        , repeatPrompt :: String
         }
 
 new :: Config -> IO (Handle IO)
-new cfg@Config {baseURL, helpMessage, greeting} = do
+new cfg@Config {baseURL, helpMessage, greeting, repeatPrompt} = do
     let httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
-    httpHandle <- HTTP.new httpConfig
-    return $
-        Handle
-            {http = httpHandle, helpMessage = helpMessage, greeting = greeting}
+    http <- HTTP.new httpConfig
+    return $ Handle {http, helpMessage, greeting, repeatPrompt}
 
 parseConfig :: IO Config
 parseConfig = do
@@ -48,7 +48,8 @@ parseConfig = do
     let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
         helpMessage = "This is a help message"
         greeting = "This is greeting message"
-    return $ Config {key, baseURL, helpMessage, greeting}
+        repeatPrompt = "How many times you want your messages to be repeated?"
+    return $ Config {key, baseURL, helpMessage, greeting, repeatPrompt}
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
@@ -120,9 +121,9 @@ commands =
             , description = "Set number of message repeats to make"
             }
       , Action
-            (\h (Message {chat}) ->
+            (\h@Handle {repeatPrompt} Message {chat} ->
                  sendInlineKeyboard h (chat & (chat_id :: Chat -> Integer)) $
-                 "How many times you want your messages to be repeated?"))
+                 repeatPrompt))
     ]
 
 getActionThrow :: (MonadThrow m) => String -> m (Action m)
