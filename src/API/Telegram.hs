@@ -113,12 +113,16 @@ newtype Action m =
 -- description hat to be between 3-256 chars long
 commands :: (Monad m) => Map BotCommand (Action m)
 commands =
-    fromList $
-    [ ( BotCommand
-            {command = "start", description = "Start interacting with bot"}
-      , Action echoMessage)
+    Map.fromList $
+    [ ( BotCommand {command = "start", description = "Greet User"}
+      , Action
+            (\h@Handle {greeting} Message {chat} ->
+                 sendMessage h (chat & (chat_id :: Chat -> Integer)) $ greeting))
     , ( BotCommand {command = "help", description = "Show help text"}
-      , Action echoMessage)
+      , Action
+            (\h@Handle {helpMessage} Message {chat} ->
+                 sendMessage h (chat & (chat_id :: Chat -> Integer)) $
+                 helpMessage))
     , ( BotCommand
             { command = "repeat"
             , description = "Set number of message repeats to make"
