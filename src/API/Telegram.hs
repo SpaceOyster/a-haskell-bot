@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
 
 module API.Telegram where
 
@@ -26,24 +26,32 @@ data Config =
     Config
         { key :: String
         , baseURL :: String
+        , helpMessage :: String
+        , greeting :: String
         }
 
 data Handle m =
     Handle
         { http :: HTTP.Handle m
+        , helpMessage :: String
+        , greeting :: String
         }
 
 new :: Config -> IO (Handle IO)
-new cfg = do
-    let httpConfig = HTTP.Config {HTTP.baseURL = baseURL cfg}
+new cfg@Config {baseURL, helpMessage, greeting} = do
+    let httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
     httpHandle <- HTTP.new httpConfig
-    return $ Handle {http = httpHandle}
+    return $
+        Handle
+            {http = httpHandle, helpMessage = helpMessage, greeting = greeting}
 
 parseConfig :: IO Config
 parseConfig = do
-    k <- getEnv "TG_API"
-    let bURL = "https://api.telegram.org/bot" ++ k ++ "/"
-    return $ Config {key = k, baseURL = bURL}
+    key <- getEnv "TG_API"
+    let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
+        helpMessage = "This is a help message"
+        greeting = "This is greeting message"
+    return $ Config {key, baseURL, helpMessage, greeting}
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
