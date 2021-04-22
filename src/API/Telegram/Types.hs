@@ -87,6 +87,19 @@ data Chat =
 instance FromJSON Chat where
   parseJSON = withObject "Chat" (fmap Chat . (.: "id"))
 
+newtype InlineKeyboardMarkup =
+  InlineKeyboardMarkup
+    { inline_keyboard :: [[InlineKeyboardButton]]
+    }
+  deriving (Show, Generic, ToJSON)
+
+data InlineKeyboardButton =
+  InlineKeyboardButton
+    { text :: String
+    , callback_data :: String
+    }
+  deriving (Show, Generic, ToJSON)
+
 data Response
   = Error
       { error_code :: Int
