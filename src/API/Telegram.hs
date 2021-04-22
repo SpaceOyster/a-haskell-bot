@@ -119,7 +119,10 @@ commands =
             { command = "repeat"
             , description = "Set number of message repeats to make"
             }
-      , Action echoMessage)
+      , Action
+            (\h (Message {chat}) ->
+                 sendInlineKeyboard h (chat & (chat_id :: Chat -> Integer)) $
+                 "How many times you want your messages to be repeated?"))
     ]
 
 getActionThrow :: (MonadThrow m) => String -> m (Action m)
