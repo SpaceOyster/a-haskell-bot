@@ -152,11 +152,11 @@ repeatKeyboard =
 
 sendInlineKeyboard ::
        (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
-sendInlineKeyboard handle chatId msg = do
+sendInlineKeyboard handle chatId prompt = do
     let json =
             encode . object $
             [ "chat_id" .= chatId
-            , "text" .= msg
+            , "text" .= prompt
             , "reply_markup" .= repeatKeyboard
             ]
         req =
