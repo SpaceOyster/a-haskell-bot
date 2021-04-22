@@ -18,9 +18,17 @@ import Utils
 data Update =
   Update
     { update_id :: Integer
-    , message :: Message -- TODO it's actually optional
+    , message :: Maybe Message
     }
   deriving (Show, Generic, FromJSON)
+
+getMessageThrow :: (MonadThrow m) => Update -> m Message
+getMessageThrow Update {update_id, message} =
+  case message of
+    Just t -> return t
+    Nothing ->
+      throwM $
+      Ex Priority.Info $ "Update " ++ show update_id ++ " has no message"
 
 data Message =
   Message

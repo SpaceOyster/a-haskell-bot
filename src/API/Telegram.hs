@@ -73,14 +73,9 @@ withHandle io = do
     handle <- new config
     io handle
 
-echoAll :: (MonadThrow m) => Handle m -> m [L8.ByteString]
-echoAll handle = do
-    updates <- getUpdates handle -- add error handling
-    mapM (echoMessage handle) $ message <$> updates
-
 reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m L8.ByteString
 reactToUpdate handle update = do
-    let msg = message update
+    msg <- getMessageThrow update
     t <- getTextThrow msg
     if isCommand t && isKnownCommand t
         then reactToCommand handle msg
