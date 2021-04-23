@@ -59,12 +59,17 @@ getUpdates handle = do
     res' <- throwDecode json
     getResult res'
 
-echoMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
-echoMessage handle msg = do
-    let req =
-            (handle & http & HTTP.postRequest $ "copyMessage") .
-            RequestBodyLBS . encode . copyMessage $
-            msg
+copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
+copyMessage handle msg@Message {message_id, chat} = do
+    let json =
+            encode . object $
+            [ "chat_id" .= chat_id (chat :: Chat)
+            , "from_chat_id" .= chat_id (chat :: Chat)
+            , "message_id" .= message_id
+            ]
+        req =
+            (handle & http & HTTP.postRequest $ "copyMessage") . RequestBodyLBS $
+            json
     res <- handle & http & HTTP.sendRequest $ req
     return $ responseBody res
 
@@ -89,7 +94,7 @@ reactToCommand handle msg = do
     runAction action handle msg
 
 reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
-reactToMessage = echoMessage
+reactToMessage = copyMessage
 
 reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
 reactToUpdates handle updates = mapM (reactToUpdate handle) updates
