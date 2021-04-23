@@ -5,10 +5,8 @@ module API.Telegram where
 
 import API.Telegram.Types
 
-import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (Value(..), (.=), encode, object, toJSON)
-import Data.ByteString (ByteString)
+import Data.Aeson (Value(..), (.=), encode, object)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.Map as Map (Map, fromList, keys, lookup, mapKeys)
