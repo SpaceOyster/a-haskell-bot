@@ -95,39 +95,46 @@ reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 reactToMessage = copyMessage
 
 reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
-reactToUpdates handle updates = mapM (reactToUpdate handle) updates
+reactToUpdates handle = mapM (reactToUpdate handle)
 
 isKnownCommand :: String -> Bool
 isKnownCommand s = tail s `elem` commandsList
 
 newtype Action m =
     Action
-        { runAction :: (Handle m -> Message -> m L8.ByteString)
+        { runAction :: Handle m -> Message -> m L8.ByteString
         }
 
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
 commands :: (Monad m) => Map BotCommand (Action m)
 commands =
-    Map.fromList $
-    [ ( BotCommand {command = "start", description = "Greet User"}
-      , Action
-            (\h@Handle {greeting} Message {chat} ->
-                 sendMessage h (chat & (chat_id :: Chat -> Integer)) $ greeting))
-    , ( BotCommand {command = "help", description = "Show help text"}
-      , Action
-            (\h@Handle {helpMessage} Message {chat} ->
-                 sendMessage h (chat & (chat_id :: Chat -> Integer)) $
-                 helpMessage))
-    , ( BotCommand
-            { command = "repeat"
-            , description = "Set number of message repeats to make"
-            }
-      , Action
-            (\h@Handle {repeatPrompt} Message {chat} ->
-                 sendInlineKeyboard h (chat & (chat_id :: Chat -> Integer)) $
-                 repeatPrompt))
-    ]
+    Map.fromList
+        [ ( BotCommand {command = "start", description = "Greet User"}
+          , Action
+                (\h@Handle {greeting} Message {chat} ->
+                     sendMessage
+                         h
+                         (chat & (chat_id :: Chat -> Integer))
+                         greeting))
+        , ( BotCommand {command = "help", description = "Show help text"}
+          , Action
+                (\h@Handle {helpMessage} Message {chat} ->
+                     sendMessage
+                         h
+                         (chat & (chat_id :: Chat -> Integer))
+                         helpMessage))
+        , ( BotCommand
+                { command = "repeat"
+                , description = "Set number of message repeats to make"
+                }
+          , Action
+                (\h@Handle {repeatPrompt} Message {chat} ->
+                     sendInlineKeyboard
+                         h
+                         (chat & (chat_id :: Chat -> Integer))
+                         repeatPrompt))
+        ]
 
 getActionThrow :: (MonadThrow m) => String -> m (Action m)
 getActionThrow cmd =
