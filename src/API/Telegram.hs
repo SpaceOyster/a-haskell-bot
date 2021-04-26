@@ -50,11 +50,10 @@ parseConfig = do
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
-    let req = handle & http & HTTP.getRequest $ "getUpdates"
-    res <- handle & http & HTTP.sendRequest $ req
-    let json = responseBody res
-    res' <- throwDecode json
-    getResult res'
+    res <- handle & http & HTTP.get $ "getUpdates"
+    let json = HTTP.responseBody res
+    updates <- throwDecode json
+    getResult updates
 
 copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 copyMessage handle msg@Message {message_id, chat} = do
@@ -64,11 +63,8 @@ copyMessage handle msg@Message {message_id, chat} = do
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-        req =
-            (handle & http & HTTP.postRequest $ "copyMessage") . RequestBodyLBS $
-            json
-    res <- handle & http & HTTP.sendRequest $ req
-    return $ responseBody res
+    res <- (handle & http & HTTP.post) "copyMessage" json
+    return $ HTTP.responseBody res
 
 withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
@@ -147,11 +143,8 @@ commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
 sendMessage :: (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
 sendMessage handle chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-        req =
-            (handle & http & HTTP.postRequest $ "sendMessage") . RequestBodyLBS $
-            json
-    res <- handle & http & HTTP.sendRequest $ req
-    return $ responseBody res
+    res <- (handle & http & HTTP.post) "sendMessage" json
+    return $ HTTP.responseBody res
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
@@ -168,8 +161,5 @@ sendInlineKeyboard handle chatId prompt = do
             , "text" .= prompt
             , "reply_markup" .= repeatKeyboard
             ]
-        req =
-            (handle & http & HTTP.postRequest $ "sendMessage") . RequestBodyLBS $
-            json
-    res <- handle & http & HTTP.sendRequest $ req
-    return $ responseBody res
+    res <- (handle & http & HTTP.post) "sendMessage" json
+    return $ HTTP.responseBody res
