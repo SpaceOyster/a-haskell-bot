@@ -13,7 +13,6 @@ import Data.Map as Map (Map, fromList, keys, lookup, mapKeys)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified HTTP
-import Network.HTTP.Client as HTTP (RequestBody(..), responseBody)
 import System.Environment (getEnv)
 import Utils (throwDecode)
 
