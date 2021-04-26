@@ -50,10 +50,8 @@ parseConfig = do
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
-    res <- handle & http & HTTP.get $ "getUpdates"
-    let json = HTTP.responseBody res
-    updates <- throwDecode json
-    getResult updates
+    json <- handle & http & HTTP.get $ "getUpdates"
+    throwDecode json
 
 copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 copyMessage handle msg@Message {message_id, chat} = do
@@ -63,8 +61,7 @@ copyMessage handle msg@Message {message_id, chat} = do
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    res <- (handle & http & HTTP.post) "copyMessage" json
-    return $ HTTP.responseBody res
+    (handle & http & HTTP.post) "copyMessage" json
 
 withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
@@ -143,8 +140,7 @@ commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
 sendMessage :: (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
 sendMessage handle chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    res <- (handle & http & HTTP.post) "sendMessage" json
-    return $ HTTP.responseBody res
+    (handle & http & HTTP.post) "sendMessage" json
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
@@ -161,5 +157,4 @@ sendInlineKeyboard handle chatId prompt = do
             , "text" .= prompt
             , "reply_markup" .= repeatKeyboard
             ]
-    res <- (handle & http & HTTP.post) "sendMessage" json
-    return $ HTTP.responseBody res
+    (handle & http & HTTP.post) "sendMessage" json
