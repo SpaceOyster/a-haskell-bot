@@ -24,9 +24,8 @@ data Config =
 
 data Handle m =
     Handle
-        { getRequest :: ByteString -> Request
-        , postRequest :: ByteString -> RequestBody -> Request
-        , sendRequest :: Request -> m (Response L8.ByteString)
+        { get :: String -> m (Response L8.ByteString)
+        , post :: String -> L8.ByteString -> m (Response L8.ByteString)
         }
 
 parseConfig :: IO Config
@@ -38,19 +37,22 @@ new cfg = do
     let initReq = parseRequest_ $ baseURL cfg
     return $
         Handle
-            { getRequest =
+            { get =
                   \apiMethod ->
-                      initReq {method = "GET", path = path initReq <> apiMethod}
-            , postRequest =
+                      let req = parseRequest_ $ baseURL cfg ++ apiMethod
+                          req' = req {method = "GET"}
+                       in httpLbs req' man
+            , post =
                   \apiMethod body ->
-                      initReq
-                          { method = "POST"
-                          , path = path initReq <> apiMethod
-                          , requestBody = body
-                          , requestHeaders =
-                                [ ( "Content-Type"
-                                  , "application/json; charset=utf-8")
-                                ]
-                          }
-            , sendRequest = \request -> httpLbs request man
+                      let req = parseRequest_ $ baseURL cfg ++ apiMethod
+                          req' =
+                              req
+                                  { method = "POST"
+                                  , requestBody = RequestBodyLBS body
+                                  , requestHeaders =
+                                        [ ( "Content-Type"
+                                          , "application/json; charset=utf-8")
+                                        ]
+                                  }
+                       in httpLbs req' man
             }
