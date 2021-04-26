@@ -24,8 +24,8 @@ data Config =
 
 data Handle m =
     Handle
-        { get :: String -> m (L8.ByteString)
-        , post :: String -> L8.ByteString -> m (L8.ByteString)
+        { get :: String -> m L8.ByteString
+        , post :: String -> L8.ByteString -> m L8.ByteString
         }
 
 parseConfig :: IO Config
@@ -34,25 +34,23 @@ parseConfig = undefined
 new :: Config -> IO (Handle IO)
 new cfg = do
     man <- newManager tlsManagerSettings
-    let initReq = parseRequest_ $ baseURL cfg
-    return $
-        Handle
-            { get =
-                  \apiMethod ->
-                      let req = parseRequest_ $ baseURL cfg ++ apiMethod
-                          req' = req {method = "GET"}
-                       in responseBody <$> httpLbs req' man
-            , post =
-                  \apiMethod body ->
-                      let req = parseRequest_ $ baseURL cfg ++ apiMethod
-                          req' =
-                              req
-                                  { method = "POST"
-                                  , requestBody = RequestBodyLBS body
-                                  , requestHeaders =
-                                        [ ( "Content-Type"
-                                          , "application/json; charset=utf-8")
-                                        ]
-                                  }
-                       in responseBody <$> httpLbs req' man
-            }
+    return $ Handle {get = constructGet cfg man, post = constructPost cfg man}
+
+constructGet :: Config -> Manager -> String -> IO L8.ByteString
+constructGet cfg man apiMethod =
+    let req = parseRequest_ $ baseURL cfg ++ apiMethod
+        req' = req {method = "GET"}
+     in responseBody <$> httpLbs req' man
+
+constructPost ::
+       Config -> Manager -> String -> L8.ByteString -> IO L8.ByteString
+constructPost cfg man apiMethod body =
+    let req = parseRequest_ $ baseURL cfg ++ apiMethod
+        req' =
+            req
+                { method = "POST"
+                , requestBody = RequestBodyLBS body
+                , requestHeaders =
+                      [("Content-Type", "application/json; charset=utf-8")]
+                }
+     in responseBody <$> httpLbs req' man
