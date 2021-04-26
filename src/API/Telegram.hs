@@ -20,7 +20,6 @@ import Utils (throwDecode)
 data Config =
     Config
         { key :: String
-        , baseURL :: String
         , helpMessage :: String
         , greeting :: String
         , repeatPrompt :: String
@@ -35,19 +34,19 @@ data Handle m =
         }
 
 new :: Config -> IO (Handle IO)
-new cfg@Config {baseURL, helpMessage, greeting, repeatPrompt} = do
-    let httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
+new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
+    let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
+        httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
     http <- HTTP.new httpConfig
     return $ Handle {http, helpMessage, greeting, repeatPrompt}
 
 parseConfig :: IO Config
 parseConfig = do
     key <- getEnv "TG_API"
-    let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
-        helpMessage = "This is a help message"
+    let helpMessage = "This is a help message"
         greeting = "This is greeting message"
         repeatPrompt = "How many times you want your messages to be repeated?"
-    return $ Config {key, baseURL, helpMessage, greeting, repeatPrompt}
+    return $ Config {key, helpMessage, greeting, repeatPrompt}
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates handle = do
