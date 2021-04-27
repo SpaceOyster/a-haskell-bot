@@ -17,6 +17,14 @@ import qualified HTTP
 import System.Environment (getEnv)
 import Utils (throwDecode)
 
+data Config =
+    Config
+        { key :: String
+        , helpMessage :: String
+        , greeting :: String
+        , repeatPrompt :: String
+        }
+
 new :: Config -> IO (Handle IO)
 new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
     let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"

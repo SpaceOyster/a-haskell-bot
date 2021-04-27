@@ -7,14 +7,6 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import qualified HTTP
 
-data Config =
-    Config
-        { key :: String
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
-        }
-
 data Handle m =
     Handle
         { http :: HTTP.Handle m
