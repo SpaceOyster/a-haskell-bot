@@ -23,8 +23,8 @@ data Handle m =
         , repeatPrompt :: String
         }
 
-get :: (MonadThrow m) => Handle m -> String -> m L8.ByteString
+get :: (Monad m) => Handle m -> String -> m L8.ByteString
 get hAPI = hAPI & http & HTTP.get
 
-post :: (MonadThrow m) => Handle m -> String -> L8.ByteString -> m L8.ByteString
+post :: (Monad m) => Handle m -> String -> L8.ByteString -> m L8.ByteString
 post hAPI = hAPI & http & HTTP.post
