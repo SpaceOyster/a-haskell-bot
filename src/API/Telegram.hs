@@ -3,6 +3,7 @@
 
 module API.Telegram where
 
+import API
 import API.Telegram.Types
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -15,22 +16,6 @@ import Exceptions (BotException(..))
 import qualified HTTP
 import System.Environment (getEnv)
 import Utils (throwDecode)
-
-data Config =
-    Config
-        { key :: String
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
-        }
-
-data Handle m =
-    Handle
-        { http :: HTTP.Handle m
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
-        }
 
 new :: Config -> IO (Handle IO)
 new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
