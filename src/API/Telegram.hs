@@ -35,7 +35,8 @@ parseConfig = do
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates hAPI = do
     json <- hAPI & http & HTTP.get $ "getUpdates"
-    throwDecode json
+    res <- throwDecode json
+    return $ res & result
 
 copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 copyMessage hAPI msg@Message {message_id, chat} = do
