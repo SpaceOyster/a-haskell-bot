@@ -90,17 +90,11 @@ commands =
         [ ( BotCommand {command = "start", description = "Greet User"}
           , Action
                 (\h@Handle {greeting} Message {chat} ->
-                     sendMessage
-                         h
-                         (chat & (chat_id :: Chat -> Integer))
-                         greeting))
+                     sendMessage h ((chat :: Chat) & chat_id) greeting))
         , ( BotCommand {command = "help", description = "Show help text"}
           , Action
                 (\h@Handle {helpMessage} Message {chat} ->
-                     sendMessage
-                         h
-                         (chat & (chat_id :: Chat -> Integer))
-                         helpMessage))
+                     sendMessage h ((chat :: Chat) & chat_id) helpMessage))
         , ( BotCommand
                 { command = "repeat"
                 , description = "Set number of message repeats to make"
@@ -109,7 +103,7 @@ commands =
                 (\h@Handle {repeatPrompt} Message {chat} ->
                      sendInlineKeyboard
                          h
-                         (chat & (chat_id :: Chat -> Integer))
+                         ((chat :: Chat) & chat_id)
                          repeatPrompt))
         ]
 
