@@ -48,45 +48,45 @@ parseConfig = do
     return $ Config {key, helpMessage, greeting, repeatPrompt}
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
-getUpdates handle = do
-    json <- handle & http & HTTP.get $ "getUpdates"
+getUpdates hAPI = do
+    json <- hAPI & http & HTTP.get $ "getUpdates"
     throwDecode json
 
 copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
-copyMessage handle msg@Message {message_id, chat} = do
+copyMessage hAPI msg@Message {message_id, chat} = do
     let json =
             encode . object $
             [ "chat_id" .= chat_id (chat :: Chat)
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    (handle & http & HTTP.post) "copyMessage" json
+    (hAPI & http & HTTP.post) "copyMessage" json
 
 withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
     config <- parseConfig
-    handle <- new config
-    io handle
+    hAPI <- new config
+    io hAPI
 
 reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m L8.ByteString
-reactToUpdate handle update = do
+reactToUpdate hAPI update = do
     msg <- getMessageThrow update
     t <- getTextThrow msg
     if isCommand t && isKnownCommand t
-        then reactToCommand handle msg
-        else reactToMessage handle msg
+        then reactToCommand hAPI msg
+        else reactToMessage hAPI msg
 
 reactToCommand :: (MonadThrow m) => Handle m -> Message -> m L8.ByteString
-reactToCommand handle msg = do
+reactToCommand hAPI msg = do
     cmd <- getCommandThrow msg
     action <- getActionThrow cmd
-    runAction action handle msg
+    runAction action hAPI msg
 
 reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 reactToMessage = copyMessage
 
 reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
-reactToUpdates handle = mapM (reactToUpdate handle)
+reactToUpdates hAPI = mapM (reactToUpdate hAPI)
 
 isKnownCommand :: String -> Bool
 isKnownCommand s = tail s `elem` commandsList
@@ -137,9 +137,9 @@ commandsList :: [String]
 commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
 
 sendMessage :: (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
-sendMessage handle chatId msg = do
+sendMessage hAPI chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    (handle & http & HTTP.post) "sendMessage" json
+    (hAPI & http & HTTP.post) "sendMessage" json
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
@@ -149,11 +149,11 @@ repeatKeyboard =
 
 sendInlineKeyboard ::
        (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
-sendInlineKeyboard handle chatId prompt = do
+sendInlineKeyboard hAPI chatId prompt = do
     let json =
             encode . object $
             [ "chat_id" .= chatId
             , "text" .= prompt
             , "reply_markup" .= repeatKeyboard
             ]
-    (handle & http & HTTP.post) "sendMessage" json
+    (hAPI & http & HTTP.post) "sendMessage" json
