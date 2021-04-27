@@ -34,7 +34,7 @@ parseConfig = do
 
 getUpdates :: (MonadThrow m) => Handle m -> m [Update]
 getUpdates hAPI = do
-    json <- hAPI & http & HTTP.get $ "getUpdates"
+    json <- hAPI & API.get $ "getUpdates"
     res <- throwDecode json
     return $ res & result
 
@@ -46,7 +46,7 @@ copyMessage hAPI msg@Message {message_id, chat} = do
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    (hAPI & http & HTTP.post) "copyMessage" json
+    (hAPI & API.post) "copyMessage" json
 
 withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
@@ -125,7 +125,7 @@ commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
 sendMessage :: (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
 sendMessage hAPI chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    (hAPI & http & HTTP.post) "sendMessage" json
+    (hAPI & API.post) "sendMessage" json
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
@@ -142,4 +142,4 @@ sendInlineKeyboard hAPI chatId prompt = do
             , "text" .= prompt
             , "reply_markup" .= repeatKeyboard
             ]
-    (hAPI & http & HTTP.post) "sendMessage" json
+    (hAPI & API.post) "sendMessage" json
