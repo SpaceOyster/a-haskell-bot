@@ -115,8 +115,8 @@ instance FromJSON Response where
 
 -- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
 -- otherwise
-getResult :: (MonadThrow m) => Response -> m [Update]
-getResult res =
+extractUpdates :: (MonadThrow m) => Response -> m [Update]
+extractUpdates res =
   case res of
     Error {error_code, description} ->
       throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
