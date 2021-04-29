@@ -15,6 +15,11 @@ data Handle m =
         , repeatPrompt :: String
         }
 
+data Request
+    = GET String
+    | POST String L8.ByteString
+    deriving (Show)
+
 get :: (Monad m) => Handle m -> String -> m L8.ByteString
 get hAPI = hAPI & http & HTTP.get
 
