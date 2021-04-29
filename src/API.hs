@@ -1,5 +1,3 @@
-{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
-
 module API where
 
 import Control.Monad.Catch (MonadThrow(..))
