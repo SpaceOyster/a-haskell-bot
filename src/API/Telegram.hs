@@ -80,8 +80,12 @@ reactToCommand hAPI msg = do
 reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 reactToMessage = copyMessage
 
-reactToUpdates :: (MonadThrow m) => Handle m -> [Update] -> m [L8.ByteString]
-reactToUpdates hAPI = mapM (reactToUpdate hAPI)
+reactToUpdates ::
+       (MonadThrow m) => Handle m -> L8.ByteString -> m [L8.ByteString]
+reactToUpdates hAPI json = do
+    resp <- throwDecode json
+    updates <- extractUpdates resp
+    mapM (reactToUpdate hAPI) updates
 
 isKnownCommand :: String -> Bool
 isKnownCommand s = tail s `elem` commandsList
