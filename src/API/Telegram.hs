@@ -69,7 +69,7 @@ reactToUpdate hAPI update = do
     t <- getTextThrow msg
     if isCommand t && isKnownCommand t
         then reactToCommand hAPI msg
-        else reactToMessage msg
+        else reactToMessage hAPI msg
 
 reactToCommand :: (MonadThrow m) => Handle m -> Message -> m API.Request
 reactToCommand hAPI msg = do
@@ -77,8 +77,8 @@ reactToCommand hAPI msg = do
     action <- getActionThrow cmd
     runAction action hAPI msg
 
-reactToMessage :: (Monad m) => Message -> m API.Request
-reactToMessage = copyMessage
+reactToMessage :: (Monad m) => Handle m -> Message -> m API.Request
+reactToMessage _ = copyMessage
 
 reactToUpdates :: (MonadThrow m) => Handle m -> L8.ByteString -> m [API.Request]
 reactToUpdates hAPI json = do
