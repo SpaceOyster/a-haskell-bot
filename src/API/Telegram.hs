@@ -101,18 +101,18 @@ commands =
     Map.fromList
         [ ( BotCommand {command = "start", description = "Greet User"}
           , Action
-                (\h@Handle {greeting} Message {chat} ->
+                (\Handle {greeting} Message {chat} ->
                      sendMessage ((chat :: Chat) & chat_id) greeting))
         , ( BotCommand {command = "help", description = "Show help text"}
           , Action
-                (\h@Handle {helpMessage} Message {chat} ->
+                (\Handle {helpMessage} Message {chat} ->
                      sendMessage ((chat :: Chat) & chat_id) helpMessage))
         , ( BotCommand
                 { command = "repeat"
                 , description = "Set number of message repeats to make"
                 }
           , Action
-                (\h@Handle {repeatPrompt} Message {chat} ->
+                (\Handle {repeatPrompt} Message {chat} ->
                      sendInlineKeyboard ((chat :: Chat) & chat_id) repeatPrompt))
         ]
 
