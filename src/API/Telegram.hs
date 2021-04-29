@@ -30,7 +30,14 @@ new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
     let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
         httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
     http <- HTTP.new httpConfig
-    return $ Handle {http, helpMessage, greeting, repeatPrompt}
+    return $
+        Handle
+            { http
+            , helpMessage
+            , greeting
+            , repeatPrompt
+            , getUpdates = GET "getUpdates"
+            }
 
 parseConfig :: IO Config
 parseConfig = do
@@ -39,12 +46,6 @@ parseConfig = do
         greeting = "This is greeting message"
         repeatPrompt = "How many times you want your messages to be repeated?"
     return $ Config {key, helpMessage, greeting, repeatPrompt}
-
-getUpdates :: (MonadThrow m) => Handle m -> m [Update]
-getUpdates hAPI = do
-    json <- hAPI & API.get $ "getUpdates"
-    res <- throwDecode json
-    return $ res & result
 
 copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
 copyMessage hAPI msg@Message {message_id, chat} = do
