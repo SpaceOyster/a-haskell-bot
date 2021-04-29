@@ -47,15 +47,15 @@ parseConfig = do
         repeatPrompt = "How many times you want your messages to be repeated?"
     return $ Config {key, helpMessage, greeting, repeatPrompt}
 
-copyMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
-copyMessage hAPI msg@Message {message_id, chat} = do
+copyMessage :: (Monad m) => Message -> m API.Request
+copyMessage msg@Message {message_id, chat} = do
     let json =
             encode . object $
             [ "chat_id" .= chat_id (chat :: Chat)
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    (hAPI & API.post) "copyMessage" json
+    return $ POST "copyMessage" json
 
 withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
@@ -63,25 +63,24 @@ withHandle io = do
     hAPI <- new config
     io hAPI
 
-reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m L8.ByteString
+reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m API.Request
 reactToUpdate hAPI update = do
     msg <- getMessageThrow update
     t <- getTextThrow msg
     if isCommand t && isKnownCommand t
         then reactToCommand hAPI msg
-        else reactToMessage hAPI msg
+        else reactToMessage msg
 
-reactToCommand :: (MonadThrow m) => Handle m -> Message -> m L8.ByteString
+reactToCommand :: (MonadThrow m) => Handle m -> Message -> m API.Request
 reactToCommand hAPI msg = do
     cmd <- getCommandThrow msg
     action <- getActionThrow cmd
     runAction action hAPI msg
 
-reactToMessage :: (Monad m) => Handle m -> Message -> m L8.ByteString
+reactToMessage :: (Monad m) => Message -> m API.Request
 reactToMessage = copyMessage
 
-reactToUpdates ::
-       (MonadThrow m) => Handle m -> L8.ByteString -> m [L8.ByteString]
+reactToUpdates :: (MonadThrow m) => Handle m -> L8.ByteString -> m [API.Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
@@ -92,7 +91,7 @@ isKnownCommand s = tail s `elem` commandsList
 
 newtype Action m =
     Action
-        { runAction :: Handle m -> Message -> m L8.ByteString
+        { runAction :: Handle m -> Message -> m API.Request
         }
 
 -- | command has to be between 1-32 chars long
@@ -103,21 +102,18 @@ commands =
         [ ( BotCommand {command = "start", description = "Greet User"}
           , Action
                 (\h@Handle {greeting} Message {chat} ->
-                     sendMessage h ((chat :: Chat) & chat_id) greeting))
+                     sendMessage ((chat :: Chat) & chat_id) greeting))
         , ( BotCommand {command = "help", description = "Show help text"}
           , Action
                 (\h@Handle {helpMessage} Message {chat} ->
-                     sendMessage h ((chat :: Chat) & chat_id) helpMessage))
+                     sendMessage ((chat :: Chat) & chat_id) helpMessage))
         , ( BotCommand
                 { command = "repeat"
                 , description = "Set number of message repeats to make"
                 }
           , Action
                 (\h@Handle {repeatPrompt} Message {chat} ->
-                     sendInlineKeyboard
-                         h
-                         ((chat :: Chat) & chat_id)
-                         repeatPrompt))
+                     sendInlineKeyboard ((chat :: Chat) & chat_id) repeatPrompt))
         ]
 
 getActionThrow :: (MonadThrow m) => String -> m (Action m)
@@ -129,10 +125,10 @@ getActionThrow cmd =
 commandsList :: [String]
 commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
 
-sendMessage :: (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
-sendMessage hAPI chatId msg = do
+sendMessage :: (Monad m) => Integer -> String -> m API.Request
+sendMessage chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    (hAPI & API.post) "sendMessage" json
+    return $ POST "sendMessage" json
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
@@ -140,13 +136,12 @@ repeatKeyboard =
   where
     button x = InlineKeyboardButton {text = show x, callback_data = show x}
 
-sendInlineKeyboard ::
-       (Monad m) => Handle m -> Integer -> String -> m L8.ByteString
-sendInlineKeyboard hAPI chatId prompt = do
+sendInlineKeyboard :: (Monad m) => Integer -> String -> m API.Request
+sendInlineKeyboard chatId prompt = do
     let json =
             encode . object $
             [ "chat_id" .= chatId
             , "text" .= prompt
             , "reply_markup" .= repeatKeyboard
             ]
-    (hAPI & API.post) "sendMessage" json
+    return $ POST "sendMessage" json
