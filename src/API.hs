@@ -33,3 +33,9 @@ sendRequest hAPI req =
     case req of
         GET method -> get hAPI method
         POST method body -> post hAPI method body
+
+hGetState :: Handle m state -> IO state
+hGetState = readIORef . state
+
+hSetState :: Handle m state -> (state -> state) -> IO ()
+hSetState hAPI f = state hAPI `modifyIORef` f
