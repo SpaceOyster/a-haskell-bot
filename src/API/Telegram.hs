@@ -71,6 +71,9 @@ setLastUpdateID :: Handle m HState -> Integer -> IO ()
 setLastUpdateID hAPI id = do
     hAPI `hSetState` \st -> st {lastUpdate = id}
 
+rememberLastUpdate :: Handle m HState -> Update -> IO ()
+rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u)
+
 data Entity
     = EMessage Message
     | ECommand Message
