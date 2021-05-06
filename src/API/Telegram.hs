@@ -5,6 +5,7 @@ module API.Telegram where
 
 import API
 import API.Telegram.Types
+import Data.IORef
 
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Aeson (Value(..), (.=), encode, object)
@@ -25,14 +26,22 @@ data Config =
         , repeatPrompt :: String
         }
 
-new :: Config -> IO (Handle IO)
+data HState =
+    HState
+        { lastUpdate :: Integer
+        , userSettings :: Map.Map String Integer
+        }
+
+new :: Config -> IO (Handle IO HState)
 new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
     let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
         httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
     http <- HTTP.new httpConfig
+    state <- newIORef $ HState {lastUpdate = 0, userSettings = mempty}
     return $
         Handle
             { http
+            , state
             , helpMessage
             , greeting
             , repeatPrompt
@@ -47,17 +56,7 @@ parseConfig = do
         repeatPrompt = "How many times you want your messages to be repeated?"
     return $ Config {key, helpMessage, greeting, repeatPrompt}
 
-copyMessage :: (Monad m) => Message -> m API.Request
-copyMessage msg@Message {message_id, chat} = do
-    let json =
-            encode . object $
-            [ "chat_id" .= chat_id (chat :: Chat)
-            , "from_chat_id" .= chat_id (chat :: Chat)
-            , "message_id" .= message_id
-            ]
-    return $ POST "copyMessage" json
-
-withHandle :: (Handle IO -> IO a) -> IO a
+withHandle :: (Handle IO HState -> IO a) -> IO a
 withHandle io = do
     config <- parseConfig
     hAPI <- new config
@@ -78,7 +77,7 @@ qualifyUpdate u =
             then return $ ECommand msg
             else return $ EMessage msg
 
-reactToUpdate :: (MonadCatch m) => Handle m -> Update -> m API.Request
+reactToUpdate :: (MonadCatch m) => Handle m state -> Update -> m API.Request
 reactToUpdate hAPI update = do
     qu <- qualifyUpdate update
     case qu of
@@ -86,16 +85,27 @@ reactToUpdate hAPI update = do
         EMessage msg -> reactToMessage hAPI msg
         EOther upd -> throwM $ Ex Priority.Info $ "Unknown Update Type"
 
-reactToCommand :: (MonadThrow m) => Handle m -> Message -> m API.Request
+reactToCommand :: (MonadThrow m) => Handle m state -> Message -> m API.Request
 reactToCommand hAPI msg = do
     cmd <- getCommandThrow msg
     action <- getActionThrow cmd
     runAction action hAPI msg
 
-reactToMessage :: (Monad m) => Handle m -> Message -> m API.Request
+reactToMessage :: (Monad m) => Handle m state -> Message -> m API.Request
 reactToMessage _ = copyMessage
 
-reactToUpdates :: (MonadCatch m) => Handle m -> L8.ByteString -> m [API.Request]
+copyMessage :: (Monad m) => Message -> m API.Request
+copyMessage msg@Message {message_id, chat} = do
+    let json =
+            encode . object $
+            [ "chat_id" .= chat_id (chat :: Chat)
+            , "from_chat_id" .= chat_id (chat :: Chat)
+            , "message_id" .= message_id
+            ]
+    return $ POST "copyMessage" json
+
+reactToUpdates ::
+       (MonadCatch m) => Handle m state -> L8.ByteString -> m [API.Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
@@ -104,14 +114,14 @@ reactToUpdates hAPI json = do
 isKnownCommand :: String -> Bool
 isKnownCommand s = tail s `elem` commandsList
 
-newtype Action m =
+newtype Action m state =
     Action
-        { runAction :: Handle m -> Message -> m API.Request
+        { runAction :: Handle m state -> Message -> m API.Request
         }
 
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
-commands :: (Monad m) => Map BotCommand (Action m)
+commands :: (Monad m) => Map BotCommand (Action m state)
 commands =
     Map.fromList
         [ ( BotCommand {command = "start", description = "Greet User"}
@@ -131,14 +141,14 @@ commands =
                      sendInlineKeyboard ((chat :: Chat) & chat_id) repeatPrompt))
         ]
 
-getActionThrow :: (MonadThrow m) => String -> m (Action m)
+getActionThrow :: (MonadThrow m) => String -> m (Action m state)
 getActionThrow cmd =
     case Map.lookup cmd $ command `mapKeys` commands of
         Just a -> return a
         Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
 
 commandsList :: [String]
-commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe))
+commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe ()))
 
 sendMessage :: (Monad m) => Integer -> String -> m API.Request
 sendMessage chatId msg = do

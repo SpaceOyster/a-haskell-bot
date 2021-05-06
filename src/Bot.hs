@@ -8,13 +8,13 @@ import Data.Function ((&))
 import HTTP
 import Utils
 
-doBotThing :: API.Handle IO -> IO [L8.ByteString]
+doBotThing :: API.Handle IO TG.HState -> IO [L8.ByteString]
 doBotThing hAPI = do
     json <- hAPI & API.sendRequest $ hAPI & API.getUpdates
     requests <- TG.reactToUpdates hAPI json
     mapM (API.sendRequest hAPI) requests
 
-loop :: API.Handle IO -> IO ()
+loop :: API.Handle IO TG.HState -> IO ()
 loop hAPI = do
     doBotThing hAPI
     threadDelay 5000000
