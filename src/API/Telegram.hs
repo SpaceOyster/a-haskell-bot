@@ -6,7 +6,7 @@ module API.Telegram where
 import API
 import API.Telegram.Types
 
-import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Aeson (Value(..), (.=), encode, object)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
@@ -63,13 +63,29 @@ withHandle io = do
     hAPI <- new config
     io hAPI
 
-reactToUpdate :: (MonadThrow m) => Handle m -> Update -> m API.Request
+data Entity
+    = EMessage Message
+    | ECommand Message
+    | EOther Update
+    deriving (Show)
+
+qualifyUpdate :: (MonadThrow m, MonadCatch m) => Update -> m Entity
+qualifyUpdate u =
+    handleAll (const $ return $ EOther u) $ do
+        msg <- getMessageThrow u
+        t <- getTextThrow msg
+        if isCommand t && isKnownCommand t
+            then return $ ECommand msg
+            else return $ EMessage msg
+
+reactToUpdate ::
+       (MonadThrow m, MonadCatch m) => Handle m -> Update -> m API.Request
 reactToUpdate hAPI update = do
-    msg <- getMessageThrow update
-    t <- getTextThrow msg
-    if isCommand t && isKnownCommand t
-        then reactToCommand hAPI msg
-        else reactToMessage hAPI msg
+    qu <- qualifyUpdate update
+    case qu of
+        ECommand msg -> reactToCommand hAPI msg
+        EMessage msg -> reactToMessage hAPI msg
+        EOther upd -> throwM $ Ex Priority.Info $ "Unknown Update Type"
 
 reactToCommand :: (MonadThrow m) => Handle m -> Message -> m API.Request
 reactToCommand hAPI msg = do
@@ -80,7 +96,11 @@ reactToCommand hAPI msg = do
 reactToMessage :: (Monad m) => Handle m -> Message -> m API.Request
 reactToMessage _ = copyMessage
 
-reactToUpdates :: (MonadThrow m) => Handle m -> L8.ByteString -> m [API.Request]
+reactToUpdates ::
+       (MonadThrow m, MonadCatch m)
+    => Handle m
+    -> L8.ByteString
+    -> m [API.Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
