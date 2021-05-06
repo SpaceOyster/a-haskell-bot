@@ -116,12 +116,15 @@ copyMessage msg@Message {message_id, chat} = do
             ]
     return $ POST "copyMessage" json
 
-reactToUpdates ::
-       (MonadCatch m) => Handle m state -> L8.ByteString -> m [API.Request]
+reactToUpdates :: Handle IO HState -> L8.ByteString -> IO [Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
+    remember updates
     mapM (reactToUpdate hAPI) updates
+  where
+    remember [] = return ()
+    remember us = rememberLastUpdate hAPI $ last us
 
 isKnownCommand :: String -> Bool
 isKnownCommand s = tail s `elem` commandsList
