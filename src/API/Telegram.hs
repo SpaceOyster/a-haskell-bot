@@ -62,6 +62,15 @@ withHandle io = do
     hAPI <- new config
     io hAPI
 
+getLastUpdateID :: Handle m HState -> IO Integer
+getLastUpdateID hAPI = do
+    st <- hGetState hAPI
+    return $ lastUpdate st
+
+setLastUpdateID :: Handle m HState -> Integer -> IO ()
+setLastUpdateID hAPI id = do
+    hAPI `hSetState` \st -> st {lastUpdate = id}
+
 data Entity
     = EMessage Message
     | ECommand Message
