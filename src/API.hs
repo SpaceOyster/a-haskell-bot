@@ -13,7 +13,7 @@ data Handle m state =
         , helpMessage :: String
         , greeting :: String
         , repeatPrompt :: String
-        , getUpdates :: Request
+        , fetchUpdates :: Request
         }
 
 data Request

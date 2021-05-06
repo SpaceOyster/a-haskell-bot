@@ -10,7 +10,7 @@ import Utils
 
 doBotThing :: API.Handle IO TG.HState -> IO [L8.ByteString]
 doBotThing hAPI = do
-    json <- hAPI & API.sendRequest $ hAPI & API.getUpdates
+    json <- hAPI & API.sendRequest $ hAPI & API.fetchUpdates
     requests <- TG.reactToUpdates hAPI json
     mapM (API.sendRequest hAPI) requests
 
