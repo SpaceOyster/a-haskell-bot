@@ -69,7 +69,7 @@ data Entity
     | EOther Update
     deriving (Show)
 
-qualifyUpdate :: (MonadThrow m, MonadCatch m) => Update -> m Entity
+qualifyUpdate :: (MonadCatch m) => Update -> m Entity
 qualifyUpdate u =
     handleAll (const $ return $ EOther u) $ do
         msg <- getMessageThrow u
@@ -78,8 +78,7 @@ qualifyUpdate u =
             then return $ ECommand msg
             else return $ EMessage msg
 
-reactToUpdate ::
-       (MonadThrow m, MonadCatch m) => Handle m -> Update -> m API.Request
+reactToUpdate :: (MonadCatch m) => Handle m -> Update -> m API.Request
 reactToUpdate hAPI update = do
     qu <- qualifyUpdate update
     case qu of
@@ -96,11 +95,7 @@ reactToCommand hAPI msg = do
 reactToMessage :: (Monad m) => Handle m -> Message -> m API.Request
 reactToMessage _ = copyMessage
 
-reactToUpdates ::
-       (MonadThrow m, MonadCatch m)
-    => Handle m
-    -> L8.ByteString
-    -> m [API.Request]
+reactToUpdates :: (MonadCatch m) => Handle m -> L8.ByteString -> m [API.Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
