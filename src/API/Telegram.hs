@@ -102,7 +102,9 @@ reactToUpdate hAPI update = do
     case qu of
         ECommand msg -> reactToCommand hAPI msg
         EMessage msg -> reactToMessage hAPI msg
-        EOther upd -> throwM $ Ex Priority.Info $ "Unknown Update Type"
+        EOther Update {update_id} ->
+            throwM $
+            Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
 reactToCommand :: (MonadThrow m) => Handle m state -> Message -> m API.Request
 reactToCommand hAPI msg = do
