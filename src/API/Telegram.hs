@@ -182,7 +182,8 @@ repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
     InlineKeyboardMarkup [[button 1, button 2, button 3, button 4, button 5]]
   where
-    button x = InlineKeyboardButton {text = show x, callback_data = show x}
+    button x =
+        InlineKeyboardButton {text = show x, callback_data = "reply_" ++ show x}
 
 sendInlineKeyboard :: (Monad m) => Integer -> String -> m API.Request
 sendInlineKeyboard chatId prompt = do
