@@ -5,6 +5,7 @@ module API.Telegram where
 
 import API
 import API.Telegram.Types
+import Control.Exception (bracket, finally)
 import Data.IORef
 
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
@@ -72,7 +73,13 @@ setLastUpdateID hAPI id = do
     hAPI `hSetState` \st -> st {lastUpdate = id}
 
 rememberLastUpdate :: Handle m HState -> Update -> IO ()
-rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u)
+rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
+
+getUpdates :: Handle IO HState -> IO API.Request
+getUpdates hAPI =
+    bracket (getLastUpdateID hAPI) (const $ return ()) $ \id ->
+        let json = encode . object $ ["offset" .= id]
+         in return $ POST "getUpdates" json
 
 data Entity
     = EMessage Message
@@ -120,8 +127,7 @@ reactToUpdates :: Handle IO HState -> L8.ByteString -> IO [Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
-    remember updates
-    mapM (reactToUpdate hAPI) updates
+    mapM (reactToUpdate hAPI) updates `finally` remember updates
   where
     remember [] = return ()
     remember us = rememberLastUpdate hAPI $ last us
