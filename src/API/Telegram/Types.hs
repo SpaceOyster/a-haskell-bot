@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module API.Telegram.Types where
 
