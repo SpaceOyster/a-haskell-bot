@@ -5,6 +5,7 @@ module API.Telegram where
 
 import API
 import API.Telegram.Types
+import Control.Applicative ((<|>))
 import Control.Exception (bracket, finally)
 import Data.IORef
 
@@ -88,18 +89,20 @@ data Entity
     | EOther Update
     deriving (Show)
 
-qualifyUpdate :: (MonadCatch m) => Update -> m Entity
-qualifyUpdate u =
-    handleAll (const $ return $ EOther u) $ do
-        msg <- getMessageThrow u
-        t <- getTextThrow msg
-        if isCommand t && isKnownCommand t
-            then return $ ECommand msg
-            else return $ EMessage msg
+qualifyUpdate :: Update -> Entity
+qualifyUpdate u@Update {message, callback_query} =
+    maybe (EOther u) Prelude.id $ do
+        cq <- callback_query
+        msg <- message
+        t <- text (msg :: Message)
+        return (ECallback cq) <|>
+            if isCommand t && isKnownCommand t
+                then return $ ECommand msg
+                else return $ EMessage msg
 
 reactToUpdate :: (MonadCatch m) => Handle m state -> Update -> m API.Request
 reactToUpdate hAPI update = do
-    qu <- qualifyUpdate update
+    let qu = qualifyUpdate update
     case qu of
         ECommand msg -> reactToCommand hAPI msg
         EMessage msg -> reactToMessage hAPI msg
