@@ -67,6 +67,16 @@ data BotCommand =
     }
   deriving (Show, Generic, FromJSON, ToJSON, Eq, Ord)
 
+data CallbackQuery =
+  CallbackQuery
+    { id :: String
+    , from :: User
+    , message :: Maybe Message
+    , inline_message_id :: Maybe String
+    , query_data :: Maybe String
+    }
+  deriving (Show)
+
 data User =
   User
     { id :: Integer
