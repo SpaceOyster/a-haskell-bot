@@ -8,7 +8,15 @@ module API.Telegram.Types where
 
 import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (FromJSON(..), ToJSON(..), (.:), decode, encode, withObject)
+import Data.Aeson
+  ( FromJSON(..)
+  , ToJSON(..)
+  , (.:)
+  , (.:?)
+  , decode
+  , encode
+  , withObject
+  )
 import Data.Aeson.Types (Value)
 import Data.Function ((&))
 import qualified Exceptions as Priority (Priority(..))
@@ -77,6 +85,16 @@ data CallbackQuery =
     , query_data :: Maybe String
     }
   deriving (Show)
+
+instance FromJSON CallbackQuery where
+  parseJSON =
+    withObject "CallbackQuery" $ \o -> do
+      id <- o .: "id"
+      from <- o .: "from"
+      message <- o .:? "message"
+      inline_message_id <- o .:? "inline_message_id"
+      query_data <- o .:? "data"
+      return $ CallbackQuery {..}
 
 data User =
   User
