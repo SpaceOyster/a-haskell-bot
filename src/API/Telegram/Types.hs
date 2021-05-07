@@ -28,6 +28,7 @@ data Update =
   Update
     { update_id :: Integer
     , message :: Maybe Message
+    , callback_query :: Maybe CallbackQuery
     }
   deriving (Show, Generic, FromJSON)
 
