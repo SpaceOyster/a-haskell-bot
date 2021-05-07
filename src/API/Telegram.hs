@@ -84,6 +84,7 @@ getUpdates hAPI =
 data Entity
     = EMessage Message
     | ECommand Message
+    | ECallback CallbackQuery
     | EOther Update
     deriving (Show)
 
