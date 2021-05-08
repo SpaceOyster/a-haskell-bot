@@ -90,17 +90,20 @@ data Entity
     deriving (Show)
 
 qualifyUpdate :: Update -> Entity
-qualifyUpdate u@Update {message, callback_query} =
-    maybe (EOther u) Prelude.id $ do
-        cq <- callback_query
-        msg <- message
-        t <- text (msg :: Message)
-        return (ECallback cq) <|>
-            if isCommand t && isKnownCommand t
-                then return $ ECommand msg
-                else return $ EMessage msg
+qualifyUpdate u@Update {message, callback_query}
+    | Just cq <- callback_query = ECallback cq
+    | Just msg <- message =
+        if isCommandE msg
+            then ECommand msg
+            else EMessage msg
+    | otherwise = EOther u
 
-reactToUpdate :: (MonadCatch m) => Handle m state -> Update -> m API.Request
+isCommandE :: Message -> Bool
+isCommandE Message {text} =
+    case text of
+        Just t -> isCommand t && isKnownCommand t
+        Nothing -> False
+
 reactToUpdate hAPI update = do
     let qu = qualifyUpdate update
     case qu of
