@@ -50,6 +50,14 @@ data Message =
     }
   deriving (Show, Generic, FromJSON)
 
+getAuthorThrow :: (MonadThrow m) => Message -> m User
+getAuthorThrow Message {message_id, from} =
+  case from of
+    Just t -> return t
+    Nothing ->
+      throwM $
+      Ex Priority.Info $ "Message " ++ show message_id ++ " has no author"
+
 getTextThrow :: (MonadThrow m) => Message -> m String
 getTextThrow Message {message_id, text} =
   case text of
