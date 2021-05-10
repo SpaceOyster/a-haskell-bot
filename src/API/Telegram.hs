@@ -163,6 +163,17 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
+reactToCallback :: Handle IO HState -> CallbackQuery -> IO API.Request
+reactToCallback hAPI cq@CallbackQuery {id, from} = do
+    cdata <- getQDataThrow cq
+    let user = from
+    case qualifyQuery cdata of
+        QDRepeat n -> do
+            setUserSettings hAPI user n
+            answerCallbackQuery hAPI id
+        QDOther s ->
+            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+
 answerCallbackQuery :: (Monad m) => Handle m state -> String -> m API.Request
 answerCallbackQuery hAPI id = do
     let json = encode . object $ ["callback_query_id" .= id]
