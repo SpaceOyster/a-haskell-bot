@@ -155,6 +155,14 @@ data QueryData
     | QDOther String
     deriving (Show)
 
+qualifyQuery :: String -> QueryData
+qualifyQuery qstring =
+    case qtype of
+        "repeat" -> QDRepeat $ read (tail qdata)
+        _ -> QDOther qstring
+  where
+    (qtype, qdata) = break (== '_') qstring
+
 copyMessage :: (Monad m) => Message -> m API.Request
 copyMessage msg@Message {message_id, chat} = do
     let json =
