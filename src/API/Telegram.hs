@@ -7,6 +7,7 @@ import API
 import API.Telegram.Types
 import Control.Applicative ((<|>))
 import Control.Exception (bracket, finally)
+import Control.Monad (join, replicateM)
 import Data.IORef (newIORef)
 
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
@@ -126,23 +127,28 @@ isCommandE Message {text} =
         Just t -> isCommand t && isKnownCommand t
         Nothing -> False
 
+reactToUpdate :: Handle IO HState -> Update -> IO [API.Request]
 reactToUpdate hAPI update = do
     let qu = qualifyUpdate update
     case qu of
-        ECommand msg -> reactToCommand hAPI msg
+        ECommand msg -> (: []) <$> reactToCommand hAPI msg
         EMessage msg -> reactToMessage hAPI msg
+        ECallback cq -> (: []) <$> reactToCallback hAPI cq
         EOther Update {update_id} ->
             throwM $
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
-reactToCommand :: (MonadThrow m) => Handle m state -> Message -> m API.Request
+reactToCommand :: Handle IO state -> Message -> IO API.Request
 reactToCommand hAPI msg = do
     cmd <- getCommandThrow msg
     action <- getActionThrow cmd
     runAction action hAPI msg
 
-reactToMessage :: (Monad m) => Handle m state -> Message -> m API.Request
-reactToMessage _ = copyMessage
+reactToMessage :: Handle IO HState -> Message -> IO [API.Request]
+reactToMessage hAPI msg = do
+    author <- getAuthorThrow msg
+    n <- hAPI `getUserSettings` author
+    n `replicateM` copyMessage msg
 
 copyMessage :: (Monad m) => Message -> m API.Request
 copyMessage msg@Message {message_id, chat} = do
@@ -158,7 +164,8 @@ reactToUpdates :: Handle IO HState -> L8.ByteString -> IO [Request]
 reactToUpdates hAPI json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
-    mapM (reactToUpdate hAPI) updates `finally` remember updates
+    requests <- mapM (reactToUpdate hAPI) updates
+    return (join requests) `finally` remember updates
   where
     remember [] = return ()
     remember us = rememberLastUpdate hAPI $ last us
