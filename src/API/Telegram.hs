@@ -31,7 +31,7 @@ data Config =
 data HState =
     HState
         { lastUpdate :: Integer
-        , userSettings :: Map.Map String Integer
+        , userSettings :: Map.Map User Int
         }
 
 new :: Config -> IO (Handle IO HState)
