@@ -47,6 +47,7 @@ new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
             , helpMessage
             , greeting
             , repeatPrompt
+            , defaultRepeat = 1
             , fetchUpdates = GET "getUpdates"
             }
 
