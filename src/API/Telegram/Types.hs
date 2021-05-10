@@ -87,6 +87,14 @@ data CallbackQuery =
     }
   deriving (Show)
 
+getQDataThrow :: (MonadThrow m) => CallbackQuery -> m String
+getQDataThrow CallbackQuery {id, query_data} =
+  case query_data of
+    Just d -> return d
+    Nothing ->
+      throwM $
+      Ex Priority.Info $ "CallbackQuery " ++ show id ++ " has no query data"
+
 instance FromJSON CallbackQuery where
   parseJSON =
     withObject "CallbackQuery" $ \o -> do
