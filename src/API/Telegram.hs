@@ -7,7 +7,7 @@ import API
 import API.Telegram.Types
 import Control.Applicative ((<|>))
 import Control.Exception (bracket, finally)
-import Data.IORef
+import Data.IORef (newIORef)
 
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Aeson (Value(..), (.=), encode, object)
