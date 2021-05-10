@@ -97,13 +97,13 @@ instance FromJSON CallbackQuery where
       query_data <- o .:? "data"
       return $ CallbackQuery {..}
 
-data User =
+newtype User =
   User
     { id :: Integer
     }
-  deriving (Show, Generic, FromJSON)
+  deriving (Ord, Eq, Show, Generic, FromJSON)
 
-data Chat =
+newtype Chat =
   Chat
     { chat_id :: Integer
     }
