@@ -89,6 +89,12 @@ getUserSettings hAPI user = do
         repeats = Map.findWithDefault drepeats user $ userSettings st
     return repeats
 
+setUserSettings :: Handle m HState -> User -> Int -> IO ()
+setUserSettings hAPI user repeats = do
+    hAPI `hSetState` \st ->
+        let usettings = Map.alter (const $ Just repeats) user $ userSettings st
+         in st {userSettings = usettings}
+
 rememberLastUpdate :: Handle m HState -> Update -> IO ()
 rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
 
