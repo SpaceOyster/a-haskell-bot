@@ -150,6 +150,11 @@ reactToMessage hAPI msg = do
     n <- hAPI `getUserSettings` author
     n `replicateM` copyMessage msg
 
+data QueryData
+    = QDRepeat Int
+    | QDOther String
+    deriving (Show)
+
 copyMessage :: (Monad m) => Message -> m API.Request
 copyMessage msg@Message {message_id, chat} = do
     let json =
