@@ -13,7 +13,15 @@ import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Aeson (Value(..), (.=), encode, object)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
-import Data.Map as Map (Map, fromList, keys, lookup, mapKeys)
+import Data.Map as Map
+    ( Map
+    , alter
+    , findWithDefault
+    , fromList
+    , keys
+    , lookup
+    , mapKeys
+    )
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified HTTP
@@ -73,6 +81,13 @@ getLastUpdateID hAPI = do
 setLastUpdateID :: Handle m HState -> Integer -> IO ()
 setLastUpdateID hAPI id = do
     hAPI `hSetState` \st -> st {lastUpdate = id}
+
+getUserSettings :: Handle m HState -> User -> IO Int
+getUserSettings hAPI user = do
+    st <- hGetState hAPI
+    let drepeats = defaultRepeat hAPI
+        repeats = Map.findWithDefault drepeats user $ userSettings st
+    return repeats
 
 rememberLastUpdate :: Handle m HState -> Update -> IO ()
 rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
