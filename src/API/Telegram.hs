@@ -163,6 +163,11 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
+answerCallbackQuery :: (Monad m) => Handle m state -> String -> m API.Request
+answerCallbackQuery hAPI id = do
+    let json = encode . object $ ["callback_query_id" .= id]
+    return $ POST "answerCallbackQuery" json
+
 copyMessage :: (Monad m) => Message -> m API.Request
 copyMessage msg@Message {message_id, chat} = do
     let json =
