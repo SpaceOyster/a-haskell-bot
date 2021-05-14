@@ -14,7 +14,6 @@ data Handle m state =
         , greeting :: String
         , repeatPrompt :: String
         , defaultRepeat :: Int
-        , fetchUpdates :: Request
         }
 
 data Request

@@ -57,7 +57,6 @@ new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
             , greeting
             , repeatPrompt
             , defaultRepeat = 1
-            , fetchUpdates = GET "getUpdates"
             }
 
 parseConfig :: IO Config
