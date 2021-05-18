@@ -40,3 +40,9 @@ reactToUpdate hBot update = do
         TG.EOther Update {update_id} ->
             throwM $
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
+
+reactToCommand :: Handle IO state -> Message -> IO API.Request
+reactToCommand hBot msg = do
+    cmd <- getCommandThrow msg
+    action <- TG.getActionThrow cmd
+    TG.runAction action (api hBot) msg
