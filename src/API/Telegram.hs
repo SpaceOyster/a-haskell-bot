@@ -102,15 +102,6 @@ sendMessage chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
     return $ POST "sendMessage" json
 
--- TODO remove
-repeatKeyboard :: InlineKeyboardMarkup
-repeatKeyboard =
-    InlineKeyboardMarkup [[button 1, button 2, button 3, button 4, button 5]]
-  where
-    button x =
-        InlineKeyboardButton
-            {text = show x, callback_data = "repeat_" ++ show x}
-
 sendInlineKeyboard ::
        (Monad m) => Integer -> String -> InlineKeyboardMarkup -> m API.Request
 sendInlineKeyboard chatId prompt keyboard = do
