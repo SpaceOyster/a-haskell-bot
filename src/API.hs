@@ -10,9 +10,6 @@ data Handle m =
     Handle
         { http :: HTTP.Handle m
         , lastUpdate :: IORef Integer
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
         , defaultRepeat :: Int
         }
 
