@@ -8,8 +8,9 @@ import API.Telegram.Types
 import Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
+import Data.Function ((&))
 import Data.IORef (IORef)
-import qualified Data.Map as Map (Map, alter, findWithDefault)
+import qualified Data.Map as Map (Map, alter, findWithDefault, fromList)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 
@@ -70,3 +71,27 @@ newtype Action m =
     Action
         { runAction :: Handle m BotState -> Message -> m API.Request
         }
+
+-- | command has to be between 1-32 chars long
+-- description hat to be between 3-256 chars long
+commands :: (Monad m) => Map.Map BotCommand (Action m)
+commands =
+    Map.fromList
+        [ ( BotCommand {command = "start", description = "Greet User"}
+          , Action
+                (\Handle {greeting} Message {chat} ->
+                     TG.sendMessage ((chat :: Chat) & chat_id) greeting))
+        , ( BotCommand {command = "help", description = "Show help text"}
+          , Action
+                (\Handle {helpMessage} Message {chat} ->
+                     TG.sendMessage ((chat :: Chat) & chat_id) helpMessage))
+        , ( BotCommand
+                { command = "repeat"
+                , description = "Set number of message repeats to make"
+                }
+          , Action
+                (\Handle {repeatPrompt} Message {chat} ->
+                     TG.sendInlineKeyboard
+                         ((chat :: Chat) & chat_id)
+                         repeatPrompt))
+        ]
