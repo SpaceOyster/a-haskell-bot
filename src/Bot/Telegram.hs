@@ -27,10 +27,9 @@ import Exceptions (BotException(..))
 import System.Environment (getEnv)
 import Utils (throwDecode)
 
-data BotState =
+newtype BotState =
     BotState
-        { lastUpdate :: Integer
-        , userSettings :: Map.Map User Int
+        { userSettings :: Map.Map User Int
         }
 
 data Config =
@@ -44,7 +43,7 @@ data Config =
 
 new :: Config -> IO (Handle IO BotState)
 new cfg@Config {..} = do
-    state <- newIORef $ BotState {lastUpdate = 0, userSettings = mempty}
+    state <- newIORef $ BotState {userSettings = mempty}
     apiCfg <- TG.parseConfig
     api <- TG.new apiCfg
     return $
