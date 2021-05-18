@@ -10,7 +10,6 @@ data Handle m =
     Handle
         { http :: HTTP.Handle m
         , lastUpdate :: IORef Integer
-        , defaultRepeat :: Int
         }
 
 data Request
