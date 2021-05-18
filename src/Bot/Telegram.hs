@@ -109,3 +109,7 @@ getActionThrow cmd =
     case Map.lookup cmd $ command `Map.mapKeys` commands of
         Just a -> return a
         Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
+
+commandsList :: [String]
+commandsList =
+    command <$> Map.keys (commands :: Map.Map BotCommand (Action Maybe))
