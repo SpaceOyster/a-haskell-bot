@@ -30,3 +30,9 @@ loop hAPI = do
     doBotThing hAPI
     threadDelay 5000000
     loop hAPI
+
+hGetState :: Handle m state -> IO state
+hGetState = readIORef . state
+
+hSetState :: Handle m state -> (state -> state) -> IO ()
+hSetState hAPI f = state hAPI `modifyIORef` f
