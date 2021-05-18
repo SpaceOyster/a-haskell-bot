@@ -111,12 +111,10 @@ repeatKeyboard =
         InlineKeyboardButton
             {text = show x, callback_data = "repeat_" ++ show x}
 
-sendInlineKeyboard :: (Monad m) => Integer -> String -> m API.Request
-sendInlineKeyboard chatId prompt = do
+sendInlineKeyboard ::
+       (Monad m) => Integer -> String -> InlineKeyboardMarkup -> m API.Request
+sendInlineKeyboard chatId prompt keyboard = do
     let json =
             encode . object $
-            [ "chat_id" .= chatId
-            , "text" .= prompt
-            , "reply_markup" .= repeatKeyboard
-            ]
+            ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
     return $ POST "sendMessage" json

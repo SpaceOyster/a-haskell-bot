@@ -142,7 +142,8 @@ commands =
                 (\Handle {repeatPrompt} Message {chat} ->
                      TG.sendInlineKeyboard
                          ((chat :: Chat) & chat_id)
-                         repeatPrompt))
+                         repeatPrompt
+                         repeatKeyboard))
         ]
 
 getActionThrow :: (MonadThrow m) => String -> m (Action m)
