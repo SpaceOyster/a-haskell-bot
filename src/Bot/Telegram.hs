@@ -7,6 +7,7 @@ import qualified API.Telegram as TG
 import API.Telegram.Types
 import Bot
 import Control.Monad (replicateM)
+import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.IORef (IORef)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
 import qualified Exceptions as Priority (Priority(..))
@@ -53,3 +54,14 @@ reactToMessage hBot msg = do
     author <- getAuthorThrow msg
     n <- hBot `getUserSettings` author
     n `replicateM` TG.copyMessage msg
+
+reactToCallback :: Handle IO BotState -> CallbackQuery -> IO API.Request
+reactToCallback hBot cq@CallbackQuery {id, from} = do
+    cdata <- getQDataThrow cq
+    let user = from
+    case TG.qualifyQuery cdata of
+        TG.QDRepeat n -> do
+            setUserSettings hBot user n
+            TG.answerCallbackQuery (api hBot) id
+        TG.QDOther s ->
+            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
