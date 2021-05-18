@@ -5,8 +5,18 @@ import qualified API.Telegram as TG
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
-import HTTP
+import Data.IORef
 import Utils
+
+data Handle m state =
+    Handle
+        { api :: API.Handle m state
+        , state :: IORef state
+        , helpMessage :: String
+        , greeting :: String
+        , repeatPrompt :: String
+        , defaultRepeat :: Int
+        }
 
 doBotThing :: API.Handle IO TG.HState -> IO [L8.ByteString]
 doBotThing hAPI = do
