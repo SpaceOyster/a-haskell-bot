@@ -10,7 +10,7 @@ import Utils
 
 data Handle m state =
     Handle
-        { api :: API.Handle m state
+        { api :: API.Handle m
         , state :: IORef state
         , helpMessage :: String
         , greeting :: String
