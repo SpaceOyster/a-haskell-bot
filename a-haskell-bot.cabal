@@ -29,6 +29,7 @@ library
       API.Telegram
       API.Telegram.Types
       Bot
+      Bot.Telegram
       Exceptions
       HTTP
       Utils
