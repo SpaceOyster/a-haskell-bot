@@ -65,3 +65,8 @@ reactToCallback hBot cq@CallbackQuery {id, from} = do
             TG.answerCallbackQuery (api hBot) id
         TG.QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+
+newtype Action m =
+    Action
+        { runAction :: Handle m BotState -> Message -> m API.Request
+        }
