@@ -8,7 +8,7 @@ import API.Telegram.Types
 import Control.Applicative ((<|>))
 import Control.Exception (bracket, finally)
 import Control.Monad (join, replicateM)
-import Data.IORef (newIORef)
+import Data.IORef (modifyIORef, newIORef, readIORef)
 
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Aeson (Value(..), (.=), encode, object)
@@ -37,22 +37,16 @@ data Config =
         , repeatPrompt :: String
         }
 
-data HState =
-    HState
-        { lastUpdate :: Integer
-        , userSettings :: Map.Map User Int
-        }
-
-new :: Config -> IO (Handle IO HState)
+new :: Config -> IO (Handle IO)
 new cfg@Config {key, helpMessage, greeting, repeatPrompt} = do
     let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
         httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
     http <- HTTP.new httpConfig
-    state <- newIORef $ HState {lastUpdate = 0, userSettings = mempty}
+    lastUpdate <- newIORef 0
     return $
         Handle
             { http
-            , state
+            , lastUpdate
             , helpMessage
             , greeting
             , repeatPrompt
@@ -67,87 +61,26 @@ parseConfig = do
         repeatPrompt = "How many times you want your messages to be repeated?"
     return $ Config {key, helpMessage, greeting, repeatPrompt}
 
-withHandle :: (Handle IO HState -> IO a) -> IO a
+withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
     config <- parseConfig
     hAPI <- new config
     io hAPI
 
-getLastUpdateID :: Handle m HState -> IO Integer
-getLastUpdateID hAPI = do
-    st <- hGetState hAPI
-    return $ lastUpdate st
+getLastUpdateID :: Handle m -> IO Integer
+getLastUpdateID = readIORef . lastUpdate
 
-setLastUpdateID :: Handle m HState -> Integer -> IO ()
-setLastUpdateID hAPI id = do
-    hAPI `hSetState` \st -> st {lastUpdate = id}
+setLastUpdateID :: Handle m -> Integer -> IO ()
+setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef` const id
 
-getUserSettings :: Handle m HState -> User -> IO Int
-getUserSettings hAPI user = do
-    st <- hGetState hAPI
-    let drepeats = defaultRepeat hAPI
-        repeats = Map.findWithDefault drepeats user $ userSettings st
-    return repeats
-
-setUserSettings :: Handle m HState -> User -> Int -> IO ()
-setUserSettings hAPI user repeats = do
-    hAPI `hSetState` \st ->
-        let usettings = Map.alter (const $ Just repeats) user $ userSettings st
-         in st {userSettings = usettings}
-
-rememberLastUpdate :: Handle m HState -> Update -> IO ()
+rememberLastUpdate :: Handle m -> Update -> IO ()
 rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
 
-getUpdates :: Handle IO HState -> IO API.Request
+getUpdates :: Handle IO -> IO API.Request
 getUpdates hAPI =
     bracket (getLastUpdateID hAPI) (const $ return ()) $ \id ->
         let json = encode . object $ ["offset" .= id]
          in return $ POST "getUpdates" json
-
-data Entity
-    = EMessage Message
-    | ECommand Message
-    | ECallback CallbackQuery
-    | EOther Update
-    deriving (Show)
-
-qualifyUpdate :: Update -> Entity
-qualifyUpdate u@Update {message, callback_query}
-    | Just cq <- callback_query = ECallback cq
-    | Just msg <- message =
-        if isCommandE msg
-            then ECommand msg
-            else EMessage msg
-    | otherwise = EOther u
-
-isCommandE :: Message -> Bool
-isCommandE Message {text} =
-    case text of
-        Just t -> isCommand t && isKnownCommand t
-        Nothing -> False
-
-reactToUpdate :: Handle IO HState -> Update -> IO [API.Request]
-reactToUpdate hAPI update = do
-    let qu = qualifyUpdate update
-    case qu of
-        ECommand msg -> (: []) <$> reactToCommand hAPI msg
-        EMessage msg -> reactToMessage hAPI msg
-        ECallback cq -> (: []) <$> reactToCallback hAPI cq
-        EOther Update {update_id} ->
-            throwM $
-            Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
-
-reactToCommand :: Handle IO state -> Message -> IO API.Request
-reactToCommand hAPI msg = do
-    cmd <- getCommandThrow msg
-    action <- getActionThrow cmd
-    runAction action hAPI msg
-
-reactToMessage :: Handle IO HState -> Message -> IO [API.Request]
-reactToMessage hAPI msg = do
-    author <- getAuthorThrow msg
-    n <- hAPI `getUserSettings` author
-    n `replicateM` copyMessage msg
 
 data QueryData
     = QDRepeat Int
@@ -162,18 +95,7 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
-reactToCallback :: Handle IO HState -> CallbackQuery -> IO API.Request
-reactToCallback hAPI cq@CallbackQuery {id, from} = do
-    cdata <- getQDataThrow cq
-    let user = from
-    case qualifyQuery cdata of
-        QDRepeat n -> do
-            setUserSettings hAPI user n
-            answerCallbackQuery hAPI id
-        QDOther s ->
-            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
-
-answerCallbackQuery :: (Monad m) => Handle m state -> String -> m API.Request
+answerCallbackQuery :: (Monad m) => Handle m -> String -> m API.Request
 answerCallbackQuery hAPI id = do
     let json = encode . object $ ["callback_query_id" .= id]
     return $ POST "answerCallbackQuery" json
@@ -188,60 +110,12 @@ copyMessage msg@Message {message_id, chat} = do
             ]
     return $ POST "copyMessage" json
 
-reactToUpdates :: Handle IO HState -> L8.ByteString -> IO [Request]
-reactToUpdates hAPI json = do
-    resp <- throwDecode json
-    updates <- extractUpdates resp
-    requests <- mapM (reactToUpdate hAPI) updates
-    return (join requests) `finally` remember updates
-  where
-    remember [] = return ()
-    remember us = rememberLastUpdate hAPI $ last us
-
-isKnownCommand :: String -> Bool
-isKnownCommand s = tail s `elem` commandsList
-
-newtype Action m state =
-    Action
-        { runAction :: Handle m state -> Message -> m API.Request
-        }
-
--- | command has to be between 1-32 chars long
--- description hat to be between 3-256 chars long
-commands :: (Monad m) => Map BotCommand (Action m state)
-commands =
-    Map.fromList
-        [ ( BotCommand {command = "start", description = "Greet User"}
-          , Action
-                (\Handle {greeting} Message {chat} ->
-                     sendMessage ((chat :: Chat) & chat_id) greeting))
-        , ( BotCommand {command = "help", description = "Show help text"}
-          , Action
-                (\Handle {helpMessage} Message {chat} ->
-                     sendMessage ((chat :: Chat) & chat_id) helpMessage))
-        , ( BotCommand
-                { command = "repeat"
-                , description = "Set number of message repeats to make"
-                }
-          , Action
-                (\Handle {repeatPrompt} Message {chat} ->
-                     sendInlineKeyboard ((chat :: Chat) & chat_id) repeatPrompt))
-        ]
-
-getActionThrow :: (MonadThrow m) => String -> m (Action m state)
-getActionThrow cmd =
-    case Map.lookup cmd $ command `mapKeys` commands of
-        Just a -> return a
-        Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
-
-commandsList :: [String]
-commandsList = command <$> keys (commands :: Map BotCommand (Action Maybe ()))
-
 sendMessage :: (Monad m) => Integer -> String -> m API.Request
 sendMessage chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
     return $ POST "sendMessage" json
 
+-- TODO remove
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
     InlineKeyboardMarkup [[button 1, button 2, button 3, button 4, button 5]]

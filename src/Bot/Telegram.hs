@@ -1,4 +1,5 @@
-{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns, RecordWildCards
+  #-}
 
 module Bot.Telegram where
 
@@ -6,10 +7,12 @@ import qualified API
 import qualified API.Telegram as TG
 import API.Telegram.Types
 import Bot
-import Control.Monad (replicateM)
+import Control.Exception (bracket, finally)
+import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
-import Data.IORef (IORef)
+import Data.IORef (IORef, newIORef)
 import qualified Data.Map as Map
     ( Map
     , alter
@@ -21,6 +24,8 @@ import qualified Data.Map as Map
     )
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
+import System.Environment (getEnv)
+import Utils (throwDecode)
 
 data BotState =
     BotState
@@ -28,10 +33,36 @@ data BotState =
         , userSettings :: Map.Map User Int
         }
 
+data Config =
+    Config
+        { key :: String
+        , helpMessage :: String
+        , greeting :: String
+        , repeatPrompt :: String
+        , defaultRepeat :: Int
+        }
+
+new :: Config -> IO (Handle IO BotState)
+new cfg@Config {..} = do
+    state <- newIORef $ BotState {lastUpdate = 0, userSettings = mempty}
+    apiCfg <- TG.parseConfig
+    api <- TG.new apiCfg
+    return $
+        Handle {api, state, helpMessage, greeting, repeatPrompt, defaultRepeat}
+
+parseConfig :: IO Config
+parseConfig = do
+    key <- getEnv "TG_API"
+    let helpMessage = "This is a help message"
+        greeting = "This is greeting message"
+        repeatPrompt = "How many times you want your messages to be repeated?"
+    return $
+        Config {key, helpMessage, greeting, repeatPrompt, defaultRepeat = 1}
+
 getUserSettings :: Handle m BotState -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
-    let drepeats = defaultRepeat hBot
+    let drepeats = Bot.defaultRepeat hBot
         repeats = Map.findWithDefault drepeats user $ userSettings st
     return repeats
 
@@ -41,22 +72,32 @@ setUserSettings hBot user repeats = do
         let usettings = Map.alter (const $ Just repeats) user $ userSettings st
          in st {userSettings = usettings}
 
+reactToUpdates :: Handle IO BotState -> L8.ByteString -> IO [API.Request]
+reactToUpdates hBot json = do
+    resp <- throwDecode json
+    updates <- extractUpdates resp
+    requests <- mapM (reactToUpdate hBot) updates
+    return (join requests) `finally` remember updates
+  where
+    remember [] = return ()
+    remember us = TG.rememberLastUpdate (api hBot) $ last us
+
 reactToUpdate :: Handle IO BotState -> Update -> IO [API.Request]
 reactToUpdate hBot update = do
-    let qu = TG.qualifyUpdate update
+    let qu = qualifyUpdate update
     case qu of
-        TG.ECommand msg -> (: []) <$> reactToCommand hBot msg
-        TG.EMessage msg -> reactToMessage hBot msg
-        TG.ECallback cq -> (: []) <$> reactToCallback hBot cq
-        TG.EOther Update {update_id} ->
+        ECommand msg -> (: []) <$> reactToCommand hBot msg
+        EMessage msg -> reactToMessage hBot msg
+        ECallback cq -> (: []) <$> reactToCallback hBot cq
+        EOther Update {update_id} ->
             throwM $
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
-reactToCommand :: Handle IO state -> Message -> IO API.Request
+reactToCommand :: Handle IO BotState -> Message -> IO API.Request
 reactToCommand hBot msg = do
     cmd <- getCommandThrow msg
-    action <- TG.getActionThrow cmd
-    TG.runAction action (api hBot) msg
+    action <- getActionThrow cmd
+    runAction action hBot msg
 
 reactToMessage :: Handle IO BotState -> Message -> IO [API.Request]
 reactToMessage hBot msg = do
@@ -121,3 +162,28 @@ repeatKeyboard =
     button x =
         InlineKeyboardButton
             {text = show x, callback_data = "repeat_" ++ show x}
+
+isKnownCommand :: String -> Bool
+isKnownCommand s = tail s `elem` commandsList
+
+data Entity
+    = EMessage Message
+    | ECommand Message
+    | ECallback CallbackQuery
+    | EOther Update
+    deriving (Show)
+
+qualifyUpdate :: Update -> Entity
+qualifyUpdate u@Update {message, callback_query}
+    | Just cq <- callback_query = ECallback cq
+    | Just msg <- message =
+        if isCommandE msg
+            then ECommand msg
+            else EMessage msg
+    | otherwise = EOther u
+
+isCommandE :: Message -> Bool
+isCommandE Message {text} =
+    case text of
+        Just t -> isCommand t && isKnownCommand t
+        Nothing -> False
