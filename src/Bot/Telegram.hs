@@ -10,7 +10,15 @@ import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Function ((&))
 import Data.IORef (IORef)
-import qualified Data.Map as Map (Map, alter, findWithDefault, fromList)
+import qualified Data.Map as Map
+    ( Map
+    , alter
+    , findWithDefault
+    , fromList
+    , keys
+    , lookup
+    , mapKeys
+    )
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 
@@ -95,3 +103,9 @@ commands =
                          ((chat :: Chat) & chat_id)
                          repeatPrompt))
         ]
+
+getActionThrow :: (MonadThrow m) => String -> m (Action m)
+getActionThrow cmd =
+    case Map.lookup cmd $ command `Map.mapKeys` commands of
+        Just a -> return a
+        Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
