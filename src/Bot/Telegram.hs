@@ -6,6 +6,7 @@ import qualified API
 import qualified API.Telegram as TG
 import API.Telegram.Types
 import Bot
+import Control.Monad (replicateM)
 import Data.IORef (IORef)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
 import qualified Exceptions as Priority (Priority(..))
@@ -46,3 +47,9 @@ reactToCommand hBot msg = do
     cmd <- getCommandThrow msg
     action <- TG.getActionThrow cmd
     TG.runAction action (api hBot) msg
+
+reactToMessage :: Handle IO BotState -> Message -> IO [API.Request]
+reactToMessage hBot msg = do
+    author <- getAuthorThrow msg
+    n <- hBot `getUserSettings` author
+    n `replicateM` TG.copyMessage msg
