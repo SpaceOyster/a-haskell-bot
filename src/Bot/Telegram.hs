@@ -1,3 +1,5 @@
+{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
+
 module Bot.Telegram where
 
 import qualified API
