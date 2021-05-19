@@ -58,6 +58,12 @@ parseConfig = do
     return $
         Config {key, helpMessage, greeting, repeatPrompt, defaultRepeat = 1}
 
+withHandle :: (Handle IO BotState -> IO a) -> IO a
+withHandle io = do
+    config <- parseConfig
+    hBot <- new config
+    io hBot
+
 getUserSettings :: Handle m BotState -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
