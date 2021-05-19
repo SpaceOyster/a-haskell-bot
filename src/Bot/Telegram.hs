@@ -132,15 +132,28 @@ reactToMessage hBot msg = do
     n <- hBot `getUserSettings` author
     n `replicateM` TG.copyMessage msg
 
+data QueryData
+    = QDRepeat Int
+    | QDOther String
+    deriving (Show)
+
+qualifyQuery :: String -> QueryData
+qualifyQuery qstring =
+    case qtype of
+        "repeat" -> QDRepeat $ read (tail qdata)
+        _ -> QDOther qstring
+  where
+    (qtype, qdata) = break (== '_') qstring
+
 reactToCallback :: Handle IO BotState -> CallbackQuery -> IO API.Request
 reactToCallback hBot cq@CallbackQuery {id, from} = do
     cdata <- getQDataThrow cq
     let user = from
-    case TG.qualifyQuery cdata of
-        TG.QDRepeat n -> do
+    case qualifyQuery cdata of
+        QDRepeat n -> do
             setUserSettings hBot user n
             TG.answerCallbackQuery (hAPI hBot) id
-        TG.QDOther s ->
+        QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 newtype Action m =
