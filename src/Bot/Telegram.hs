@@ -64,6 +64,13 @@ withHandle io = do
     hBot <- new config
     io hBot
 
+doBotThing :: Handle IO BotState -> IO [L8.ByteString]
+doBotThing hBot = do
+    req <- hBot & api & TG.getUpdates
+    json <- hBot & api & API.sendRequest $ req
+    requests <- reactToUpdates hBot json
+    mapM (API.sendRequest $ api hBot) requests
+
 getUserSettings :: Handle m BotState -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
