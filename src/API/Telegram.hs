@@ -5,29 +5,13 @@ module API.Telegram where
 
 import API
 import API.Telegram.Types
-import Control.Applicative ((<|>))
-import Control.Exception (bracket, finally)
-import Control.Monad (join, replicateM)
+import Control.Exception (bracket)
 import Data.IORef (modifyIORef, newIORef, readIORef)
 
-import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
 import Data.Aeson (Value(..), (.=), encode, object)
-import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
-import Data.Map as Map
-    ( Map
-    , alter
-    , findWithDefault
-    , fromList
-    , keys
-    , lookup
-    , mapKeys
-    )
-import qualified Exceptions as Priority (Priority(..))
-import Exceptions (BotException(..))
 import qualified HTTP
 import System.Environment (getEnv)
-import Utils (throwDecode)
 
 data Config =
     Config
