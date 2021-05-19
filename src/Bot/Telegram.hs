@@ -45,9 +45,8 @@ new :: Config -> IO (Handle IO BotState)
 new cfg@Config {..} = do
     state <- newIORef $ BotState {userSettings = mempty}
     apiCfg <- TG.parseConfig
-    api <- TG.new apiCfg
-    return $
-        Handle {api, state, helpMessage, greeting, repeatPrompt, defaultRepeat}
+    hAPI <- TG.new apiCfg
+    return $ Handle {..}
 
 parseConfig :: IO Config
 parseConfig = do
@@ -66,10 +65,10 @@ withHandle io = do
 
 doBotThing :: Handle IO BotState -> IO [L8.ByteString]
 doBotThing hBot = do
-    req <- hBot & api & TG.getUpdates
-    json <- hBot & api & API.sendRequest $ req
+    req <- hBot & hAPI & TG.getUpdates
+    json <- hBot & hAPI & API.sendRequest $ req
     requests <- reactToUpdates hBot json
-    mapM (API.sendRequest $ api hBot) requests
+    mapM (API.sendRequest $ hAPI hBot) requests
 
 getUserSettings :: Handle m BotState -> User -> IO Int
 getUserSettings hBot user = do
@@ -92,7 +91,7 @@ reactToUpdates hBot json = do
     return (join requests) `finally` remember updates
   where
     remember [] = return ()
-    remember us = TG.rememberLastUpdate (api hBot) $ last us
+    remember us = TG.rememberLastUpdate (hAPI hBot) $ last us
 
 data Entity
     = EMessage Message
@@ -140,7 +139,7 @@ reactToCallback hBot cq@CallbackQuery {id, from} = do
     case TG.qualifyQuery cdata of
         TG.QDRepeat n -> do
             setUserSettings hBot user n
-            TG.answerCallbackQuery (api hBot) id
+            TG.answerCallbackQuery (hAPI hBot) id
         TG.QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
