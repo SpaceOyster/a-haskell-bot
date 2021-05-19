@@ -1,4 +1,8 @@
-module API where
+module API
+    ( Handle(..)
+    , Request(..)
+    , sendRequest
+    ) where
 
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
