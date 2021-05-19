@@ -7,9 +7,9 @@ import qualified API
 import qualified API.Telegram as TG
 import API.Telegram.Types
 import Bot
-import Control.Exception (bracket, finally)
+import Control.Exception (finally)
 import Control.Monad (join, replicateM)
-import Control.Monad.Catch (MonadCatch, MonadThrow(..), handleAll)
+import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (IORef, newIORef)
@@ -80,6 +80,22 @@ reactToUpdates hBot json = do
   where
     remember [] = return ()
     remember us = TG.rememberLastUpdate (api hBot) $ last us
+
+data Entity
+    = EMessage Message
+    | ECommand Message
+    | ECallback CallbackQuery
+    | EOther Update
+    deriving (Show)
+
+qualifyUpdate :: Update -> Entity
+qualifyUpdate u@Update {message, callback_query}
+    | Just cq <- callback_query = ECallback cq
+    | Just msg <- message =
+        if isCommandE msg
+            then ECommand msg
+            else EMessage msg
+    | otherwise = EOther u
 
 reactToUpdate :: Handle IO BotState -> Update -> IO [API.Request]
 reactToUpdate hBot update = do
@@ -165,22 +181,6 @@ repeatKeyboard =
 
 isKnownCommand :: String -> Bool
 isKnownCommand s = tail s `elem` commandsList
-
-data Entity
-    = EMessage Message
-    | ECommand Message
-    | ECallback CallbackQuery
-    | EOther Update
-    deriving (Show)
-
-qualifyUpdate :: Update -> Entity
-qualifyUpdate u@Update {message, callback_query}
-    | Just cq <- callback_query = ECallback cq
-    | Just msg <- message =
-        if isCommandE msg
-            then ECommand msg
-            else EMessage msg
-    | otherwise = EOther u
 
 isCommandE :: Message -> Bool
 isCommandE Message {text} =
