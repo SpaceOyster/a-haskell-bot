@@ -1,7 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
 
-module API.Telegram where
+module API.Telegram
+    ( module API
+    , new
+    , parseConfig
+    , rememberLastUpdate
+    , getUpdates
+    , answerCallbackQuery
+    , copyMessage
+    , sendMessage
+    , sendInlineKeyboard
+    ) where
 
 import API
 import API.Telegram.Types
