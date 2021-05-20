@@ -73,7 +73,7 @@ doBotThing hBot = do
     req <- hBot & hAPI & TG.getUpdates
     json <- hBot & hAPI & API.sendRequest $ req
     requests <- reactToUpdates hBot json
-    mapM (API.sendRequest $ hAPI hBot) requests
+    mapM (hBot & hAPI & API.sendRequest) requests
 
 getUserSettings :: Handle m BotState -> User -> IO Int
 getUserSettings hBot user = do
