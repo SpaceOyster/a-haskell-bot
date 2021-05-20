@@ -1,7 +1,12 @@
 {-# LANGUAGE DuplicateRecordFields, NamedFieldPuns, RecordWildCards
   #-}
 
-module Bot.Telegram where
+module Bot.Telegram
+    ( module Bot
+    , doBotThing
+    , BotState
+    , withHandle
+    ) where
 
 import qualified API
 import qualified API.Telegram as TG
