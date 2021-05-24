@@ -125,10 +125,10 @@ newtype User =
   deriving (Ord, Eq, Show, Generic)
 
 instance ToJSON User where
-  toJSON = genericToJSON defaultOptions {fieldLabelModifier = drop 1}
+  toJSON = genericToJSON defaultOptions {fieldLabelModifier = drop 5}
 
 instance FromJSON User where
-  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 1}
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 5}
 
 hashUser :: User -> L8.ByteString
 hashUser = encode . user_id
