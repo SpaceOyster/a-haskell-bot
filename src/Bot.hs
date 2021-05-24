@@ -1,7 +1,7 @@
 module Bot where
 
 import qualified API (Handle)
-import Data.IORef
+import Data.IORef (IORef, modifyIORef, readIORef)
 
 data Handle m state =
     Handle
