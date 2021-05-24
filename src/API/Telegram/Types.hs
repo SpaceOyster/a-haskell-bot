@@ -130,6 +130,9 @@ instance ToJSON User where
 instance FromJSON User where
   parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 1}
 
+hashUser :: User -> L8.ByteString
+hashUser = encode . user_id
+
 newtype Chat =
   Chat
     { chat_id :: Integer
