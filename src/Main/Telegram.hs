@@ -4,7 +4,7 @@ import Bot.Telegram
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 
-loop :: Handle IO BotState -> IO ()
+loop :: Handle IO -> IO ()
 loop hBot =
     forever $ do
         doBotThing hBot

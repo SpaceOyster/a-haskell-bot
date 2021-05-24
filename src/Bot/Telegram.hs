@@ -40,7 +40,7 @@ data Config =
         , defaultRepeat :: Int
         }
 
-new :: Config -> IO (Handle IO BotState)
+new :: Config -> IO (Handle IO)
 new cfg@Config {..} = do
     state <- newIORef $ BotState {userSettings = mempty}
     apiCfg <- TG.parseConfig
@@ -56,20 +56,20 @@ parseConfig = do
     return $
         Config {key, helpMessage, greeting, repeatPrompt, defaultRepeat = 1}
 
-withHandle :: (Handle IO BotState -> IO a) -> IO a
+withHandle :: (Handle IO -> IO a) -> IO a
 withHandle io = do
     config <- parseConfig
     hBot <- new config
     io hBot
 
-doBotThing :: Handle IO BotState -> IO [L8.ByteString]
+doBotThing :: Handle IO -> IO [L8.ByteString]
 doBotThing hBot = do
     req <- hBot & hAPI & TG.getUpdates
     json <- hBot & hAPI & API.sendRequest $ req
     requests <- reactToUpdates hBot json
     mapM (hBot & hAPI & API.sendRequest) requests
 
-getUserSettings :: Handle m BotState -> User -> IO Int
+getUserSettings :: Handle m -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
     let drepeats = Bot.defaultRepeat hBot
@@ -77,14 +77,14 @@ getUserSettings hBot user = do
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     return repeats
 
-setUserSettings :: Handle m BotState -> User -> Int -> IO ()
+setUserSettings :: Handle m -> User -> Int -> IO ()
 setUserSettings hBot user repeats = do
     hBot `Bot.hSetState` \st ->
         let uhash = hashUser user
             usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
          in st {userSettings = usettings}
 
-reactToUpdates :: Handle IO BotState -> L8.ByteString -> IO [API.Request]
+reactToUpdates :: Handle IO -> L8.ByteString -> IO [API.Request]
 reactToUpdates hBot json = do
     resp <- throwDecode json
     updates <- extractUpdates resp
@@ -110,7 +110,7 @@ qualifyUpdate u@Update {message, callback_query}
             else EMessage msg
     | otherwise = EOther u
 
-reactToUpdate :: Handle IO BotState -> Update -> IO [API.Request]
+reactToUpdate :: Handle IO -> Update -> IO [API.Request]
 reactToUpdate hBot update = do
     let qu = qualifyUpdate update
     case qu of
@@ -121,13 +121,13 @@ reactToUpdate hBot update = do
             throwM $
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
-reactToCommand :: Handle IO BotState -> Message -> IO API.Request
+reactToCommand :: Handle IO -> Message -> IO API.Request
 reactToCommand hBot msg = do
     cmd <- getCommandThrow msg
     action <- getActionThrow cmd
     runAction action hBot msg
 
-reactToMessage :: Handle IO BotState -> Message -> IO [API.Request]
+reactToMessage :: Handle IO -> Message -> IO [API.Request]
 reactToMessage hBot msg = do
     author <- getAuthorThrow msg
     n <- hBot `getUserSettings` author
@@ -146,7 +146,7 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
-reactToCallback :: Handle IO BotState -> CallbackQuery -> IO API.Request
+reactToCallback :: Handle IO -> CallbackQuery -> IO API.Request
 reactToCallback hBot cq@CallbackQuery {id, from} = do
     cdata <- getQDataThrow cq
     let user = from
@@ -159,7 +159,7 @@ reactToCallback hBot cq@CallbackQuery {id, from} = do
 
 newtype Action m =
     Action
-        { runAction :: Handle m BotState -> Message -> m API.Request
+        { runAction :: Handle m -> Message -> m API.Request
         }
 
 -- | command has to be between 1-32 chars long
