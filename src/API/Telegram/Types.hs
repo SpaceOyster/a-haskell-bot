@@ -14,10 +14,15 @@ import Data.Aeson
   , (.:)
   , (.:?)
   , decode
+  , defaultOptions
   , encode
+  , fieldLabelModifier
+  , genericParseJSON
+  , genericToJSON
   , withObject
   )
 import Data.Aeson.Types (Value)
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
@@ -115,9 +120,15 @@ instance FromJSON CallbackQuery where
 
 newtype User =
   User
-    { id :: Integer
+    { user_id :: Integer
     }
-  deriving (Ord, Eq, Show, Generic, FromJSON)
+  deriving (Ord, Eq, Show, Generic)
+
+instance ToJSON User where
+  toJSON = genericToJSON defaultOptions {fieldLabelModifier = drop 1}
+
+instance FromJSON User where
+  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 1}
 
 newtype Chat =
   Chat
