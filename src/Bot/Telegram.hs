@@ -4,7 +4,6 @@
 module Bot.Telegram
     ( module Bot
     , doBotThing
-    , BotState
     , withHandle
     ) where
 
@@ -31,11 +30,6 @@ import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import System.Environment (getEnv)
 import Utils (throwDecode)
-
-newtype BotState =
-    BotState
-        { userSettings :: Map.Map L8.ByteString Int
-        }
 
 data Config =
     Config
