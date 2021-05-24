@@ -34,7 +34,7 @@ import Utils (throwDecode)
 
 newtype BotState =
     BotState
-        { userSettings :: Map.Map User Int
+        { userSettings :: Map.Map L8.ByteString Int
         }
 
 data Config =
@@ -79,13 +79,15 @@ getUserSettings :: Handle m BotState -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
     let drepeats = Bot.defaultRepeat hBot
-        repeats = Map.findWithDefault drepeats user $ userSettings st
+        uhash = hashUser user
+        repeats = Map.findWithDefault drepeats uhash $ userSettings st
     return repeats
 
 setUserSettings :: Handle m BotState -> User -> Int -> IO ()
 setUserSettings hBot user repeats = do
     hBot `Bot.hSetState` \st ->
-        let usettings = Map.alter (const $ Just repeats) user $ userSettings st
+        let uhash = hashUser user
+            usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
          in st {userSettings = usettings}
 
 reactToUpdates :: Handle IO BotState -> L8.ByteString -> IO [API.Request]
