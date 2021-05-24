@@ -1,12 +1,7 @@
 module Bot where
 
-import qualified API
-import qualified API.Telegram as TG
-import Control.Concurrent (threadDelay)
-import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Function ((&))
+import qualified API (Handle)
 import Data.IORef
-import Utils
 
 data Handle m state =
     Handle
