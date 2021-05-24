@@ -21,7 +21,9 @@ hGetState = readIORef . state
 hSetState :: Handle m -> (BotState -> BotState) -> IO ()
 hSetState hAPI f = state hAPI `modifyIORef` f
 
+type Hash = L8.ByteString
+
 data BotState =
     BotState
-        { userSettings :: Map L8.ByteString Int
+        { userSettings :: Map Hash Int
         }
