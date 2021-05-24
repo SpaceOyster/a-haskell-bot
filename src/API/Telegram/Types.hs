@@ -122,7 +122,7 @@ newtype User =
   User
     { user_id :: Integer
     }
-  deriving (Ord, Eq, Show, Generic)
+  deriving (Show, Generic)
 
 instance ToJSON User where
   toJSON = genericToJSON defaultOptions {fieldLabelModifier = drop 5}
