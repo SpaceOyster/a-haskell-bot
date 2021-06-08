@@ -23,7 +23,7 @@ hSetState hAPI f = state hAPI `modifyIORef` f
 
 type Hash = L8.ByteString
 
-data BotState =
+newtype BotState =
     BotState
         { userSettings :: Map Hash Int
         }
