@@ -64,6 +64,10 @@ withHandle io = do
 
 doBotThing :: Handle IO -> IO [L8.ByteString]
 doBotThing hBot = do
+    updates <- fetchUpdates hBot
+    requests <- reactToUpdates hBot updates
+    mapM (hBot & hAPI & API.sendRequest) requests
+
 fetchUpdates :: Handle IO -> IO [Update]
 fetchUpdates hBot = do
     req <- hBot & hAPI & TG.getUpdates
@@ -86,10 +90,8 @@ setUserSettings hBot user repeats = do
             usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
          in st {userSettings = usettings}
 
-reactToUpdates :: Handle IO -> L8.ByteString -> IO [API.Request]
-reactToUpdates hBot json = do
-    resp <- throwDecode json
-    updates <- extractUpdates resp
+reactToUpdates :: Handle IO -> [Update] -> IO [API.Request]
+reactToUpdates hBot updates = do
     requests <- mapM (reactToUpdate hBot) updates
     return (join requests) `finally` remember updates
   where
