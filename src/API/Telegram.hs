@@ -16,7 +16,7 @@ module API.Telegram
 import API
 import API.Telegram.Types
 import Control.Exception (bracket)
-import Data.IORef (modifyIORef, newIORef, readIORef)
+import Data.IORef (modifyIORef', newIORef, readIORef)
 
 import Data.Aeson (Value(..), (.=), encode, object)
 import Data.Function ((&))
@@ -52,7 +52,7 @@ getLastUpdateID :: Handle m -> IO Integer
 getLastUpdateID = readIORef . lastUpdate
 
 setLastUpdateID :: Handle m -> Integer -> IO ()
-setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef` const id
+setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef'` const id
 
 rememberLastUpdate :: Handle m -> Update -> IO ()
 rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
