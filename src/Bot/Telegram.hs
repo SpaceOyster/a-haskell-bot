@@ -92,8 +92,8 @@ setUserSettings hBot user repeats = do
 
 reactToUpdates :: Handle IO -> [Update] -> IO [API.Request]
 reactToUpdates hBot updates = do
-    requests <- mapM (reactToUpdate hBot) updates
-    return (join requests) `finally` remember updates
+    requests <- join <$> mapM (reactToUpdate hBot) updates
+    return requests `finally` remember updates
   where
     remember [] = return ()
     remember us = TG.rememberLastUpdate (hAPI hBot) $ last us
