@@ -64,10 +64,12 @@ withHandle io = do
 
 doBotThing :: Handle IO -> IO [L8.ByteString]
 doBotThing hBot = do
+fetchUpdates :: Handle IO -> IO [Update]
+fetchUpdates hBot = do
     req <- hBot & hAPI & TG.getUpdates
     json <- hBot & hAPI & API.sendRequest $ req
-    requests <- reactToUpdates hBot json
-    mapM (hBot & hAPI & API.sendRequest) requests
+    resp <- throwDecode json
+    extractUpdates resp
 
 getUserSettings :: Handle m -> User -> IO Int
 getUserSettings hBot user = do
