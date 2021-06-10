@@ -1,11 +1,12 @@
 module Main.Telegram where
 
-import Bot.Telegram
+import qualified Bot
+import qualified Bot.Telegram as TG
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 
-loop :: Handle IO -> IO ()
+loop :: Bot.Handle IO -> IO ()
 loop hBot =
     forever $ do
-        doBotThing hBot
+        TG.doBotThing hBot
         threadDelay 5000000
