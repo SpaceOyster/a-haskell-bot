@@ -11,11 +11,11 @@ import Control.Monad (forever)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
 
-loop :: Bot.Handle IO -> IO ()
-loop hBot =
+loop :: Bot.Handle IO -> Int -> IO ()
+loop hBot period =
     forever $ do
         TG.doBotThing hBot
-        threadDelay 5000000
+        threadDelay period
 
 data AppConfig =
     AppConfig
