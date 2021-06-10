@@ -1,10 +1,8 @@
 module Main where
 
-import qualified API.Telegram as Telegram
-import qualified Bot
-import HTTP
+import qualified Bot.Telegram as TG (withHandle)
+import qualified Main.Telegram as TG
 
 main :: IO ()
 main = do
-  telegramConfig <- HTTP.parseConfig
-  Bot.loop =<< HTTP.new telegramConfig
+  TG.withHandle TG.loop
