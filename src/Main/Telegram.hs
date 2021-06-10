@@ -27,7 +27,8 @@ instance A.FromJSON AppConfig where
     parseJSON =
         A.withObject "FromJSON Main.AppConfig" $ \o -> do
             defaults <- o A..: "defaults"
-            poll_period <- defaults A..: "poll-period"
+            poll_period_ms <- defaults A..: "poll-period"
+            let poll_period = (1000 *) $ max 500 poll_period_ms
             telegram <- A.parseJSON (A.Object o)
             return $ AppConfig {..}
 
