@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Main.Telegram where
 
@@ -26,20 +27,19 @@ instance A.FromJSON AppConfig where
     parseJSON =
         A.withObject "FromJSON Main.AppConfig" $ \o -> do
             defaults <- o A..: "defaults"
-            repeats <- defaults A..: "repeats"
             poll_period <- defaults A..: "poll-period"
-            telegramO <- o A..: "telegram"
-            tg_api_key <- telegramO A..: "api-key"
-            strings <- o A..: "strings"
-            help <- strings A..: "help"
-            greeting <- strings A..: "greeting"
-            repeat <- strings A..: "repeat"
-            let telegram =
-                    TG.Config
-                        { TG.key = tg_api_key
-                        , TG.helpMessage = help
-                        , TG.greeting = greeting
-                        , TG.repeatPrompt = repeat
-                        , TG.defaultRepeat = repeats
-                        }
+            telegram <- A.parseJSON (A.Object o)
             return $ AppConfig {..}
+
+instance A.FromJSON TG.Config where
+    parseJSON =
+        A.withObject "FromJSON Bot.Telegram" $ \o -> do
+            defaults <- o A..: "defaults"
+            defaultRepeat <- defaults A..: "repeats"
+            telegramO <- o A..: "telegram"
+            key <- telegramO A..: "api-key"
+            strings <- o A..: "strings"
+            helpMessage <- strings A..: "help"
+            greeting <- strings A..: "greeting"
+            repeatPrompt <- strings A..: "repeat"
+            return $ TG.Config {..}
