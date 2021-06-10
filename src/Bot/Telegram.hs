@@ -5,6 +5,7 @@ module Bot.Telegram
     ( module Bot
     , doBotThing
     , withHandle
+    , Config(..)
     ) where
 
 import qualified API
