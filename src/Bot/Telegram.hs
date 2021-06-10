@@ -48,18 +48,8 @@ new cfg@Config {..} = do
     hAPI <- TG.new apiCfg
     return $ Handle {..}
 
-parseConfig :: IO Config
-parseConfig = do
-    key <- getEnv "TG_API"
-    let helpMessage = "This is a help message"
-        greeting = "This is greeting message"
-        repeatPrompt = "How many times you want your messages to be repeated?"
-    return $
-        Config {key, helpMessage, greeting, repeatPrompt, defaultRepeat = 1}
-
-withHandle :: (Handle IO -> IO a) -> IO a
-withHandle io = do
-    config <- parseConfig
+withHandle :: Config -> (Handle IO -> IO a) -> IO a
+withHandle config io = do
     hBot <- new config
     io hBot
 
