@@ -10,3 +10,9 @@ loop hBot =
     forever $ do
         TG.doBotThing hBot
         threadDelay 5000000
+
+data AppConfig =
+    AppConfig
+        { poll_period :: Integer
+        , telegram :: TG.Config
+        }
