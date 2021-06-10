@@ -19,7 +19,7 @@ loop hBot =
 
 data AppConfig =
     AppConfig
-        { poll_period :: Integer
+        { poll_period :: Int
         , telegram :: TG.Config
         }
 
