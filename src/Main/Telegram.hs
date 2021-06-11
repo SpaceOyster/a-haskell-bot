@@ -9,6 +9,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
+import qualified Utils as U (throwDecode)
 
 loop :: Bot.Handle IO -> Int -> IO ()
 loop hBot period =
