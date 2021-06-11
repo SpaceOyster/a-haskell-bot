@@ -40,6 +40,7 @@ data Config =
         , repeatPrompt :: String
         , defaultRepeat :: Int
         }
+    deriving (Show)
 
 new :: Config -> IO (Handle IO)
 new cfg@Config {..} = do

@@ -28,6 +28,7 @@ data AppConfig =
         { poll_period :: Int
         , telegram :: TG.Config
         }
+    deriving (Show)
 
 instance A.FromJSON AppConfig where
     parseJSON =
