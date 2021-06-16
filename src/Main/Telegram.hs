@@ -36,18 +36,15 @@ instance A.FromJSON AppConfig where
             defaults <- o A..: "defaults"
             poll_period_ms <- defaults A..: "poll_period_ms"
             let poll_period = (1000 *) $ max 500 poll_period_ms
-            telegram <- A.parseJSON (A.Object o)
+            telegramO <- o A..: "telegram"
+            telegram <- A.parseJSON (A.Object telegramO)
             return $ AppConfig {..}
 
 instance A.FromJSON TG.Config where
     parseJSON =
         A.withObject "FromJSON Bot.Telegram" $ \o -> do
-            defaults <- o A..: "defaults"
-            defaultRepeat <- defaults A..: "repeats"
-            telegramO <- o A..: "telegram"
-            key <- telegramO A..: "api_key"
-            strings <- o A..: "strings"
-            helpMessage <- strings A..: "help"
-            greeting <- strings A..: "greeting"
-            repeatPrompt <- strings A..: "repeat"
+            echoMultiplier <- o A..: "default-echo-multiplier"
+            key <- o A..: "api_key"
+            stringsO <- o A..: "strings"
+            strings <- A.parseJSON (A.Object stringsO)
             return $ TG.Config {..}
