@@ -35,9 +35,7 @@ import Utils (throwDecode)
 data Config =
     Config
         { key :: String
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
+        , strings :: Bot.Strings
         , defaultRepeat :: Int
         }
     deriving (Show)
@@ -165,21 +163,23 @@ commands =
     Map.fromList
         [ ( BotCommand {command = "start", description = "Greet User"}
           , Action
-                (\Handle {greeting} Message {chat} ->
-                     TG.sendMessage ((chat :: Chat) & chat_id) greeting))
+                (\Handle {strings} Message {chat} ->
+                     TG.sendMessage ((chat :: Chat) & chat_id) $
+                     Bot.greeting strings))
         , ( BotCommand {command = "help", description = "Show help text"}
           , Action
-                (\Handle {helpMessage} Message {chat} ->
-                     TG.sendMessage ((chat :: Chat) & chat_id) helpMessage))
+                (\Handle {strings} Message {chat} ->
+                     TG.sendMessage ((chat :: Chat) & chat_id) $
+                     Bot.help strings))
         , ( BotCommand
                 { command = "repeat"
                 , description = "Set number of message repeats to make"
                 }
           , Action
-                (\Handle {repeatPrompt} Message {chat} ->
+                (\Handle {strings} Message {chat} ->
                      TG.sendInlineKeyboard
                          ((chat :: Chat) & chat_id)
-                         repeatPrompt
+                         (Bot.repeat strings)
                          repeatKeyboard))
         ]
 

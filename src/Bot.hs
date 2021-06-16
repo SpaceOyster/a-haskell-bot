@@ -9,9 +9,7 @@ data Handle m =
     Handle
         { hAPI :: API.Handle m
         , state :: IORef BotState
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
+        , strings :: Strings
         , defaultRepeat :: Int
         }
 
