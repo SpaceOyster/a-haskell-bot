@@ -4,13 +4,13 @@
 module API.Telegram
     ( module API
     , new
-    , parseConfig
     , rememberLastUpdate
     , getUpdates
     , answerCallbackQuery
     , copyMessage
     , sendMessage
     , sendInlineKeyboard
+    , Config(..)
     ) where
 
 import API
@@ -37,14 +37,8 @@ new cfg@Config {key, echoMultiplier} = do
     lastUpdate <- newIORef echoMultiplier
     return $ Handle {http, lastUpdate}
 
-parseConfig :: IO Config
-parseConfig = do
-    key <- getEnv "TG_API"
-    return $ Config {key, defaultRepeat = 1}
-
-withHandle :: (Handle IO -> IO a) -> IO a
-withHandle io = do
-    config <- parseConfig
+withHandle :: Config -> (Handle IO -> IO a) -> IO a
+withHandle config io = do
     hAPI <- new config
     io hAPI
 

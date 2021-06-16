@@ -43,8 +43,7 @@ data Config =
 new :: Config -> IO (Handle IO)
 new cfg@Config {..} = do
     state <- newIORef $ BotState {userSettings = mempty}
-    apiCfg <- TG.parseConfig
-    hAPI <- TG.new apiCfg
+    hAPI <- TG.new TG.Config {..}
     return $ Handle {..}
 
 withHandle :: Config -> (Handle IO -> IO a) -> IO a
