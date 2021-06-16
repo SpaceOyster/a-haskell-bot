@@ -1,9 +1,13 @@
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+
 module Bot where
 
 import qualified API (Handle)
+import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.Map (Map)
+import GHC.Generics (Generic)
 
 data Handle m =
     Handle
@@ -19,7 +23,7 @@ data Strings =
         , greeting :: String
         , repeat :: String
         }
-    deriving (Show)
+    deriving (Show, Generic, FromJSON)
 
 hGetState :: Handle m -> IO BotState
 hGetState = readIORef . state
