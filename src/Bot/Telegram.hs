@@ -35,8 +35,8 @@ import Utils (throwDecode)
 data Config =
     Config
         { key :: String
+        , echoMultiplier :: Int
         , strings :: Bot.Strings
-        , defaultRepeat :: Int
         }
     deriving (Show)
 
@@ -68,7 +68,7 @@ fetchUpdates hBot = do
 getUserSettings :: Handle m -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
-    let drepeats = Bot.defaultRepeat hBot
+    let drepeats = Bot.echoMultiplier hBot
         uhash = hashUser user
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     return repeats

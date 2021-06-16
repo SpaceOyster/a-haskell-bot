@@ -10,7 +10,7 @@ data Handle m =
         { hAPI :: API.Handle m
         , state :: IORef BotState
         , strings :: Strings
-        , defaultRepeat :: Int
+        , echoMultiplier :: Int
         }
 
 data Strings =
