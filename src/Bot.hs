@@ -15,6 +15,14 @@ data Handle m =
         , defaultRepeat :: Int
         }
 
+data Strings =
+    Strings
+        { help :: String
+        , greeting :: String
+        , repeat :: String
+        }
+    deriving (Show)
+
 hGetState :: Handle m -> IO BotState
 hGetState = readIORef . state
 
