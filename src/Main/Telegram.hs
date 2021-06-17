@@ -48,3 +48,11 @@ instance A.FromJSON TG.Config where
             stringsO <- o A..: "strings"
             strings <- A.parseJSON (A.Object stringsO)
             return $ TG.Config {..}
+
+instance A.FromJSON Bot.Strings where
+    parseJSON =
+        A.withObject "" $ \o -> do
+            help <- o A..:? "help" A..!= "Default help message"
+            greeting <- o A..:? "greeting" A..!= "Default greeting"
+            repeat <- o A..:? "repeat" A..!= "Default repeat prompt"
+            return $ Bot.Strings {..}

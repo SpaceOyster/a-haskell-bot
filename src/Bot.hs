@@ -1,5 +1,3 @@
-{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
-
 module Bot where
 
 import qualified API (Handle)
@@ -23,7 +21,7 @@ data Strings =
         , greeting :: String
         , repeat :: String
         }
-    deriving (Show, Generic, FromJSON)
+    deriving (Show)
 
 hGetState :: Handle m -> IO BotState
 hGetState = readIORef . state
