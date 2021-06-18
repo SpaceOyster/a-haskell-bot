@@ -1,6 +1,7 @@
 module Bot where
 
 import qualified API (Handle)
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.IORef (IORef, modifyIORef, readIORef)
@@ -38,6 +39,17 @@ greeting = getterStringM greetingM "Default help message"
 
 repeat :: Strings -> String
 repeat = getterStringM repeatM "Default help message"
+
+instance Semigroup Strings where
+    s0 <> s1 =
+        Strings
+            { helpM = helpM s0 <|> helpM s1
+            , greetingM = greetingM s0 <|> greetingM s1
+            , repeatM = repeatM s0 <|> repeatM s1
+            }
+
+instance Monoid Strings where
+    mempty = Strings {helpM = mempty, greetingM = mempty, repeatM = mempty}
 
 hGetState :: Handle m -> IO BotState
 hGetState = readIORef . state
