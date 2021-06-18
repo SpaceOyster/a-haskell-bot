@@ -5,13 +5,15 @@ module Bot.Telegram
     ( module Bot
     , doBotThing
     , withHandle
+    , mergeStrings
     , Config(..)
     ) where
 
 import qualified API
 import qualified API.Telegram as TG
 import API.Telegram.Types
-import Bot
+import Bot hiding (strings)
+import qualified Bot (strings)
 import Control.Exception (finally)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
@@ -39,6 +41,9 @@ data Config =
         , strings :: Bot.Strings
         }
     deriving (Show)
+
+mergeStrings :: Config -> Bot.Strings -> Config
+mergeStrings cfg ss = cfg {strings = strings cfg <> ss}
 
 new :: Config -> IO (Handle IO)
 new cfg@Config {..} = do
