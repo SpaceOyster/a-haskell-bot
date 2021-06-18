@@ -32,13 +32,13 @@ getterStringM get deflt =
             Nothing -> deflt
 
 help :: Strings -> String
-help = getterStringM helpM "Default help message"
+help = getterStringM helpM ""
 
 greeting :: Strings -> String
-greeting = getterStringM greetingM "Default help message"
+greeting = getterStringM greetingM ""
 
 repeat :: Strings -> String
-repeat = getterStringM repeatM "Default help message"
+repeat = getterStringM repeatM ""
 
 instance Semigroup Strings where
     s0 <> s1 =
