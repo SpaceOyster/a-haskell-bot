@@ -26,6 +26,7 @@ run configPath = do
 data AppConfig =
     AppConfig
         { poll_period :: Int
+        , strings :: Bot.Strings
         , telegram :: TG.Config
         }
     deriving (Show)
@@ -36,8 +37,10 @@ instance A.FromJSON AppConfig where
             defaults <- o A..: "defaults"
             poll_period_ms <- defaults A..: "poll_period_ms"
             let poll_period = (1000 *) $ max 500 poll_period_ms
+            strings <- o A..:? "strings" A..!= mempty
             telegramO <- o A..: "telegram"
-            telegram <- A.parseJSON (A.Object telegramO)
+            telegram' <- A.parseJSON (A.Object telegramO)
+            let telegram = telegram' `TG.mergeStrings` strings
             return $ AppConfig {..}
 
 instance A.FromJSON TG.Config where
