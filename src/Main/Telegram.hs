@@ -45,8 +45,7 @@ instance A.FromJSON TG.Config where
         A.withObject "FromJSON Bot.Telegram" $ \o -> do
             echoMultiplier <- o A..: "default-echo-multiplier"
             key <- o A..: "api_key"
-            stringsO <- o A..: "strings"
-            strings <- A.parseJSON (A.Object stringsO)
+            strings <- o A..:? "strings" A..!= mempty
             return $ TG.Config {..}
 
 instance A.FromJSON Bot.Strings where
