@@ -38,8 +38,7 @@ instance A.FromJSON AppConfig where
             poll_period_ms <- defaults A..: "poll_period_ms"
             let poll_period = (1000 *) $ max 500 poll_period_ms
             strings <- o A..:? "strings" A..!= mempty
-            telegramO <- o A..: "telegram"
-            telegram' <- A.parseJSON (A.Object telegramO)
+            telegram' <- o A..: "telegram"
             let telegram = telegram' `TG.mergeStrings` strings
             return $ AppConfig {..}
 
