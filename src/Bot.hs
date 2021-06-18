@@ -17,11 +17,27 @@ data Handle m =
 
 data Strings =
     Strings
-        { help :: String
-        , greeting :: String
-        , repeat :: String
+        { helpM :: Maybe String
+        , greetingM :: Maybe String
+        , repeatM :: Maybe String
         }
     deriving (Show)
+
+getterStringM :: (Strings -> Maybe String) -> String -> (Strings -> String)
+getterStringM get deflt =
+    \ss ->
+        case get ss of
+            Just a -> a
+            Nothing -> deflt
+
+help :: Strings -> String
+help = getterStringM helpM "Default help message"
+
+greeting :: Strings -> String
+greeting = getterStringM greetingM "Default help message"
+
+repeat :: Strings -> String
+repeat = getterStringM repeatM "Default help message"
 
 hGetState :: Handle m -> IO BotState
 hGetState = readIORef . state
