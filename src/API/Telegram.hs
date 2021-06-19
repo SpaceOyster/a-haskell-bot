@@ -4,13 +4,13 @@
 module API.Telegram
     ( module API
     , new
-    , parseConfig
     , rememberLastUpdate
     , getUpdates
     , answerCallbackQuery
     , copyMessage
     , sendMessage
     , sendInlineKeyboard
+    , Config(..)
     ) where
 
 import API
@@ -26,36 +26,30 @@ import System.Environment (getEnv)
 data Config =
     Config
         { key :: String
-        , defaultRepeat :: Integer
+        , echoMultiplier :: Int
         }
 
 new :: Config -> IO (Handle IO)
-new cfg@Config {key, defaultRepeat} = do
+new cfg@Config {key, echoMultiplier} = do
     let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
         httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
     http <- HTTP.new httpConfig
-    lastUpdate <- newIORef defaultRepeat
+    lastUpdate <- newIORef echoMultiplier
     return $ Handle {http, lastUpdate}
 
-parseConfig :: IO Config
-parseConfig = do
-    key <- getEnv "TG_API"
-    return $ Config {key, defaultRepeat = 1}
-
-withHandle :: (Handle IO -> IO a) -> IO a
-withHandle io = do
-    config <- parseConfig
+withHandle :: Config -> (Handle IO -> IO a) -> IO a
+withHandle config io = do
     hAPI <- new config
     io hAPI
 
-getLastUpdateID :: Handle m -> IO Integer
+getLastUpdateID :: Handle m -> IO Int
 getLastUpdateID = readIORef . lastUpdate
 
-setLastUpdateID :: Handle m -> Integer -> IO ()
+setLastUpdateID :: Handle m -> Int -> IO ()
 setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef'` const id
 
 rememberLastUpdate :: Handle m -> Update -> IO ()
-rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
+rememberLastUpdate hAPI u = hAPI `setLastUpdateID` fromInteger (update_id u + 1)
 
 -- API method
 getUpdates :: Handle IO -> IO API.Request

@@ -13,7 +13,7 @@ import qualified HTTP
 data Handle m =
     Handle
         { http :: HTTP.Handle m
-        , lastUpdate :: IORef Integer
+        , lastUpdate :: IORef Int
         }
 
 data Request

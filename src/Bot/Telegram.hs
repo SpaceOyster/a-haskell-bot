@@ -5,12 +5,15 @@ module Bot.Telegram
     ( module Bot
     , doBotThing
     , withHandle
+    , mergeStrings
+    , Config(..)
     ) where
 
 import qualified API
 import qualified API.Telegram as TG
 import API.Telegram.Types
-import Bot
+import Bot hiding (strings)
+import qualified Bot (strings)
 import Control.Exception (finally)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
@@ -34,31 +37,22 @@ import Utils (throwDecode)
 data Config =
     Config
         { key :: String
-        , helpMessage :: String
-        , greeting :: String
-        , repeatPrompt :: String
-        , defaultRepeat :: Int
+        , echoMultiplier :: Int
+        , strings :: Bot.Strings
         }
+    deriving (Show)
+
+mergeStrings :: Config -> Bot.Strings -> Config
+mergeStrings cfg ss = cfg {strings = strings cfg <> ss}
 
 new :: Config -> IO (Handle IO)
 new cfg@Config {..} = do
     state <- newIORef $ BotState {userSettings = mempty}
-    apiCfg <- TG.parseConfig
-    hAPI <- TG.new apiCfg
+    hAPI <- TG.new TG.Config {..}
     return $ Handle {..}
 
-parseConfig :: IO Config
-parseConfig = do
-    key <- getEnv "TG_API"
-    let helpMessage = "This is a help message"
-        greeting = "This is greeting message"
-        repeatPrompt = "How many times you want your messages to be repeated?"
-    return $
-        Config {key, helpMessage, greeting, repeatPrompt, defaultRepeat = 1}
-
-withHandle :: (Handle IO -> IO a) -> IO a
-withHandle io = do
-    config <- parseConfig
+withHandle :: Config -> (Handle IO -> IO a) -> IO a
+withHandle config io = do
     hBot <- new config
     io hBot
 
@@ -78,7 +72,7 @@ fetchUpdates hBot = do
 getUserSettings :: Handle m -> User -> IO Int
 getUserSettings hBot user = do
     st <- Bot.hGetState hBot
-    let drepeats = Bot.defaultRepeat hBot
+    let drepeats = Bot.echoMultiplier hBot
         uhash = hashUser user
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     return repeats
@@ -173,21 +167,23 @@ commands =
     Map.fromList
         [ ( BotCommand {command = "start", description = "Greet User"}
           , Action
-                (\Handle {greeting} Message {chat} ->
-                     TG.sendMessage ((chat :: Chat) & chat_id) greeting))
+                (\Handle {strings} Message {chat} ->
+                     TG.sendMessage ((chat :: Chat) & chat_id) $
+                     Bot.greeting strings))
         , ( BotCommand {command = "help", description = "Show help text"}
           , Action
-                (\Handle {helpMessage} Message {chat} ->
-                     TG.sendMessage ((chat :: Chat) & chat_id) helpMessage))
+                (\Handle {strings} Message {chat} ->
+                     TG.sendMessage ((chat :: Chat) & chat_id) $
+                     Bot.help strings))
         , ( BotCommand
                 { command = "repeat"
                 , description = "Set number of message repeats to make"
                 }
           , Action
-                (\Handle {repeatPrompt} Message {chat} ->
+                (\Handle {strings} Message {chat} ->
                      TG.sendInlineKeyboard
                          ((chat :: Chat) & chat_id)
-                         repeatPrompt
+                         (Bot.repeat strings)
                          repeatKeyboard))
         ]
 
