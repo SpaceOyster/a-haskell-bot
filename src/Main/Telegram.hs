@@ -45,8 +45,8 @@ instance A.FromJSON AppConfig where
 instance A.FromJSON TG.Config where
     parseJSON =
         A.withObject "FromJSON Bot.Telegram" $ \o -> do
-            echoMultiplier <- o A..: "default-echo-multiplier"
-            key <- o A..: "api_key"
+            echoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
+            key <- o A..:? "api_key" A..!= ""
             strings <- o A..:? "strings" A..!= mempty
             return $ TG.Config {..}
 
