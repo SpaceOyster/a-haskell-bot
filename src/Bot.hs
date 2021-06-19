@@ -6,6 +6,7 @@ import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.Map (Map)
+import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 
 data Handle m =
@@ -25,11 +26,7 @@ data Strings =
     deriving (Show)
 
 getterStringM :: (Strings -> Maybe String) -> String -> (Strings -> String)
-getterStringM get deflt =
-    \ss ->
-        case get ss of
-            Just a -> a
-            Nothing -> deflt
+getterStringM get deflt = fromMaybe deflt . get
 
 help :: Strings -> String
 help = getterStringM helpM ""
