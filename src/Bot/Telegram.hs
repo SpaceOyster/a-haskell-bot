@@ -167,29 +167,28 @@ newtype Action m =
 
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
-commands :: (Monad m) => Map.Map BotCommand (Action m)
+commands :: Map.Map BotCommand (Action IO)
 commands =
     Map.fromList
         [ ( BotCommand {command = "start", description = "Greet User"}
           , Action
-                (\Handle {strings} Message {chat} ->
-                     TG.sendMessage ((chat :: Chat) & chat_id) $
-                     Bot.greeting strings))
+                (\Handle {strings} Message {chat} -> do
+                     let address = (chat :: Chat) & chat_id
+                     TG.sendMessage address $ Bot.greeting strings))
         , ( BotCommand {command = "help", description = "Show help text"}
           , Action
-                (\Handle {strings} Message {chat} ->
-                     TG.sendMessage ((chat :: Chat) & chat_id) $
-                     Bot.help strings))
+                (\Handle {strings} Message {chat} -> do
+                     let address = (chat :: Chat) & chat_id
+                     TG.sendMessage address $ Bot.help strings))
         , ( BotCommand
                 { command = "repeat"
                 , description = "Set number of message repeats to make"
                 }
           , Action
-                (\Handle {strings} Message {chat} ->
-                     TG.sendInlineKeyboard
-                         ((chat :: Chat) & chat_id)
-                         (Bot.repeat strings)
-                         repeatKeyboard))
+                (\hBot@Handle {strings} Message {chat, from} -> do
+                     prompt <- hBot & repeatPrompt $ from
+                     let address = (chat :: Chat) & chat_id
+                     TG.sendInlineKeyboard address prompt repeatKeyboard))
         ]
 
 repeatPrompt :: Handle m -> Maybe User -> IO String
@@ -205,8 +204,7 @@ getActionThrow cmd =
         Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
 
 commandsList :: [String]
-commandsList =
-    command <$> Map.keys (commands :: Map.Map BotCommand (Action Maybe))
+commandsList = command <$> Map.keys (commands :: Map.Map BotCommand (Action IO))
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
