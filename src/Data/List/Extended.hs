@@ -13,11 +13,11 @@ changeSubseq l sub new = ping l
     ping l =
         case break (== subHead) l of
             (ls, []) -> ls
-            (ls, rs) -> pong ls rs
-    pong ls rs =
+            (ls, rs) -> ls ++ pong rs
+    pong rs =
         case stripPrefix sub rs of
-            Just rs' -> ls ++ new ++ ping rs'
-            Nothing -> ls ++ head rs : ping (tail rs)
+            Just rs' -> new ++ ping rs'
+            Nothing -> head rs : ping (tail rs)
 
 changeSubseq' :: (Eq a) => [a] -> [a] -> [a] -> [a]
 changeSubseq' l [] _ = l
