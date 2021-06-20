@@ -30,6 +30,7 @@ library
       API.Telegram.Types
       Bot
       Bot.Telegram
+      Data.List.Extended
       Exceptions
       HTTP
       Main.Telegram
