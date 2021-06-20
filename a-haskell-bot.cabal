@@ -33,6 +33,7 @@ library
       Data.List.Extended
       Exceptions
       HTTP
+      Logger
       Main.Telegram
       Utils
   other-modules:
