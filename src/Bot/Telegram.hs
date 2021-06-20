@@ -20,7 +20,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (IORef, newIORef)
-import Data.List.Extended (changeSubseq)
+import Data.List.Extended (replaceSubseq)
 import qualified Data.Map as Map
     ( Map
     , alter
@@ -195,7 +195,7 @@ repeatPrompt :: Handle m -> Maybe User -> IO String
 repeatPrompt hBot userM = do
     mult <- hBot & getUserMultiplierM $ userM
     let prompt' = hBot & Bot.strings & Bot.repeat
-    return $ changeSubseq prompt' "%n" (show mult)
+    return $ replaceSubseq prompt' "%n" (show mult)
 
 getActionThrow :: (MonadThrow m) => String -> m (Action IO)
 getActionThrow cmd =
