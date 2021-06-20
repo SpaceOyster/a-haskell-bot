@@ -77,6 +77,10 @@ getUserMultiplier hBot user = do
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     return repeats
 
+getUserMultiplierM :: Handle m -> Maybe User -> IO Int
+getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
+getUserMultiplierM hBot Nothing = return $ hBot & Bot.echoMultiplier
+
 setUserMultiplier :: Handle m -> User -> Int -> IO ()
 setUserMultiplier hBot user repeats = do
     hBot `Bot.hSetState` \st ->
