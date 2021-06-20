@@ -69,16 +69,16 @@ fetchUpdates hBot = do
     resp <- throwDecode json
     extractUpdates resp
 
-getUserSettings :: Handle m -> User -> IO Int
-getUserSettings hBot user = do
+getUserMultiplier :: Handle m -> User -> IO Int
+getUserMultiplier hBot user = do
     st <- Bot.hGetState hBot
     let drepeats = Bot.echoMultiplier hBot
         uhash = hashUser user
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     return repeats
 
-setUserSettings :: Handle m -> User -> Int -> IO ()
-setUserSettings hBot user repeats = do
+setUserMultiplier :: Handle m -> User -> Int -> IO ()
+setUserMultiplier hBot user repeats = do
     hBot `Bot.hSetState` \st ->
         let uhash = hashUser user
             usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
@@ -128,7 +128,7 @@ reactToCommand hBot msg = do
 reactToMessage :: Handle IO -> Message -> IO [API.Request]
 reactToMessage hBot msg = do
     author <- getAuthorThrow msg
-    n <- hBot `getUserSettings` author
+    n <- hBot `getUserMultiplier` author
     n `replicateM` TG.copyMessage msg
 
 data QueryData
@@ -150,7 +150,7 @@ reactToCallback hBot cq@CallbackQuery {id, from} = do
     let user = from
     case qualifyQuery cdata of
         QDRepeat n -> do
-            setUserSettings hBot user n
+            setUserMultiplier hBot user n
             TG.answerCallbackQuery (hAPI hBot) id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
