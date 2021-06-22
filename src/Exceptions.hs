@@ -9,10 +9,10 @@ import Control.Monad.Catch (Exception(..))
 import Data.Typeable (Typeable)
 
 data Priority
-    = Info
+    = Debug
+    | Info
     | Warning
     | Error
-    | Debug 
     deriving (Eq, Enum, Show)
 
 data BotException =
