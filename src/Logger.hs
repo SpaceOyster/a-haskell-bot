@@ -24,3 +24,9 @@ newLogger ltype =
     case ltype of
         LogStdout' -> pure $ LogStdout IO.stdout
         LogFile' path -> LogFile <$> IO.openFile path IO.AppendMode
+
+closeLogger :: Log -> IO ()
+closeLogger ltype =
+    case ltype of
+        LogStdout hStdout -> IO.hFlush hStdout
+        LogFile hFile -> IO.hClose hFile
