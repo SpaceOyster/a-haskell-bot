@@ -4,8 +4,8 @@
 
 module Logger where
 
+import Control.Applicative ((<|>))
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Data.Function ((&))
 import Prelude hiding (log)
 import qualified System.IO as IO
 
@@ -22,6 +22,16 @@ data Config =
         , verbosity :: Verbosity
         }
 
+instance Semigroup Config where
+    c0 <> c1 =
+        Config
+            { fileM = fileM c0 <|> fileM c1
+            , verbosity =
+                  verbosity (c0 :: Config) `max` verbosity (c1 :: Config)
+            }
+
+instance Monoid Config where
+    mempty = Config {fileM = mempty, verbosity = Debug}
 
 data Handle =
     Handle
