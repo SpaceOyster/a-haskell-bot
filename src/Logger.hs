@@ -1,17 +1,26 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
+
 module Logger where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Function ((&))
 import Prelude hiding (log)
 import qualified System.IO as IO
+
 data Verbosity
     = Debug
     | Info
     | Warning
     | Error
     deriving (Eq, Ord, Show)
+
+data Config =
+    Config
+        { fileM :: Maybe FilePath
+        , verbosity :: Verbosity
+        }
 
 
 data Handle =
