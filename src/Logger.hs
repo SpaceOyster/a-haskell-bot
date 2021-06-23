@@ -1,6 +1,9 @@
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE GADTs #-}
 module Logger where
 
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Function ((&))
 import Prelude hiding (log)
 import qualified System.IO as IO
 data Verbosity
@@ -16,6 +19,17 @@ data Handle =
         { logger :: Log
         , verbosity :: Verbosity
         }
+
+
+log :: MonadIO m => Handle -> Verbosity -> String -> m ()
+log Handle {..} v s =
+    liftIO $
+    if v >= verbosity
+        then IO.hPutStrLn (getLogIO logger) s
+        else noLog
+
+noLog :: (Monad m) => m ()
+noLog = pure ()
 
 data LogType a where
     LogFile' :: FilePath -> LogType IO.Handle
