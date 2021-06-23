@@ -5,7 +5,9 @@
 module Logger where
 
 import Control.Applicative ((<|>))
+import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Data.Maybe (maybe)
 import Prelude hiding (log)
 import qualified System.IO as IO
 
@@ -39,6 +41,12 @@ data Handle =
         , verbosity :: Verbosity
         }
 
+withHandle :: Config -> (Handle -> IO a) -> IO a
+withHandle Config {..} f =
+    bracket
+        (newLogger . maybe LogStdout' LogFile' $ fileM)
+        closeLogger
+        (\logger -> f (Handle {..}))
 
 log :: MonadIO m => Handle -> Verbosity -> String -> m ()
 log Handle {..} v s =
