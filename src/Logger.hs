@@ -18,3 +18,9 @@ data LogType a where
 data Log
     = LogFile IO.Handle
     | LogStdout IO.Handle
+
+newLogger :: LogType IO.Handle -> IO Log
+newLogger ltype =
+    case ltype of
+        LogStdout' -> pure $ LogStdout IO.stdout
+        LogFile' path -> LogFile <$> IO.openFile path IO.AppendMode
