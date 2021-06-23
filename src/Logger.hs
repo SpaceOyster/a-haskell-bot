@@ -14,3 +14,7 @@ data Verbosity
 data LogType a where
     LogFile' :: FilePath -> LogType IO.Handle
     LogStdout' :: LogType IO.Handle
+
+data Log
+    = LogFile IO.Handle
+    | LogStdout IO.Handle
