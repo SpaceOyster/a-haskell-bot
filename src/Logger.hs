@@ -11,6 +11,12 @@ data Verbosity
     deriving (Eq, Ord, Show)
 
 
+data Handle =
+    Handle
+        { logger :: Log
+        , verbosity :: Verbosity
+        }
+
 data LogType a where
     LogFile' :: FilePath -> LogType IO.Handle
     LogStdout' :: LogType IO.Handle
