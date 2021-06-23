@@ -30,3 +30,9 @@ closeLogger ltype =
     case ltype of
         LogStdout hStdout -> IO.hFlush hStdout
         LogFile hFile -> IO.hClose hFile
+
+getLogIO :: Log -> IO.Handle
+getLogIO l =
+    case l of
+        LogFile h -> h
+        LogStdout h -> h
