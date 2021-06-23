@@ -1,7 +1,8 @@
+{-# LANGUAGE GADTs #-}
 module Logger where
 
-log :: String -> IO ()
-log = print
+import Prelude hiding (log)
+import qualified System.IO as IO
 data Verbosity
     = Debug
     | Info
@@ -9,3 +10,7 @@ data Verbosity
     | Error
     deriving (Eq, Ord, Show)
 
+
+data LogType a where
+    LogFile' :: FilePath -> LogType IO.Handle
+    LogStdout' :: LogType IO.Handle
