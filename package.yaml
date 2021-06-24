@@ -28,6 +28,7 @@ dependencies:
 - exceptions
 - containers
 - time
+- text
 
 library:
   source-dirs: src
