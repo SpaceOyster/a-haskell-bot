@@ -2,7 +2,21 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
 
-module Logger where
+module Logger
+    ( Config(..)
+    , Handle(..)
+    , withHandle
+    , log
+    , log'
+    , debug
+    , debug'
+    , info
+    , info'
+    , warning
+    , warning'
+    , error
+    , error'
+    ) where
 
 import Control.Applicative ((<|>))
 import Control.Exception (bracket)
