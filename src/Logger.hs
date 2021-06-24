@@ -51,10 +51,12 @@ withHandle Config {..} f =
 
 log :: MonadIO m => Handle -> Verbosity -> String -> m ()
 log Handle {..} v s =
-    liftIO $
-    if v >= verbosity
-        then IO.hPutStrLn (getLogIO logger) s
-        else noLog
+    liftIO $ do
+        ts <- timeStamp
+        if v >= verbosity
+            then IO.hPutStrLn (getLogIO logger) $
+                 ts <> " " <> show v <> " " <> s
+            else noLog
 
 noLog :: (Monad m) => m ()
 noLog = pure ()
