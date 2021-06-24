@@ -15,6 +15,13 @@ import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
 import Prelude hiding (error, log)
 import qualified System.IO as IO
+    ( Handle
+    , IOMode(..)
+    , hClose
+    , hFlush
+    , openFile
+    , stdout
+    )
 
 data Verbosity
     = Debug
