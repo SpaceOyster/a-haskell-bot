@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
 
 module Logger where
@@ -55,13 +56,13 @@ withHandle Config {..} f =
         closeLogger
         (\logger -> f (Handle {..}))
 
-log :: MonadIO m => Handle -> Verbosity -> String -> m ()
+log :: MonadIO m => Handle -> Verbosity -> T.Text -> m ()
 log Handle {..} v s =
     liftIO $ do
         ts <- timeStamp
         if v >= verbosity
-            then IO.hPutStrLn (getLogIO logger) $
-                 ts <> " " <> show v <> " " <> s
+            then T.hPutStrLn (getLogIO logger) $
+                 ts <> " " <> verbToText v <> " " <> s
             else noLog
 
 noLog :: (Monad m) => m ()
