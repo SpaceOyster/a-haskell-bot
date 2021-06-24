@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
 
 module Logger where
@@ -58,15 +57,15 @@ log Handle {..} v s =
 noLog :: (Monad m) => m ()
 noLog = pure ()
 
-data LogType a where
-    LogFile' :: FilePath -> LogType IO.Handle
-    LogStdout' :: LogType IO.Handle
+data LogType
+    = LogFile' FilePath
+    | LogStdout'
 
 data Log
     = LogFile IO.Handle
     | LogStdout IO.Handle
 
-newLogger :: LogType IO.Handle -> IO Log
+newLogger :: LogType -> IO Log
 newLogger ltype =
     case ltype of
         LogStdout' -> pure $ LogStdout IO.stdout
