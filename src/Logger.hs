@@ -93,7 +93,7 @@ getLogIO l =
         LogFile h -> h
         LogStdout h -> h
 
-timeStamp :: IO String
+timeStamp :: IO T.Text
 timeStamp = do
     time <- Time.getZonedTime
-    pure $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
+    pure . T.pack $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
