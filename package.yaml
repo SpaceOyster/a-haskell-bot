@@ -27,6 +27,7 @@ dependencies:
 - aeson
 - exceptions
 - containers
+- time
 
 library:
   source-dirs: src
