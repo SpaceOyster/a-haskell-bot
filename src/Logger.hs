@@ -6,7 +6,10 @@ module Logger where
 import Control.Applicative ((<|>))
 import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.Char as Char (toUpper)
 import Data.Maybe (maybe)
+import qualified Data.Text as T (Text, pack)
+import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
 import Prelude hiding (log)
@@ -18,6 +21,9 @@ data Verbosity
     | Warning
     | Error
     deriving (Eq, Ord, Show)
+
+verbToText :: Verbosity -> T.Text
+verbToText = T.pack . fmap Char.toUpper . show
 
 data Config =
     Config
