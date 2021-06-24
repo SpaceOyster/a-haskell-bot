@@ -7,6 +7,8 @@ import Control.Applicative ((<|>))
 import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Maybe (maybe)
+import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
+import qualified Data.Time.LocalTime as Time (getZonedTime)
 import Prelude hiding (log)
 import qualified System.IO as IO
 
@@ -82,3 +84,8 @@ getLogIO l =
     case l of
         LogFile h -> h
         LogStdout h -> h
+
+timeStamp :: IO String
+timeStamp = do
+    time <- Time.getZonedTime
+    pure $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
