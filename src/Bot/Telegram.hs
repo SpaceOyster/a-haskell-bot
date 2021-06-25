@@ -32,6 +32,7 @@ import qualified Data.Map as Map
     )
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
+import qualified Logger
 import System.Environment (getEnv)
 import Utils (throwDecode)
 
@@ -52,8 +53,8 @@ new cfg@Config {..} = do
     hAPI <- TG.new TG.Config {..}
     return $ Handle {..}
 
-withHandle :: Config -> (Handle IO -> IO a) -> IO a
-withHandle config io = do
+withHandle :: Config -> Logger.Handle -> (Handle IO -> IO a) -> IO a
+withHandle config hLog io = do
     hBot <- new config
     io hBot
 
