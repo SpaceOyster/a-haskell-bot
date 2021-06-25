@@ -1,6 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 
 module Logger
     ( Config(..)
