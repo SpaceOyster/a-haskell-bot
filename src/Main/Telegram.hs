@@ -22,7 +22,8 @@ run :: FilePath -> IO ()
 run configPath = do
     json <- BL.readFile configPath
     AppConfig {..} <- U.throwDecode json
-    TG.withHandle telegram $ flip loop poll_period
+    Logger.withHandle logger $ \hLog -> do
+        TG.withHandle telegram hLog $ flip loop poll_period
 
 data AppConfig =
     AppConfig
