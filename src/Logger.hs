@@ -82,6 +82,13 @@ instance Semigroup Config where
 instance Monoid Config where
     mempty = Config {file = mempty, verbosity = Info}
 
+instance A.FromJSON Config where
+    parseJSON =
+        A.withObject "FromJSON Logger.Config" $ \o -> do
+            file <- o A..:? "file"
+            verbosity <- o A..:? "verbosity" A..!= Info
+            pure $ Config {..}
+
 data Handle =
     Handle
         { logger :: Log
