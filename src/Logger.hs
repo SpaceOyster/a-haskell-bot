@@ -21,9 +21,16 @@ module Logger
 import Control.Applicative ((<|>))
 import Control.Exception (bracket)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.Aeson as A
+    ( FromJSON(..)
+    , (.!=)
+    , (.:?)
+    , withObject
+    , withText
+    )
 import qualified Data.Char as Char (toUpper)
 import Data.Maybe (maybe)
-import qualified Data.Text as T (Text, pack)
+import qualified Data.Text as T (Text, pack, unpack)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
@@ -46,6 +53,16 @@ data Verbosity
 
 verbToText :: Verbosity -> T.Text
 verbToText = T.pack . fmap Char.toUpper . show
+
+instance A.FromJSON Verbosity where
+    parseJSON =
+        A.withText "FromJSON Fugacious.Logger.Verbosity" $ \t ->
+            case t of
+                "debug" -> pure Debug
+                "info" -> pure Info
+                "warning" -> pure Warning
+                "error" -> pure Error
+                _ -> fail $ "Unknown verbosity: " ++ T.unpack t
 
 data Config =
     Config
