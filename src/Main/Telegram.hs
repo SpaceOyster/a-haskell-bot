@@ -23,6 +23,7 @@ run configPath = do
     json <- BL.readFile configPath
     AppConfig {..} <- U.throwDecode json
     Logger.withHandle logger $ \hLog -> do
+        Logger.info' hLog "Trying to initiate Telegram bot"
         TG.withHandle telegram hLog $ flip loop poll_period
 
 data AppConfig =
