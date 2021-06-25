@@ -9,6 +9,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as BL
+import qualified Logger
 import qualified Utils as U (throwDecode)
 
 loop :: Bot.Handle IO -> Int -> IO ()
@@ -27,6 +28,7 @@ data AppConfig =
     AppConfig
         { poll_period :: Int
         , strings :: Bot.Strings
+        , logger :: Logger.Config
         , telegram :: TG.Config
         }
     deriving (Show)
@@ -38,6 +40,7 @@ instance A.FromJSON AppConfig where
             poll_period_ms <- defaults A..: "poll_period_ms"
             let poll_period = (1000 *) $ max 500 poll_period_ms
             strings <- o A..:? "strings" A..!= mempty
+            logger <- o A..:? "logger" A..!= mempty
             telegram' <- o A..: "telegram"
             let telegram = telegram' `TG.mergeStrings` strings
             return $ AppConfig {..}
