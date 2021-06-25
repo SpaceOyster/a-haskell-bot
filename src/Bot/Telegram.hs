@@ -47,15 +47,20 @@ data Config =
 mergeStrings :: Config -> Bot.Strings -> Config
 mergeStrings cfg ss = cfg {strings = strings cfg <> ss}
 
-new :: Config -> IO (Handle IO)
-new cfg@Config {..} = do
+new :: Config -> Logger.Handle -> IO (Handle IO)
+new cfg@Config {..} hLog = do
+    Logger.debug' hLog $ "Initiating BotState"
     state <- newIORef $ BotState {userSettings = mempty}
+    Logger.info' hLog $ "Trying to initiate API"
     hAPI <- TG.new TG.Config {..}
+    Logger.debug' hLog $ "Returning initiated Bot.Handle"
     return $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle IO -> IO a) -> IO a
 withHandle config hLog io = do
-    hBot <- new config
+    Logger.debug' hLog $ "Initiating Bot.Handle with " <> show config
+    hBot <- new config hLog
+    Logger.debug' hLog $ "Launching function passed to Bot.withHandle"
     io hBot
 
 doBotThing :: Handle IO -> IO [L8.ByteString]
