@@ -49,20 +49,21 @@ verbToText = T.pack . fmap Char.toUpper . show
 
 data Config =
     Config
-        { fileM :: Maybe FilePath
+        { file :: Maybe FilePath
         , verbosity :: Verbosity
         }
+    deriving (Show)
 
 instance Semigroup Config where
     c0 <> c1 =
         Config
-            { fileM = fileM c0 <|> fileM c1
+            { file = file c0 <|> file c1
             , verbosity =
                   verbosity (c0 :: Config) `max` verbosity (c1 :: Config)
             }
 
 instance Monoid Config where
-    mempty = Config {fileM = mempty, verbosity = Debug}
+    mempty = Config {file = mempty, verbosity = Info}
 
 data Handle =
     Handle
@@ -73,7 +74,7 @@ data Handle =
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle Config {..} f =
     bracket
-        (newLogger . maybe LogTypeStdout LogTypeFile $ fileM)
+        (newLogger . maybe LogTypeStdout LogTypeFile $ file)
         closeLogger
         (\logger -> f (Handle {..}))
 
