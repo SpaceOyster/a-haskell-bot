@@ -100,7 +100,10 @@ withHandle Config {..} f =
     bracket
         (newLogger . maybe LogTypeStdout LogTypeFile $ file)
         closeLogger
-        (\logger -> f (Handle {..}))
+        (\logger -> do
+             let hLog = Handle {..}
+             info' hLog "Logger initiated"
+             f hLog)
 
 log :: MonadIO m => Handle -> Verbosity -> T.Text -> m ()
 log Handle {..} v s =
