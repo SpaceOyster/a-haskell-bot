@@ -8,10 +8,12 @@ import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
+import qualified Logger
 
 data Handle m =
     Handle
         { hAPI :: API.Handle m
+        , hLog :: Logger.Handle
         , state :: IORef BotState
         , strings :: Strings
         , echoMultiplier :: Int
@@ -49,10 +51,14 @@ instance Monoid Strings where
     mempty = Strings {helpM = mempty, greetingM = mempty, repeatM = mempty}
 
 hGetState :: Handle m -> IO BotState
-hGetState = readIORef . state
+hGetState hBot = do
+    Logger.debug' (hLog hBot) "Getting BotState"
+    readIORef $ state hBot
 
 hSetState :: Handle m -> (BotState -> BotState) -> IO ()
-hSetState hAPI f = state hAPI `modifyIORef` f
+hSetState hBot f = do
+    Logger.debug' (hLog hBot) "Setting BotState"
+    state hBot `modifyIORef` f
 
 type Hash = L8.ByteString
 
