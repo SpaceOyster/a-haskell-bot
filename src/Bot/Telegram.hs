@@ -1,5 +1,6 @@
-{-# LANGUAGE DuplicateRecordFields, NamedFieldPuns, RecordWildCards
-  #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Bot.Telegram
     ( module Bot
