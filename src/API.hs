@@ -9,11 +9,13 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef
 import qualified HTTP
+import qualified Logger
 
 data Handle m =
     Handle
         { http :: HTTP.Handle m
-        , lastUpdate :: IORef Int
+        , hLog :: Logger.Handle
+        , lastUpdate :: IORef Integer
         }
 
 data Request
