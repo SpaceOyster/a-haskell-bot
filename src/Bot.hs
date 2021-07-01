@@ -58,6 +58,7 @@ hGetState hBot = do
 hSetState :: Handle m -> (BotState -> BotState) -> IO ()
 hSetState hBot f = do
     Logger.debug' (hLog hBot) "Setting BotState"
+    Logger.debug' (hLog hBot) "Appying state BotState mutating function"
     state hBot `modifyIORef` f
 
 type Hash = L8.ByteString
