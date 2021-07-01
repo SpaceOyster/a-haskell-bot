@@ -38,7 +38,7 @@ new cfg@Config {key} hLog = do
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
     lastUpdate <- newIORef 0
-    return $ Handle {http, hLog, lastUpdate}
+    pure $ Handle {http, hLog, lastUpdate}
 
 withHandle :: Config -> Logger.Handle -> (Handle IO -> IO a) -> IO a
 withHandle config hLog io = do
@@ -57,16 +57,16 @@ rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
 -- API method
 getUpdates :: Handle IO -> IO API.Request
 getUpdates hAPI@Handle {hLog} =
-    bracket (getLastUpdateID hAPI) (const $ return ()) $ \id -> do
+    bracket (getLastUpdateID hAPI) (const $ pure ()) $ \id -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
         let json = encode . object $ ["offset" .= id]
-        return $ POST "getUpdates" json
+        pure $ POST "getUpdates" json
 
 -- API method
 answerCallbackQuery :: (Monad m) => Handle m -> String -> m API.Request
 answerCallbackQuery hAPI id = do
     let json = encode . object $ ["callback_query_id" .= id]
-    return $ POST "answerCallbackQuery" json
+    pure $ POST "answerCallbackQuery" json
 
 -- API method
 copyMessage :: (Monad m) => Message -> m API.Request
@@ -77,13 +77,13 @@ copyMessage msg@Message {message_id, chat} = do
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    return $ POST "copyMessage" json
+    pure $ POST "copyMessage" json
 
 -- API method
 sendMessage :: (Monad m) => Integer -> String -> m API.Request
 sendMessage chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    return $ POST "sendMessage" json
+    pure $ POST "sendMessage" json
 
 -- API method
 sendInlineKeyboard ::
@@ -92,4 +92,4 @@ sendInlineKeyboard chatId prompt keyboard = do
     let json =
             encode . object $
             ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
-    return $ POST "sendMessage" json
+    pure $ POST "sendMessage" json

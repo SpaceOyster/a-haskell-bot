@@ -31,7 +31,7 @@ data Handle m =
 new :: Config -> IO (Handle IO)
 new cfg = do
     man <- newManager tlsManagerSettings
-    return $ Handle {get = constructGet cfg man, post = constructPost cfg man}
+    pure $ Handle {get = constructGet cfg man, post = constructPost cfg man}
 
 constructGet :: Config -> Manager -> String -> IO L8.ByteString
 constructGet cfg man apiMethod =

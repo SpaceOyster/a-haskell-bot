@@ -54,7 +54,7 @@ new cfg@Config {..} hLog = do
     Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
     state <- newIORef $ BotState {userSettings = mempty}
     hAPI <- TG.new TG.Config {..} hLog
-    return $ Handle {..}
+    pure $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle IO -> IO a) -> IO a
 withHandle config hLog io = do
@@ -84,7 +84,7 @@ getUserMultiplier hBot user = do
     let drepeats = Bot.echoMultiplier hBot
         uhash = hashUser user
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
-    return repeats
+    pure repeats
 
 getUserMultiplierM :: Handle m -> Maybe User -> IO Int
 getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
@@ -92,7 +92,7 @@ getUserMultiplierM hBot@Handle {hLog} Nothing = do
     Logger.warning'
         hLog
         "Telegram: No User info, returning default echo multiplier"
-    return $ hBot & Bot.echoMultiplier
+    pure $ hBot & Bot.echoMultiplier
 
 setUserMultiplier :: Handle m -> User -> Int -> IO ()
 setUserMultiplier hBot@Handle {hLog} user repeats = do
@@ -107,9 +107,9 @@ reactToUpdates :: Handle IO -> [Update] -> IO [API.Request]
 reactToUpdates hBot@Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
     requests <- join <$> mapM (reactToUpdate hBot) updates
-    return requests `finally` remember updates
+    pure requests `finally` remember updates
   where
-    remember [] = return ()
+    remember [] = pure ()
     remember us = TG.rememberLastUpdate (hAPI hBot) $ last us
 
 data Entity
@@ -217,12 +217,12 @@ repeatPrompt :: Handle m -> Maybe User -> IO String
 repeatPrompt hBot userM = do
     mult <- hBot & getUserMultiplierM $ userM
     let prompt' = hBot & Bot.strings & Bot.repeat
-    return $ replaceSubseq prompt' "%n" (show mult)
+    pure $ replaceSubseq prompt' "%n" (show mult)
 
 getActionThrow :: (MonadThrow m) => String -> m (Action IO)
 getActionThrow cmd =
     case Map.lookup cmd $ command `Map.mapKeys` commands of
-        Just a -> return a
+        Just a -> pure a
         Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
 
 commandsList :: [String]

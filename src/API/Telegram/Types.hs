@@ -41,7 +41,7 @@ data Update =
 getMessageThrow :: (MonadThrow m) => Update -> m Message
 getMessageThrow Update {update_id, message} =
   case message of
-    Just t -> return t
+    Just t -> pure t
     Nothing ->
       throwM $
       Ex Priority.Info $ "Update " ++ show update_id ++ " has no message"
@@ -59,7 +59,7 @@ data Message =
 getAuthorThrow :: (MonadThrow m) => Message -> m User
 getAuthorThrow Message {message_id, from} =
   case from of
-    Just t -> return t
+    Just t -> pure t
     Nothing ->
       throwM $
       Ex Priority.Info $ "Message " ++ show message_id ++ " has no author"
@@ -67,7 +67,7 @@ getAuthorThrow Message {message_id, from} =
 getTextThrow :: (MonadThrow m) => Message -> m String
 getTextThrow Message {message_id, text} =
   case text of
-    Just t -> return t
+    Just t -> pure t
     Nothing ->
       throwM $
       Ex Priority.Info $ "Message " ++ show message_id ++ " has no text"
@@ -82,7 +82,7 @@ getCommandThrow msg@Message {message_id} = do
   unless (isCommand t) $
     throwM $
     Ex Priority.Info $ "Message " ++ show message_id ++ " is not a command"
-  return . takeWhile (/= ' ') . tail $ t
+  pure . takeWhile (/= ' ') . tail $ t
 
 data BotCommand =
   BotCommand
@@ -104,7 +104,7 @@ data CallbackQuery =
 getQDataThrow :: (MonadThrow m) => CallbackQuery -> m String
 getQDataThrow CallbackQuery {id, query_data} =
   case query_data of
-    Just d -> return d
+    Just d -> pure d
     Nothing ->
       throwM $
       Ex Priority.Info $ "CallbackQuery " ++ show id ++ " has no query data"
@@ -117,7 +117,7 @@ instance FromJSON CallbackQuery where
       message <- o .:? "message"
       inline_message_id <- o .:? "inline_message_id"
       query_data <- o .:? "data"
-      return $ CallbackQuery {..}
+      pure $ CallbackQuery {..}
 
 newtype User =
   User
@@ -181,4 +181,4 @@ extractUpdates res =
   case res of
     Error {error_code, description} ->
       throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
-    Result {result} -> return result
+    Result {result} -> pure result

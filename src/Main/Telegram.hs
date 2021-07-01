@@ -48,7 +48,7 @@ instance A.FromJSON AppConfig where
             logger <- o A..:? "logger" A..!= mempty
             telegram' <- o A..: "telegram"
             let telegram = telegram' `TG.mergeStrings` strings
-            return $ AppConfig {..}
+            pure $ AppConfig {..}
 
 instance A.FromJSON TG.Config where
     parseJSON =
@@ -56,7 +56,7 @@ instance A.FromJSON TG.Config where
             echoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
             key <- o A..:? "api_key" A..!= ""
             strings <- o A..:? "strings" A..!= mempty
-            return $ TG.Config {..}
+            pure $ TG.Config {..}
 
 instance A.FromJSON Bot.Strings where
     parseJSON =
@@ -64,4 +64,4 @@ instance A.FromJSON Bot.Strings where
             helpM <- o A..:? "help"
             greetingM <- o A..:? "greeting"
             repeatM <- o A..:? "repeat"
-            return $ Bot.Strings {..}
+            pure $ Bot.Strings {..}

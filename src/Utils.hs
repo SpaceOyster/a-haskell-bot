@@ -12,4 +12,4 @@ throwDecode :: (MonadThrow m, FromJSON a) => LBS.ByteString -> m a
 throwDecode lbs =
     case eitherDecode lbs of
         Left err -> throwM $ Ex Priority.Warning err
-        Right a -> return a
+        Right a -> pure a
