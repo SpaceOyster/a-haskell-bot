@@ -186,10 +186,7 @@ commands =
                 (\Handle {strings} Message {chat} -> do
                      let address = (chat :: Chat) & chat_id
                      TG.sendMessage address $ Bot.help strings))
-        , ( BotCommand
-                { command = "repeat"
-                , description = "Set number of message repeats to make"
-                }
+        , ( BotCommand {command = "repeat", description = "Set echo multiplier"}
           , Action
                 (\hBot@Handle {strings} Message {chat, from} -> do
                      prompt <- hBot & repeatPrompt $ from
