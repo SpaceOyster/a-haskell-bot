@@ -49,30 +49,31 @@ mergeStrings cfg ss = cfg {strings = strings cfg <> ss}
 
 new :: Config -> Logger.Handle -> IO (Handle IO)
 new cfg@Config {..} hLog = do
-    Logger.debug' hLog $ "Initiating BotState"
+    Logger.info' hLog "Initiating Telegram Bot"
+    Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
     state <- newIORef $ BotState {userSettings = mempty}
-    Logger.info' hLog $ "Trying to initiate API"
-    hAPI <- TG.new TG.Config {..}
-    Logger.debug' hLog $ "Returning initiated Bot.Handle"
+    hAPI <- TG.new TG.Config {..} hLog
     return $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle IO -> IO a) -> IO a
 withHandle config hLog io = do
-    Logger.debug' hLog $ "Initiating Bot.Handle with " <> show config
     hBot <- new config hLog
-    Logger.debug' hLog $ "Launching function passed to Bot.withHandle"
     io hBot
 
 doBotThing :: Handle IO -> IO [L8.ByteString]
-doBotThing hBot = do
+doBotThing hBot@Handle {hLog} = do
     updates <- fetchUpdates hBot
     requests <- reactToUpdates hBot updates
+    Logger.info' hLog $
+        "Telegram: sending " <> show (length requests) <> " responses"
     mapM (hBot & hAPI & API.sendRequest) requests
 
 fetchUpdates :: Handle IO -> IO [Update]
-fetchUpdates hBot = do
+fetchUpdates hBot@Handle {hLog} = do
+    Logger.info' hLog "Telegram: fetching Updates"
     req <- hBot & hAPI & TG.getUpdates
     json <- hBot & hAPI & API.sendRequest $ req
+    Logger.debug' hLog "Telegram: decoding json response"
     resp <- throwDecode json
     extractUpdates resp
 
@@ -86,17 +87,24 @@ getUserMultiplier hBot user = do
 
 getUserMultiplierM :: Handle m -> Maybe User -> IO Int
 getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
-getUserMultiplierM hBot Nothing = return $ hBot & Bot.echoMultiplier
+getUserMultiplierM hBot@Handle {hLog} Nothing = do
+    Logger.warning'
+        hLog
+        "Telegram: No User info, returning default echo multiplier"
+    return $ hBot & Bot.echoMultiplier
 
 setUserMultiplier :: Handle m -> User -> Int -> IO ()
-setUserMultiplier hBot user repeats = do
+setUserMultiplier hBot@Handle {hLog} user repeats = do
+    Logger.debug' hLog $ "Setting echo multiplier to: " <> show repeats
+    Logger.debug' hLog $ "    For User: " <> show user
     hBot `Bot.hSetState` \st ->
         let uhash = hashUser user
             usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
          in st {userSettings = usettings}
 
 reactToUpdates :: Handle IO -> [Update] -> IO [API.Request]
-reactToUpdates hBot updates = do
+reactToUpdates hBot@Handle {hLog} updates = do
+    Logger.info' hLog "Telegram: processing each update"
     requests <- join <$> mapM (reactToUpdate hBot) updates
     return requests `finally` remember updates
   where
@@ -120,7 +128,9 @@ qualifyUpdate u@Update {message, callback_query}
     | otherwise = EOther u
 
 reactToUpdate :: Handle IO -> Update -> IO [API.Request]
-reactToUpdate hBot update = do
+reactToUpdate hBot@Handle {hLog} update = do
+    Logger.debug' hLog $
+        "Telegram: Qualifying Update with id " <> show (update_id update)
     let qu = qualifyUpdate update
     case qu of
         ECommand msg -> (: []) <$> reactToCommand hBot msg
@@ -131,15 +141,20 @@ reactToUpdate hBot update = do
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
 reactToCommand :: Handle IO -> Message -> IO API.Request
-reactToCommand hBot msg = do
+reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
     cmd <- getCommandThrow msg
+    Logger.debug' hLog $
+        "Telegram: Got command" <> cmd <> " in update id " <> show message_id
     action <- getActionThrow cmd
     runAction action hBot msg
 
 reactToMessage :: Handle IO -> Message -> IO [API.Request]
-reactToMessage hBot msg = do
+reactToMessage hBot@Handle {hLog} msg@Message {message_id} = do
     author <- getAuthorThrow msg
     n <- hBot `getUserMultiplier` author
+    Logger.debug' hLog $
+        "Telegram: generating " <>
+        show n <> " echoes for Message: " <> show message_id
     n `replicateM` TG.copyMessage msg
 
 data QueryData
@@ -156,11 +171,14 @@ qualifyQuery qstring =
     (qtype, qdata) = break (== '_') qstring
 
 reactToCallback :: Handle IO -> CallbackQuery -> IO API.Request
-reactToCallback hBot cq@CallbackQuery {id, from} = do
+reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
+    Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
     cdata <- getQDataThrow cq
     let user = from
     case qualifyQuery cdata of
         QDRepeat n -> do
+            Logger.info' hLog $
+                "Setting echo multiplier = " <> show n <> " for " <> show user
             setUserMultiplier hBot user n
             TG.answerCallbackQuery (hAPI hBot) id
         QDOther s ->
