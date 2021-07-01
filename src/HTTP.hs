@@ -28,9 +28,6 @@ data Handle m =
         , post :: String -> L8.ByteString -> m L8.ByteString
         }
 
-parseConfig :: IO Config
-parseConfig = undefined
-
 new :: Config -> IO (Handle IO)
 new cfg = do
     man <- newManager tlsManagerSettings
