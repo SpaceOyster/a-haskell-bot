@@ -27,7 +27,6 @@ import System.Environment (getEnv)
 data Config =
     Config
         { key :: String
-        , echoMultiplier :: Int
         }
 
 new :: Config -> Logger.Handle -> IO (Handle IO)
