@@ -56,10 +56,11 @@ rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
 
 -- API method
 getUpdates :: Handle IO -> IO API.Request
-getUpdates hAPI =
-    bracket (getLastUpdateID hAPI) (const $ return ()) $ \id ->
+getUpdates hAPI@Handle {hLog} =
+    bracket (getLastUpdateID hAPI) (const $ return ()) $ \id -> do
+        Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
         let json = encode . object $ ["offset" .= id]
-         in return $ POST "getUpdates" json
+        return $ POST "getUpdates" json
 
 -- API method
 answerCallbackQuery :: (Monad m) => Handle m -> String -> m API.Request
