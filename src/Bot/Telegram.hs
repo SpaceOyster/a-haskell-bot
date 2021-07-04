@@ -280,3 +280,7 @@ isCommandE Message {text} =
     case text of
         Just t -> isCommand t && isKnownCommand t
         Nothing -> False
+
+isCommand :: String -> Bool
+isCommand "" = False
+isCommand s = (== '/') . head $ s
