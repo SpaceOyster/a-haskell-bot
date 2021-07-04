@@ -194,6 +194,12 @@ data Command
     | UnknownCommand
     deriving (Show, Enum, Bounded)
 
+describe :: Command -> String
+describe Start = "Greet User"
+describe Help = "Show help text"
+describe Repeat = "Set echo multiplier"
+describe UnknownCommand = "Unknown Command"
+
 newtype Action m =
     Action
         { runAction :: Handle m -> Message -> m API.Request
