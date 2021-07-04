@@ -185,6 +185,15 @@ reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
+-- | command has to be between 1-32 chars long
+-- description hat to be between 3-256 chars long
+data Command
+    = Start
+    | Help
+    | Repeat
+    | UnknownCommand
+    deriving (Show, Enum, Bounded)
+
 newtype Action m =
     Action
         { runAction :: Handle m -> Message -> m API.Request
