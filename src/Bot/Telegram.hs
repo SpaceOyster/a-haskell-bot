@@ -278,7 +278,7 @@ isKnownCommand s = tail s `elem` commandsList
 isCommandE :: Message -> Bool
 isCommandE Message {text} =
     case text of
-        Just t -> isCommand t && isKnownCommand t
+        Just t -> isCommand t
         Nothing -> False
 
 isCommand :: String -> Bool
