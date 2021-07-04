@@ -208,6 +208,18 @@ parseCommand s =
         "repeat" -> Repeat
         _ -> UnknownCommand
 
+commandAction :: Command -> Action IO
+commandAction cmd =
+    Action $ \hBot@Handle {..} Message {..} -> do
+        let address = (chat :: Chat) & chat_id
+        case cmd of
+            Start -> TG.sendMessage address $ Bot.greeting strings
+            Help -> TG.sendMessage address $ Bot.help strings
+            Repeat -> do
+                prompt <- hBot & repeatPrompt $ from
+                TG.sendInlineKeyboard address prompt repeatKeyboard
+            UnknownCommand -> TG.sendMessage address $ Bot.unknown strings
+
 newtype Action m =
     Action
         { runAction :: Handle m -> Message -> m API.Request
