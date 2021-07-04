@@ -23,15 +23,7 @@ import Data.Char (toLower)
 import Data.Function ((&))
 import Data.IORef (IORef, newIORef)
 import Data.List.Extended (replaceSubseq)
-import qualified Data.Map as Map
-    ( Map
-    , alter
-    , findWithDefault
-    , fromList
-    , keys
-    , lookup
-    , mapKeys
-    )
+import qualified Data.Map as Map (Map, alter, findWithDefault)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified Logger
@@ -232,43 +224,11 @@ newtype Action m =
         { runAction :: Handle m -> Message -> m API.Request
         }
 
--- | command has to be between 1-32 chars long
--- description hat to be between 3-256 chars long
-commands :: Map.Map BotCommand (Action IO)
-commands =
-    Map.fromList
-        [ ( BotCommand {command = "start", description = "Greet User"}
-          , Action
-                (\Handle {strings} Message {chat} -> do
-                     let address = (chat :: Chat) & chat_id
-                     TG.sendMessage address $ Bot.greeting strings))
-        , ( BotCommand {command = "help", description = "Show help text"}
-          , Action
-                (\Handle {strings} Message {chat} -> do
-                     let address = (chat :: Chat) & chat_id
-                     TG.sendMessage address $ Bot.help strings))
-        , ( BotCommand {command = "repeat", description = "Set echo multiplier"}
-          , Action
-                (\hBot@Handle {strings} Message {chat, from} -> do
-                     prompt <- hBot & repeatPrompt $ from
-                     let address = (chat :: Chat) & chat_id
-                     TG.sendInlineKeyboard address prompt repeatKeyboard))
-        ]
-
 repeatPrompt :: Handle m -> Maybe User -> IO String
 repeatPrompt hBot userM = do
     mult <- hBot & getUserMultiplierM $ userM
     let prompt' = hBot & Bot.strings & Bot.repeat
     pure $ replaceSubseq prompt' "%n" (show mult)
-
-getActionThrow :: (MonadThrow m) => String -> m (Action IO)
-getActionThrow cmd =
-    case Map.lookup cmd $ command `Map.mapKeys` commands of
-        Just a -> pure a
-        Nothing -> throwM $ Ex Priority.Info $ "Unknown command: " ++ cmd
-
-commandsList :: [String]
-commandsList = command <$> Map.keys (commands :: Map.Map BotCommand (Action IO))
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard =
@@ -277,9 +237,6 @@ repeatKeyboard =
     button x =
         InlineKeyboardButton
             {text = show x, callback_data = "repeat_" ++ show x}
-
-isKnownCommand :: String -> Bool
-isKnownCommand s = tail s `elem` commandsList
 
 isCommandE :: Message -> Bool
 isCommandE Message {text} =
