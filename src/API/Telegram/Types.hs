@@ -7,7 +7,6 @@
 
 module API.Telegram.Types where
 
-import Control.Monad (unless)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
   ( FromJSON(..)
@@ -71,18 +70,6 @@ getTextThrow Message {message_id, text} =
     Nothing ->
       throwM $
       Ex Priority.Info $ "Message " ++ show message_id ++ " has no text"
-
-isCommand :: String -> Bool
-isCommand "" = False
-isCommand s = (== '/') . head $ s
-
-getCommandThrow :: (MonadThrow m) => Message -> m String
-getCommandThrow msg@Message {message_id} = do
-  t <- getTextThrow msg
-  unless (isCommand t) $
-    throwM $
-    Ex Priority.Info $ "Message " ++ show message_id ++ " is not a command"
-  pure . takeWhile (/= ' ') . tail $ t
 
 data BotCommand =
   BotCommand
