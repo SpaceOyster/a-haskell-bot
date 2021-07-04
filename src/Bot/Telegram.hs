@@ -19,6 +19,7 @@ import Control.Exception (finally)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Char (toLower)
 import Data.Function ((&))
 import Data.IORef (IORef, newIORef)
 import Data.List.Extended (replaceSubseq)
