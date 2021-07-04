@@ -200,6 +200,14 @@ describe Help = "Show help text"
 describe Repeat = "Set echo multiplier"
 describe UnknownCommand = "Unknown Command"
 
+parseCommand :: String -> Command
+parseCommand s =
+    case toLower <$> s of
+        "start" -> Start
+        "help" -> Help
+        "repeat" -> Repeat
+        _ -> UnknownCommand
+
 newtype Action m =
     Action
         { runAction :: Handle m -> Message -> m API.Request
