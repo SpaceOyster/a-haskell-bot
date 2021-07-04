@@ -64,4 +64,5 @@ instance A.FromJSON Bot.Strings where
             helpM <- o A..:? "help"
             greetingM <- o A..:? "greeting"
             repeatM <- o A..:? "repeat"
+            unknownM <- o A..:? "unknown"
             pure $ Bot.Strings {..}

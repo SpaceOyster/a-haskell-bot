@@ -24,6 +24,7 @@ data Strings =
         { helpM :: Maybe String
         , greetingM :: Maybe String
         , repeatM :: Maybe String
+        , unknownM :: Maybe String
         }
     deriving (Show)
 
@@ -39,16 +40,26 @@ greeting = getterStringM greetingM ""
 repeat :: Strings -> String
 repeat = getterStringM repeatM ""
 
+unknown :: Strings -> String
+unknown = getterStringM unknownM ""
+
 instance Semigroup Strings where
     s0 <> s1 =
         Strings
             { helpM = helpM s0 <|> helpM s1
             , greetingM = greetingM s0 <|> greetingM s1
             , repeatM = repeatM s0 <|> repeatM s1
+            , unknownM = unknownM s0 <|> unknownM s1
             }
 
 instance Monoid Strings where
-    mempty = Strings {helpM = mempty, greetingM = mempty, repeatM = mempty}
+    mempty =
+        Strings
+            { helpM = mempty
+            , greetingM = mempty
+            , repeatM = mempty
+            , unknownM = mempty
+            }
 
 hGetState :: Handle m -> IO BotState
 hGetState hBot = do
