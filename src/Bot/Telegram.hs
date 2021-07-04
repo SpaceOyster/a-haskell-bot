@@ -221,6 +221,11 @@ commandAction cmd =
                 TG.sendInlineKeyboard address prompt repeatKeyboard
             UnknownCommand -> TG.sendMessage address $ Bot.unknown strings
 
+getCommandThrow :: (MonadThrow m) => Message -> m Command
+getCommandThrow msg = do
+    t <- getTextThrow msg
+    pure . parseCommand . takeWhile (/= ' ') . tail $ t
+
 newtype Action m =
     Action
         { runAction :: Handle m -> Message -> m API.Request
