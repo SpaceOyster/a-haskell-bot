@@ -21,13 +21,12 @@ import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Function ((&))
-import Data.IORef (IORef, newIORef)
+import Data.IORef (newIORef)
 import Data.List.Extended (replaceSubseq)
-import qualified Data.Map as Map (Map, alter, findWithDefault)
+import qualified Data.Map as Map (alter, findWithDefault)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified Logger
-import System.Environment (getEnv)
 import Utils (throwDecode)
 
 data Config =
