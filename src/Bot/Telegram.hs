@@ -146,8 +146,9 @@ reactToCommand :: Handle IO -> Message -> IO API.Request
 reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
     cmd <- getCommandThrow msg
     Logger.debug' hLog $
-        "Telegram: Got command" <> cmd <> " in update id " <> show message_id
-    action <- getActionThrow cmd
+        "Telegram: Got command" <>
+        show cmd <> " in message id " <> show message_id
+    let action = commandAction cmd
     runAction action hBot msg
 
 reactToMessage :: Handle IO -> Message -> IO [API.Request]
