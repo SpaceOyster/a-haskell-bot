@@ -19,7 +19,6 @@ import Control.Exception (finally)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Char (toLower)
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import Data.List.Extended (replaceSubseq)
@@ -178,29 +177,6 @@ reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
--- | command has to be between 1-32 chars long
--- description hat to be between 3-256 chars long
-data Command
-    = Start
-    | Help
-    | Repeat
-    | UnknownCommand
-    deriving (Show, Enum, Bounded)
-
-describe :: Command -> String
-describe Start = "Greet User"
-describe Help = "Show help text"
-describe Repeat = "Set echo multiplier"
-describe UnknownCommand = "Unknown Command"
-
-parseCommand :: String -> Command
-parseCommand s =
-    case toLower <$> s of
-        "start" -> Start
-        "help" -> Help
-        "repeat" -> Repeat
-        _ -> UnknownCommand
-
 commandAction :: Command -> Action IO
 commandAction cmd =
     Action $ \hBot@Handle {..} Message {..} -> do
@@ -242,7 +218,3 @@ isCommandE Message {text} =
     case text of
         Just t -> isCommand t
         Nothing -> False
-
-isCommand :: String -> Bool
-isCommand "" = False
-isCommand s = (== '/') . head $ s

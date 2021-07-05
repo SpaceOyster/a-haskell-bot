@@ -4,6 +4,7 @@ import qualified API (Handle)
 import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Char (toLower)
 import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.Map (Map)
 import Data.Maybe (fromMaybe)
@@ -78,3 +79,30 @@ newtype BotState =
     BotState
         { userSettings :: Map Hash Int
         }
+
+-- | command has to be between 1-32 chars long
+-- description hat to be between 3-256 chars long
+data Command
+    = Start
+    | Help
+    | Repeat
+    | UnknownCommand
+    deriving (Show, Enum, Bounded)
+
+describe :: Command -> String
+describe Start = "Greet User"
+describe Help = "Show help text"
+describe Repeat = "Set echo multiplier"
+describe UnknownCommand = "Unknown Command"
+
+parseCommand :: String -> Command
+parseCommand s =
+    case toLower <$> s of
+        "start" -> Start
+        "help" -> Help
+        "repeat" -> Repeat
+        _ -> UnknownCommand
+
+isCommand :: String -> Bool
+isCommand "" = False
+isCommand s = (== '/') . head $ s
