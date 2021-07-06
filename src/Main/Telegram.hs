@@ -38,6 +38,9 @@ data AppConfig =
         }
     deriving (Show)
 
+mergeStrings :: TG.Config -> Bot.Strings -> TG.Config
+mergeStrings cfg ss = cfg {TG.strings = TG.strings cfg <> ss}
+
 instance A.FromJSON AppConfig where
     parseJSON =
         A.withObject "FromJSON Main.AppConfig" $ \o -> do
@@ -47,7 +50,7 @@ instance A.FromJSON AppConfig where
             strings <- o A..:? "strings" A..!= mempty
             logger <- o A..:? "logger" A..!= mempty
             telegram' <- o A..: "telegram"
-            let telegram = telegram' `TG.mergeStrings` strings
+            let telegram = telegram' `mergeStrings` strings
             pure $ AppConfig {..}
 
 instance A.FromJSON TG.Config where

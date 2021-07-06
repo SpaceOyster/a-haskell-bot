@@ -6,7 +6,6 @@ module Bot.Telegram
     ( module Bot
     , doBotThing
     , withHandle
-    , mergeStrings
     , Config(..)
     ) where
 
@@ -35,9 +34,6 @@ data Config =
         , strings :: Bot.Strings
         }
     deriving (Show)
-
-mergeStrings :: Config -> Bot.Strings -> Config
-mergeStrings cfg ss = cfg {strings = strings cfg <> ss}
 
 new :: Config -> Logger.Handle -> IO (Handle IO)
 new cfg@Config {..} hLog = do
