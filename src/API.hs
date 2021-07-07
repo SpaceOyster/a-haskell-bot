@@ -11,11 +11,12 @@ import Data.IORef
 import qualified HTTP
 import qualified Logger
 
-data Handle m =
+data Handle =
     Handle
-        { http :: HTTP.Handle m
+        { http :: HTTP.Handle
         , hLog :: Logger.Handle
         , lastUpdate :: IORef Integer
+        , baseURL :: String
         }
 
 data Request
@@ -23,13 +24,13 @@ data Request
     | POST String L8.ByteString
     deriving (Show)
 
-get :: (Monad m) => Handle m -> String -> m L8.ByteString
-get hAPI = hAPI & http & HTTP.get
+get :: Handle -> String -> IO L8.ByteString
+get hAPI m = hAPI & http & HTTP.get $ baseURL hAPI <> m
 
-post :: (Monad m) => Handle m -> String -> L8.ByteString -> m L8.ByteString
-post hAPI = hAPI & http & HTTP.post
+post :: Handle -> String -> L8.ByteString -> IO L8.ByteString
+post hAPI m = hAPI & http & HTTP.post $ baseURL hAPI <> m
 
-sendRequest :: (Monad m) => Handle m -> Request -> m L8.ByteString
+sendRequest :: Handle -> Request -> IO L8.ByteString
 sendRequest hAPI req =
     case req of
         GET method -> get hAPI method

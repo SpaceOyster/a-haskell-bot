@@ -12,7 +12,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Logger
 import qualified Utils as U (throwDecode)
 
-loop :: Bot.Handle IO -> Int -> IO ()
+loop :: Bot.Handle -> Int -> IO ()
 loop hBot period =
     forever $ do
         TG.doBotThing hBot

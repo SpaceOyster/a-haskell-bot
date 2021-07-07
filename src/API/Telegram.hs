@@ -30,32 +30,32 @@ data Config =
         { key :: String
         }
 
-new :: Config -> Logger.Handle -> IO (Handle IO)
+new :: Config -> Logger.Handle -> IO Handle
 new cfg@Config {key} hLog = do
     Logger.info' hLog "Initiating Telegram API handle"
-    let baseURL = "https://api.telegram.org/bot" ++ key ++ "/"
-        httpConfig = HTTP.Config {HTTP.baseURL = baseURL}
+    let baseURL = "https://api.telegram.org/bot" <> key <> "/"
+        httpConfig = HTTP.Config {}
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
     lastUpdate <- newIORef 0
-    pure $ Handle {http, hLog, lastUpdate}
+    pure $ Handle {http, hLog, lastUpdate, baseURL}
 
-withHandle :: Config -> Logger.Handle -> (Handle IO -> IO a) -> IO a
+withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do
     hAPI <- new config hLog
     io hAPI
 
-getLastUpdateID :: Handle m -> IO Integer
+getLastUpdateID :: Handle -> IO Integer
 getLastUpdateID = readIORef . lastUpdate
 
-setLastUpdateID :: Handle m -> Integer -> IO ()
+setLastUpdateID :: Handle -> Integer -> IO ()
 setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef'` const id
 
-rememberLastUpdate :: Handle m -> Update -> IO ()
+rememberLastUpdate :: Handle -> Update -> IO ()
 rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
 
 -- API method
-getUpdates :: Handle IO -> IO API.Request
+getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@Handle {hLog} =
     bracket (getLastUpdateID hAPI) (const $ pure ()) $ \id -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
@@ -63,7 +63,7 @@ getUpdates hAPI@Handle {hLog} =
         pure $ POST "getUpdates" json
 
 -- API method
-answerCallbackQuery :: (Monad m) => Handle m -> String -> m API.Request
+answerCallbackQuery :: (Monad m) => Handle -> String -> m API.Request
 answerCallbackQuery hAPI id = do
     let json = encode . object $ ["callback_query_id" .= id]
     pure $ POST "answerCallbackQuery" json
