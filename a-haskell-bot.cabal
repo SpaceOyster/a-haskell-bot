@@ -28,6 +28,7 @@ library
       API
       API.Telegram
       API.Telegram.Types
+      API.Vkontakte
       Bot
       Bot.Telegram
       Data.List.Extended
