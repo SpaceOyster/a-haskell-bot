@@ -29,6 +29,7 @@ dependencies:
 - containers
 - time
 - text
+- network-uri
 
 library:
   source-dirs: src
