@@ -5,6 +5,7 @@ module Network.URI.Extended
 
 import Network.URI
 
+type QueryParams = [(String, Maybe String)]
 
 addPath :: URI -> String -> URI
 addPath uri p = uri {uriPath = uriPath uri <> p}
