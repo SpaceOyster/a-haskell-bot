@@ -28,12 +28,13 @@ data Config =
 data Handle =
     Handle
         { manager :: H.Manager
+        , baseURI :: URI.URI
         }
 
 new :: Config -> IO Handle
-new cfg = do
-    man <- H.newManager tlsManagerSettings
-    pure $ Handle {manager = man}
+new Config {..} = do
+    manager <- H.newManager tlsManagerSettings
+    pure $ Handle {..}
 
 get :: Handle -> String -> IO L8.ByteString
 get handle url =
