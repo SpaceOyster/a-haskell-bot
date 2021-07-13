@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module API.Telegram
     ( module API
@@ -19,10 +20,13 @@ import API.Telegram.Types
 import Control.Exception (bracket)
 import Data.IORef (modifyIORef', newIORef, readIORef)
 
+import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (Value(..), (.=), encode, object)
 import Data.Function ((&))
+import qualified Exceptions as Ex
 import qualified HTTP
 import qualified Logger
+import qualified Network.URI.Extended as URI
 import System.Environment (getEnv)
 
 data Config =
@@ -30,11 +34,18 @@ data Config =
         { key :: String
         }
 
+makeBaseURI :: MonadThrow m => Config -> m URI.URI
+makeBaseURI Config {..} =
+    maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
+  where
+    ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
+
 new :: Config -> Logger.Handle -> IO Handle
 new cfg@Config {key} hLog = do
     Logger.info' hLog "Initiating Telegram API handle"
+    baseURI <- makeBaseURI cfg
     let baseURL = "https://api.telegram.org/bot" <> key <> "/"
-        httpConfig = HTTP.Config {}
+        httpConfig = HTTP.Config {baseURI}
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
     lastUpdate <- newIORef 0
