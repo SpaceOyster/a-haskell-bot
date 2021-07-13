@@ -15,11 +15,12 @@ import qualified Network.HTTP.Client as H
     , responseBody
     )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
+import qualified Network.URI.Extended as URI
 import System.Environment (getEnv)
 
 data Config =
     Config
-        {
+        { baseURI :: URI.URI
         }
 
 data Handle =
