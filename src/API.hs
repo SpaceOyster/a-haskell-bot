@@ -24,17 +24,18 @@ data Handle =
         }
 
 data Request
-    = GET String
-    | POST String L8.ByteString
+    = GET URI.URI
+    | POST URI.URI L8.ByteString
     deriving (Show)
 
-get :: Handle -> String -> IO L8.ByteString
-get hAPI m = hAPI & http & HTTP.get $ baseURL hAPI <> m
 baseURI :: Handle -> URI.URI
 baseURI hAPI = hAPI & http & (HTTP.baseURI :: HTTP.Handle -> URI.URI)
 
-post :: Handle -> String -> L8.ByteString -> IO L8.ByteString
-post hAPI m = hAPI & http & HTTP.post $ baseURL hAPI <> m
+get :: Handle -> URI.URI -> IO L8.ByteString
+get hAPI = hAPI & http & HTTP.get'
+
+post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
+post hAPI = hAPI & http & HTTP.post'
 
 sendRequest :: Handle -> Request -> IO L8.ByteString
 sendRequest hAPI req =
