@@ -138,13 +138,13 @@ reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
     runAction action hBot msg
 
 reactToMessage :: Handle -> Message -> IO [API.Request]
-reactToMessage hBot@Handle {hLog} msg@Message {message_id} = do
+reactToMessage hBot@Handle {..} msg@Message {message_id} = do
     author <- getAuthorThrow msg
     n <- hBot `getUserMultiplier` author
     Logger.debug' hLog $
         "Telegram: generating " <>
         show n <> " echoes for Message: " <> show message_id
-    n `replicateM` TG.copyMessage msg
+    n `replicateM` TG.copyMessage hAPI msg
 
 data QueryData
     = QDRepeat Int
@@ -178,12 +178,12 @@ commandAction cmd =
     Action $ \hBot@Handle {..} Message {..} -> do
         let address = (chat :: Chat) & chat_id
         case cmd of
-            Start -> TG.sendMessage address $ Bot.greeting strings
-            Help -> TG.sendMessage address $ Bot.help strings
+            Start -> TG.sendMessage hAPI address $ Bot.greeting strings
+            Help -> TG.sendMessage hAPI address $ Bot.help strings
             Repeat -> do
                 prompt <- hBot & repeatPrompt $ from
-                TG.sendInlineKeyboard address prompt repeatKeyboard
-            UnknownCommand -> TG.sendMessage address $ Bot.unknown strings
+                TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
+            UnknownCommand -> TG.sendMessage hAPI address $ Bot.unknown strings
 
 getCommandThrow :: (MonadThrow m) => Message -> m Command
 getCommandThrow msg = do
