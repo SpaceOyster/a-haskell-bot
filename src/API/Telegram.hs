@@ -56,6 +56,9 @@ withHandle config hLog io = do
     hAPI <- new config hLog
     io hAPI
 
+apiMethod :: Handle -> String -> URI.URI
+apiMethod hAPI method = baseURI hAPI `URI.addPath` method
+
 getLastUpdateID :: Handle -> IO Integer
 getLastUpdateID = readIORef . lastUpdate
 
@@ -71,36 +74,41 @@ getUpdates hAPI@Handle {hLog} =
     bracket (getLastUpdateID hAPI) (const $ pure ()) $ \id -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
         let json = encode . object $ ["offset" .= id]
-        pure $ POST "getUpdates" json
+        pure $ POST (apiMethod hAPI "getUpdates") json
 
 -- API method
 answerCallbackQuery :: (Monad m) => Handle -> String -> m API.Request
 answerCallbackQuery hAPI id = do
     let json = encode . object $ ["callback_query_id" .= id]
-    pure $ POST "answerCallbackQuery" json
+    pure $ POST (apiMethod hAPI "answerCallbackQuery") json
 
 -- API method
-copyMessage :: (Monad m) => Message -> m API.Request
-copyMessage msg@Message {message_id, chat} = do
+copyMessage :: (Monad m) => Handle -> Message -> m API.Request
+copyMessage hAPI msg@Message {message_id, chat} = do
     let json =
             encode . object $
             [ "chat_id" .= chat_id (chat :: Chat)
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    pure $ POST "copyMessage" json
+    pure $ POST (apiMethod hAPI "copyMessage") json
 
 -- API method
-sendMessage :: (Monad m) => Integer -> String -> m API.Request
-sendMessage chatId msg = do
+sendMessage :: (Monad m) => Handle -> Integer -> String -> m API.Request
+sendMessage hAPI chatId msg = do
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    pure $ POST "sendMessage" json
+    pure $ POST (apiMethod hAPI "sendMessage") json
 
 -- API method
 sendInlineKeyboard ::
-       (Monad m) => Integer -> String -> InlineKeyboardMarkup -> m API.Request
-sendInlineKeyboard chatId prompt keyboard = do
+       (Monad m)
+    => Handle
+    -> Integer
+    -> String
+    -> InlineKeyboardMarkup
+    -> m API.Request
+sendInlineKeyboard hAPI chatId prompt keyboard = do
     let json =
             encode . object $
             ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
-    pure $ POST "sendMessage" json
+    pure $ POST (apiMethod hAPI "sendMessage") json
