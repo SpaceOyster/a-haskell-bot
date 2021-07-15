@@ -23,17 +23,16 @@ import System.Environment (getEnv)
 
 data Config =
     Config
-        { baseURI :: URI.URI
+        {
         }
 
 data Handle =
     Handle
         { manager :: H.Manager
-        , baseURI :: URI.URI
         }
 
 new :: Config -> IO Handle
-new Config {..} = do
+new _cfg = do
     manager <- H.newManager tlsManagerSettings
     pure $ Handle {..}
 

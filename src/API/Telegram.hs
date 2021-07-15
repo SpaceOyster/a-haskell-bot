@@ -44,12 +44,11 @@ new :: Config -> Logger.Handle -> IO Handle
 new cfg@Config {key} hLog = do
     Logger.info' hLog "Initiating Telegram API handle"
     baseURI <- makeBaseURI cfg
-    let baseURL = "https://api.telegram.org/bot" <> key <> "/"
-        httpConfig = HTTP.Config {baseURI}
+    let httpConfig = HTTP.Config {}
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
     lastUpdate <- newIORef 0
-    pure $ Handle {http, hLog, lastUpdate, baseURL}
+    pure $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do

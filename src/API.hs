@@ -4,7 +4,6 @@ module API
     ( Handle(..)
     , Request(..)
     , sendRequest
-    , baseURI
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -20,16 +19,13 @@ data Handle =
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
         , lastUpdate :: IORef Integer
-        , baseURL :: String
+        , baseURI :: URI.URI
         }
 
 data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
     deriving (Show)
-
-baseURI :: Handle -> URI.URI
-baseURI hAPI = hAPI & http & (HTTP.baseURI :: HTTP.Handle -> URI.URI)
 
 get :: Handle -> URI.URI -> IO L8.ByteString
 get hAPI = hAPI & http & HTTP.get'
