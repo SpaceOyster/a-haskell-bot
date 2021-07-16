@@ -25,3 +25,11 @@ instance Exception BotException
 instance Show BotException where
     show (Ex priority description) = "[" ++ show priority ++ "] " ++ description
     show (URLParsing description) = "URLParsing: " <> description
+
+data ParsingException =
+    ParsingException !String
+
+instance Exception ParsingException
+
+instance Show ParsingException where
+    show (ParsingException description) = "ParsingException: " <> description
