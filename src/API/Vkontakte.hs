@@ -14,6 +14,7 @@ import Data.Function ((&))
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import GHC.Generics
 import qualified HTTP
+import Utils (throwDecode)
 
 data Config =
     Config
@@ -27,7 +28,7 @@ new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
     getLongPollServer http cfg
     lastUpdate <- newIORef 0
-    pure $ Handle {http, hLog = undefined, lastUpdate, baseURL = ""}
+    pure $ Handle {http, hLog = undefined, lastUpdate, baseURI = undefined}
 
 data PollServer =
     PollServer
@@ -43,10 +44,10 @@ data APIResponse =
         }
     deriving (Show, Generic, FromJSON)
 
-getLongPollServer :: HTTP.Handle -> Config -> IO (Maybe APIResponse)
+getLongPollServer :: HTTP.Handle -> Config -> IO APIResponse
 getLongPollServer http Config {..} = do
     json <-
         http & HTTP.get $
         "https://api.vk.com/method/groups.getLongPollServer?v=" <>
         v <> "&access_token=" <> key <> "&group_id=" <> show group_id
-    pure $ decode json
+    throwDecode json
