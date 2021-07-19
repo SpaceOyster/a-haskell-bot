@@ -32,7 +32,7 @@ new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
     pollServer <- getLongPollServer http cfg
     baseURI <- makeBaseURI pollServer
-    lastUpdate <- newIORef $ ts pollServer
+    lastUpdate <- newIORef $ ts (pollServer :: PollServer)
     pure $ Handle {http, hLog = undefined, lastUpdate, baseURI}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
@@ -51,6 +51,13 @@ data PollServer =
 data APIResponse =
     Response
         { response :: PollServer
+        }
+    deriving (Show, Generic, FromJSON)
+
+data PollResponse =
+    PollResponse
+        { ts :: Integer
+        , updates :: [Object]
         }
     deriving (Show, Generic, FromJSON)
 
