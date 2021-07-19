@@ -34,6 +34,11 @@ new cfg@Config {..} = do
     lastUpdate <- newIORef $ ts pollServer
     pure $ Handle {http, hLog = undefined, lastUpdate, baseURI}
 
+withHandle :: Config -> (Handle -> IO a) -> IO a
+withHandle config io = do
+    hAPI <- new config
+    io hAPI
+
 data PollServer =
     PollServer
         { key :: String
