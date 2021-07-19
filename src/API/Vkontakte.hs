@@ -29,9 +29,9 @@ data Config =
 new :: Config -> IO Handle
 new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
-    getLongPollServer http cfg
+    baseURI <- makeBaseURI http cfg
     lastUpdate <- newIORef 0
-    pure $ Handle {http, hLog = undefined, lastUpdate, baseURI = undefined}
+    pure $ Handle {http, hLog = undefined, lastUpdate, baseURI}
 
 data PollServer =
     PollServer
