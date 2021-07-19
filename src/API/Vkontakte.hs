@@ -56,7 +56,7 @@ data APIResponse =
 makeBaseURI :: MonadThrow m => PollServer -> m URI.URI
 makeBaseURI PollServer {..} = do
     maybe ex pure . URI.parseURI $
-        server <> "/?act=a_check&key=" <> key <> "&wait=25"
+        server <> "?act=a_check&key=" <> key <> "&wait=25"
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
