@@ -4,6 +4,8 @@ module API
     ( Handle(..)
     , Request(..)
     , sendRequest
+    , getLastUpdateID
+    , setLastUpdateID
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -38,3 +40,9 @@ sendRequest hAPI req =
     case req of
         GET method -> get hAPI method
         POST method body -> post hAPI method body
+
+getLastUpdateID :: Handle -> IO Integer
+getLastUpdateID = readIORef . lastUpdate
+
+setLastUpdateID :: Handle -> Integer -> IO ()
+setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef'` const id

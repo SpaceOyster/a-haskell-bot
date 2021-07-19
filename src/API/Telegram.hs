@@ -58,19 +58,13 @@ withHandle config hLog io = do
 apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
-getLastUpdateID :: Handle -> IO Integer
-getLastUpdateID = readIORef . lastUpdate
-
-setLastUpdateID :: Handle -> Integer -> IO ()
-setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef'` const id
-
 rememberLastUpdate :: Handle -> Update -> IO ()
-rememberLastUpdate hAPI u = hAPI `setLastUpdateID` (update_id u + 1)
+rememberLastUpdate hAPI u = hAPI `API.setLastUpdateID` (update_id u + 1)
 
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@Handle {hLog} =
-    bracket (getLastUpdateID hAPI) (const $ pure ()) $ \id -> do
+    bracket (API.getLastUpdateID hAPI) (const $ pure ()) $ \id -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
         let json = encode . object $ ["offset" .= id]
         pure $ POST (apiMethod hAPI "getUpdates") json
