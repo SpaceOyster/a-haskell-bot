@@ -29,8 +29,9 @@ data Config =
 new :: Config -> IO Handle
 new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
-    baseURI <- makeBaseURI http cfg
-    lastUpdate <- newIORef 0
+    pollServer <- getLongPollServer http cfg
+    baseURI <- makeBaseURI pollServer
+    lastUpdate <- newIORef $ ts pollServer
     pure $ Handle {http, hLog = undefined, lastUpdate, baseURI}
 
 data PollServer =
@@ -47,19 +48,18 @@ data APIResponse =
         }
     deriving (Show, Generic, FromJSON)
 
-makeBaseURI :: HTTP.Handle -> Config -> IO URI.URI
-makeBaseURI http cfg@Config {..} = do
-    res <- getLongPollServer http cfg
-    let PollServer {..} = response res
+makeBaseURI :: MonadThrow m => PollServer -> m URI.URI
+makeBaseURI PollServer {..} = do
     maybe ex pure . URI.parseURI $
-        server <> "/?act=a_check&key=" <> key <> "&ts=" <> show ts <> "&wait=25"
+        server <> "/?act=a_check&key=" <> key <> "&wait=25"
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
-getLongPollServer :: HTTP.Handle -> Config -> IO APIResponse
+getLongPollServer :: HTTP.Handle -> Config -> IO PollServer
 getLongPollServer http Config {..} = do
     json <-
         http & HTTP.get $
         "https://api.vk.com/method/groups.getLongPollServer?v=" <>
         v <> "&access_token=" <> key <> "&group_id=" <> show group_id
-    throwDecode json
+    res <- throwDecode json
+    pure $ response res
