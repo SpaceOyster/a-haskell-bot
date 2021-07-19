@@ -11,6 +11,7 @@ module API.Vkontakte
 import API
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import qualified Exceptions as Ex
@@ -68,3 +69,9 @@ getLongPollServer http Config {..} = do
         v <> "&access_token=" <> key <> "&group_id=" <> show group_id
     res <- throwDecode json
     pure $ response res
+
+getUpdates :: Handle -> IO API.Request
+getUpdates hAPI = do
+    ts <- getLastUpdateID hAPI
+    let uri = baseURI hAPI
+    pure . GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
