@@ -20,7 +20,7 @@ data Handle =
     Handle
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
-        , lastUpdate :: IORef Integer
+        , lastUpdateID :: IORef Integer
         , baseURI :: URI.URI
         }
 
@@ -42,7 +42,7 @@ sendRequest hAPI req =
         POST method body -> post hAPI method body
 
 getLastUpdateID :: Handle -> IO Integer
-getLastUpdateID = readIORef . lastUpdate
+getLastUpdateID = readIORef . lastUpdateID
 
 setLastUpdateID :: Handle -> Integer -> IO ()
-setLastUpdateID hAPI id = lastUpdate hAPI `modifyIORef'` const id
+setLastUpdateID hAPI id = lastUpdateID hAPI `modifyIORef'` const id

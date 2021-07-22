@@ -47,7 +47,7 @@ new cfg@Config {key} hLog = do
     let httpConfig = HTTP.Config {}
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
-    lastUpdate <- newIORef 0
+    lastUpdateID <- newIORef 0
     pure $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a

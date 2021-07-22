@@ -33,8 +33,8 @@ new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
     pollServer <- getLongPollServer http $ cfg {v = "5.50"}
     baseURI <- makeBaseURI pollServer
-    lastUpdate <- newIORef $ ts (pollServer :: PollServer)
-    pure $ Handle {http, hLog = undefined, lastUpdate, baseURI}
+    lastUpdateID <- newIORef $ ts (pollServer :: PollServer)
+    pure $ Handle {http, hLog = undefined, lastUpdateID, baseURI}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle config io = do
