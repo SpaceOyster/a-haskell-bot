@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module API.Vkontakte
     (
@@ -56,8 +57,8 @@ data APIResponse =
 
 data PollResponse =
     PollResponse
-        { ts :: Integer
-        , updates :: [Object]
+        { ts :: String
+        , updates :: [GroupEvent]
         }
     deriving (Show, Generic, FromJSON)
 
@@ -82,3 +83,23 @@ getUpdates hAPI = do
     ts <- getLastUpdateID hAPI
     let uri = baseURI hAPI
     pure . GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
+
+data MessageNew =
+    MessageNew
+        { message :: Object
+        , client_info :: Object
+        }
+    deriving (Show, Generic, FromJSON)
+
+data GroupEvent
+    = Message MessageNew
+    | Other
+    deriving (Show)
+
+instance FromJSON GroupEvent where
+    parseJSON =
+        withObject "FromJSON API.Vkontakte" $ \o -> do
+            String eventType <- o .: "type"
+            case eventType of
+                "message_new" -> Message <$> o .: "object"
+                _ -> pure Other
