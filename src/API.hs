@@ -55,3 +55,6 @@ getLastUpdateID = readIORef . lastUpdateID
 
 setLastUpdateID :: Handle -> Integer -> IO ()
 setLastUpdateID hAPI id = lastUpdateID hAPI `modifyIORef'` const id
+
+getState :: Handle -> IO APIState
+getState = readIORef . apiState
