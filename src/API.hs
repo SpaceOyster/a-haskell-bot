@@ -12,6 +12,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef
+import qualified Exceptions as Ex
 import qualified HTTP
 import qualified Logger
 import qualified Network.URI.Extended as URI
@@ -58,3 +59,13 @@ setLastUpdateID hAPI id = lastUpdateID hAPI `modifyIORef'` const id
 
 getState :: Handle -> IO APIState
 getState = readIORef . apiState
+
+setState :: Handle -> APIState -> IO ()
+setState hAPI newState = do
+    oldState <- getState hAPI
+    case (oldState, newState) of
+        (VK _, VK _) -> doSetState
+        (TG _, TG _) -> doSetState
+        _ -> throwM $ Ex.APIStateSetting "State type is not compatible"
+  where
+    doSetState = apiState hAPI `modifyIORef'` const newState
