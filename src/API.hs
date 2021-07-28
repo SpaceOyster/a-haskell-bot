@@ -22,6 +22,7 @@ data Handle =
         , hLog :: Logger.Handle
         , lastUpdateID :: IORef Integer
         , baseURI :: URI.URI
+        , apiState :: IORef APIState
         }
 
 data APIState
