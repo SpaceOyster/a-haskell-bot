@@ -28,7 +28,7 @@ import qualified HTTP
 import qualified Logger
 import qualified Network.URI.Extended as URI
 
-data Config =
+newtype Config =
     Config
         { key :: String
         }

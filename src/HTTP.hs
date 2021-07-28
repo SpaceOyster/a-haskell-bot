@@ -25,7 +25,7 @@ data Config =
         {
         }
 
-data Handle =
+newtype Handle =
     Handle
         { manager :: H.Manager
         }

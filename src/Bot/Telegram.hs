@@ -210,7 +210,4 @@ repeatKeyboard =
             {text = show x, callback_data = "repeat_" ++ show x}
 
 isCommandE :: Message -> Bool
-isCommandE Message {text} =
-    case text of
-        Just t -> isCommand t
-        Nothing -> False
+isCommandE Message {text} = maybe False isCommand text

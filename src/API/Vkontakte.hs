@@ -49,7 +49,7 @@ data PollServer =
         }
     deriving (Show, Generic, FromJSON)
 
-data APIResponse =
+newtype APIResponse =
     Response
         { response :: PollServer
         }

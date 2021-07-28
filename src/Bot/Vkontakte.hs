@@ -22,5 +22,5 @@ withHandle config io = do
     hBot <- new config
     io hBot
 
-doBotThing :: Handle -> IO (L8.ByteString)
+doBotThing :: Handle -> IO L8.ByteString
 doBotThing hBot = undefined
