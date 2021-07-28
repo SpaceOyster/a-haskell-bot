@@ -26,6 +26,14 @@ instance Show BotException where
     show (Ex priority description) = "[" ++ show priority ++ "] " ++ description
     show (URLParsing description) = "URLParsing: " <> description
 
+data APIException =
+    APIStateSetting !String
+
+instance Exception APIException
+
+instance Show APIException where
+    show (APIStateSetting description) = "APIStateSetting: " <> description
+
 data ParsingException =
     ParsingException !String
 
