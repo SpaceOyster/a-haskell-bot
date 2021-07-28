@@ -24,6 +24,14 @@ data Handle =
         , baseURI :: URI.URI
         }
 
+data APIState
+    = VK
+          { vkLastUpdateID :: String
+          }
+    | TG
+          { tgLastUpdateID :: Integer
+          }
+
 data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
