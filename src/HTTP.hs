@@ -19,7 +19,6 @@ import qualified Network.HTTP.Client as H
     )
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import qualified Network.URI.Extended as URI
-import System.Environment (getEnv)
 
 data Config =
     Config

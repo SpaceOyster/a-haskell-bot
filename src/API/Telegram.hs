@@ -27,7 +27,6 @@ import qualified Exceptions as Ex
 import qualified HTTP
 import qualified Logger
 import qualified Network.URI.Extended as URI
-import System.Environment (getEnv)
 
 data Config =
     Config
