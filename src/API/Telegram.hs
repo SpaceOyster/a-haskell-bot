@@ -55,6 +55,11 @@ withHandle config hLog io = do
     hAPI <- new config hLog
     io hAPI
 
+getLastUpdateID :: Handle -> IO Integer
+getLastUpdateID hAPI = do
+    state <- getState hAPI
+    pure $ tgLastUpdateID state
+
 apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
