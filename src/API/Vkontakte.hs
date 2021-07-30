@@ -34,6 +34,7 @@ new cfg@Config {..} = do
     pollServer <- getLongPollServer http $ cfg {v = "5.86"}
     baseURI <- makeBaseURI pollServer
     lastUpdateID <- newIORef $ ts (pollServer :: PollServer)
+    apiState <- newIORef $ VK {tgLastUpdateID = ts}
     pure $ Handle {http, hLog = undefined, lastUpdateID, baseURI}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a

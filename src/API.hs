@@ -6,6 +6,9 @@ module API
     , sendRequest
     , getLastUpdateID
     , setLastUpdateID
+    , APIState(..)
+    , getState
+    , setState
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
