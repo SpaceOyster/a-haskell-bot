@@ -31,7 +31,7 @@ data Config =
 new :: Config -> IO Handle
 new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
-    pollServer <- getLongPollServer http $ cfg {v = "5.50"}
+    pollServer <- getLongPollServer http $ cfg {v = "5.86"}
     baseURI <- makeBaseURI pollServer
     lastUpdateID <- newIORef $ ts (pollServer :: PollServer)
     pure $ Handle {http, hLog = undefined, lastUpdateID, baseURI}
