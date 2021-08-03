@@ -4,8 +4,6 @@ module API
     ( Handle(..)
     , Request(..)
     , sendRequest
-    , getLastUpdateID
-    , setLastUpdateID
     , getState
     , setState
     ) where
@@ -23,7 +21,6 @@ data Handle state =
     Handle
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
-        , lastUpdateID :: IORef Integer
         , baseURI :: URI.URI
         , apiState :: IORef state
         }
@@ -44,12 +41,6 @@ sendRequest hAPI req =
     case req of
         GET method -> get hAPI method
         POST method body -> post hAPI method body
-
-getLastUpdateID :: Handle s -> IO Integer
-getLastUpdateID = readIORef . lastUpdateID
-
-setLastUpdateID :: Handle s -> Integer -> IO ()
-setLastUpdateID hAPI id = lastUpdateID hAPI `modifyIORef'` const id
 
 getState :: Handle s -> IO s
 getState = readIORef . apiState
