@@ -11,9 +11,9 @@ import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import qualified Logger
 
-data Handle =
+data Handle apiState =
     Handle
-        { hAPI :: API.Handle
+        { hAPI :: API.Handle apiState
         , hLog :: Logger.Handle
         , state :: IORef BotState
         , strings :: Strings
@@ -62,12 +62,12 @@ instance Monoid Strings where
             , unknownM = mempty
             }
 
-hGetState :: Handle -> IO BotState
+hGetState :: Handle s -> IO BotState
 hGetState hBot = do
     Logger.debug' (hLog hBot) "Getting BotState"
     readIORef $ state hBot
 
-hSetState :: Handle -> (BotState -> BotState) -> IO ()
+hSetState :: Handle s -> (BotState -> BotState) -> IO ()
 hSetState hBot f = do
     Logger.debug' (hLog hBot) "Setting BotState"
     Logger.debug' (hLog hBot) "Appying state BotState mutating function"

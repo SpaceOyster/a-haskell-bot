@@ -9,7 +9,7 @@ module API.Vkontakte
     (
     ) where
 
-import API
+import qualified API
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -20,6 +20,10 @@ import GHC.Generics
 import qualified HTTP
 import qualified Network.URI.Extended as URI
 import Utils (throwDecode)
+
+type APIState = String
+
+type Handle = API.Handle APIState
 
 data Config =
     Config
@@ -34,8 +38,8 @@ new cfg@Config {..} = do
     pollServer <- getLongPollServer http $ cfg {v = "5.86"}
     baseURI <- makeBaseURI pollServer
     lastUpdateID <- newIORef $ ts (pollServer :: PollServer)
-    apiState <- newIORef $ VK {tgLastUpdateID = ts}
-    pure $ Handle {http, hLog = undefined, lastUpdateID, baseURI}
+    apiState <- newIORef $ ""
+    pure $ API.Handle {http, hLog = undefined, lastUpdateID, baseURI, apiState}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle config io = do
@@ -81,9 +85,9 @@ getLongPollServer http Config {..} = do
 
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
-    ts <- getLastUpdateID hAPI
-    let uri = baseURI hAPI
-    pure . GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
+    ts <- API.getLastUpdateID hAPI
+    let uri = API.baseURI hAPI
+    pure . API.GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
 
 data MessageNew =
     MessageNew

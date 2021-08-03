@@ -3,6 +3,7 @@
 
 module Main.Telegram where
 
+import qualified API.Telegram as TG (APIState)
 import qualified Bot
 import qualified Bot.Telegram as TG
 import Control.Concurrent (threadDelay)
@@ -12,7 +13,7 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Logger
 import qualified Utils as U (throwDecode)
 
-loop :: Bot.Handle -> Int -> IO ()
+loop :: Bot.Handle TG.APIState -> Int -> IO ()
 loop hBot period =
     forever $ do
         TG.doBotThing hBot

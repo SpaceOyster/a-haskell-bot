@@ -35,7 +35,7 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> Logger.Handle -> IO Handle
+new :: Config -> Logger.Handle -> IO (Handle TG.APIState)
 new cfg@Config {..} hLog = do
     Logger.info' hLog "Initiating Telegram Bot"
     Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
@@ -43,12 +43,12 @@ new cfg@Config {..} hLog = do
     hAPI <- TG.new TG.Config {..} hLog
     pure $ Handle {..}
 
-withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
+withHandle :: Config -> Logger.Handle -> (Handle TG.APIState -> IO a) -> IO a
 withHandle config hLog io = do
     hBot <- new config hLog
     io hBot
 
-doBotThing :: Handle -> IO [L8.ByteString]
+doBotThing :: Handle TG.APIState -> IO [L8.ByteString]
 doBotThing hBot@Handle {hLog} = do
     updates <- fetchUpdates hBot
     requests <- reactToUpdates hBot updates
@@ -56,7 +56,7 @@ doBotThing hBot@Handle {hLog} = do
         "Telegram: sending " <> show (length requests) <> " responses"
     mapM (hBot & hAPI & API.sendRequest) requests
 
-fetchUpdates :: Handle -> IO [Update]
+fetchUpdates :: Handle TG.APIState -> IO [Update]
 fetchUpdates hBot@Handle {hLog} = do
     Logger.info' hLog "Telegram: fetching Updates"
     req <- hBot & hAPI & TG.getUpdates
@@ -65,7 +65,7 @@ fetchUpdates hBot@Handle {hLog} = do
     resp <- throwDecode json
     extractUpdates resp
 
-getUserMultiplier :: Handle -> User -> IO Int
+getUserMultiplier :: Handle s -> User -> IO Int
 getUserMultiplier hBot user = do
     st <- Bot.hGetState hBot
     let drepeats = Bot.echoMultiplier hBot
@@ -73,7 +73,7 @@ getUserMultiplier hBot user = do
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     pure repeats
 
-getUserMultiplierM :: Handle -> Maybe User -> IO Int
+getUserMultiplierM :: Handle s -> Maybe User -> IO Int
 getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
 getUserMultiplierM hBot@Handle {hLog} Nothing = do
     Logger.warning'
@@ -81,7 +81,7 @@ getUserMultiplierM hBot@Handle {hLog} Nothing = do
         "Telegram: No User info, returning default echo multiplier"
     pure $ hBot & Bot.echoMultiplier
 
-setUserMultiplier :: Handle -> User -> Int -> IO ()
+setUserMultiplier :: Handle s -> User -> Int -> IO ()
 setUserMultiplier hBot@Handle {hLog} user repeats = do
     Logger.debug' hLog $ "Setting echo multiplier to: " <> show repeats
     Logger.debug' hLog $ "    For User: " <> show user
@@ -90,7 +90,7 @@ setUserMultiplier hBot@Handle {hLog} user repeats = do
             usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
          in st {userSettings = usettings}
 
-reactToUpdates :: Handle -> [Update] -> IO [API.Request]
+reactToUpdates :: Handle TG.APIState -> [Update] -> IO [API.Request]
 reactToUpdates hBot@Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
     requests <- join <$> mapM (reactToUpdate hBot) updates
@@ -115,7 +115,7 @@ qualifyUpdate u@Update {message, callback_query}
             else EMessage msg
     | otherwise = EOther u
 
-reactToUpdate :: Handle -> Update -> IO [API.Request]
+reactToUpdate :: Handle TG.APIState -> Update -> IO [API.Request]
 reactToUpdate hBot@Handle {hLog} update = do
     Logger.debug' hLog $
         "Telegram: Qualifying Update with id " <> show (update_id update)
@@ -128,7 +128,7 @@ reactToUpdate hBot@Handle {hLog} update = do
             throwM $
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
-reactToCommand :: Handle -> Message -> IO API.Request
+reactToCommand :: Handle TG.APIState -> Message -> IO API.Request
 reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
     cmd <- getCommandThrow msg
     Logger.debug' hLog $
@@ -137,7 +137,7 @@ reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
     let action = commandAction cmd
     runAction action hBot msg
 
-reactToMessage :: Handle -> Message -> IO [API.Request]
+reactToMessage :: Handle TG.APIState -> Message -> IO [API.Request]
 reactToMessage hBot@Handle {..} msg@Message {message_id} = do
     author <- getAuthorThrow msg
     n <- hBot `getUserMultiplier` author
@@ -159,7 +159,7 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
-reactToCallback :: Handle -> CallbackQuery -> IO API.Request
+reactToCallback :: Handle TG.APIState -> CallbackQuery -> IO API.Request
 reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
     Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
     cdata <- getQDataThrow cq
@@ -173,7 +173,7 @@ reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
-commandAction :: Command -> Action IO
+commandAction :: Command -> Action TG.APIState IO
 commandAction cmd =
     Action $ \hBot@Handle {..} Message {..} -> do
         let address = (chat :: Chat) & chat_id
@@ -190,12 +190,12 @@ getCommandThrow msg = do
     t <- getTextThrow msg
     pure . parseCommand . takeWhile (/= ' ') . tail $ t
 
-newtype Action m =
+newtype Action s m =
     Action
-        { runAction :: Handle -> Message -> m API.Request
+        { runAction :: Handle s -> Message -> m API.Request
         }
 
-repeatPrompt :: Handle -> Maybe User -> IO String
+repeatPrompt :: Handle s -> Maybe User -> IO String
 repeatPrompt hBot userM = do
     mult <- hBot & getUserMultiplierM $ userM
     let prompt' = hBot & Bot.strings & Bot.repeat
