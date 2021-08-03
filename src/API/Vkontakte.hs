@@ -50,7 +50,7 @@ data PollServer =
     PollServer
         { key :: String
         , server :: String
-        , ts :: Integer
+        , ts :: String
         }
     deriving (Show, Generic, FromJSON)
 
