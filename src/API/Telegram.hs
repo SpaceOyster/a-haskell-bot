@@ -51,7 +51,6 @@ new cfg@Config {key} hLog = do
     let httpConfig = HTTP.Config {}
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
-    lastUpdateID <- newIORef 0
     apiState <- newIORef 0
     pure $ API.Handle {..}
 
@@ -64,12 +63,12 @@ apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Update -> IO ()
-rememberLastUpdate hAPI u = hAPI `API.setLastUpdateID` (update_id u + 1)
+rememberLastUpdate hAPI u = hAPI `API.setState` (update_id u + 1)
 
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@API.Handle {hLog} =
-    bracket (API.getLastUpdateID hAPI) (const $ pure ()) $ \id -> do
+    bracket (API.getState hAPI) (const $ pure ()) $ \id -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
         let json = encode . object $ ["offset" .= id]
         pure $ API.POST (apiMethod hAPI "getUpdates") json

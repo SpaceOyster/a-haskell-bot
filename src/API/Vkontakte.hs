@@ -37,9 +37,8 @@ new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
     pollServer <- getLongPollServer http $ cfg {v = "5.86"}
     baseURI <- makeBaseURI pollServer
-    lastUpdateID <- newIORef $ ts (pollServer :: PollServer)
-    apiState <- newIORef $ ""
-    pure $ API.Handle {http, hLog = undefined, lastUpdateID, baseURI, apiState}
+    apiState <- newIORef $ ts (pollServer :: PollServer)
+    pure $ API.Handle {http, hLog = undefined, baseURI, apiState}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle config io = do
@@ -85,7 +84,7 @@ getLongPollServer http Config {..} = do
 
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
-    ts <- API.getLastUpdateID hAPI
+    ts <- API.getState hAPI
     let uri = API.baseURI hAPI
     pure . API.GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
 
