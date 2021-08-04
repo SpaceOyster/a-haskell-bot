@@ -82,6 +82,9 @@ getLongPollServer http Config {..} = do
     res <- throwDecode json
     pure $ response res
 
+rememberLastUpdate :: Handle -> PollResponse -> IO PollResponse
+rememberLastUpdate hAPI p@PollResponse {ts} = API.setState hAPI ts >> pure p
+
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
     ts <- API.getState hAPI
