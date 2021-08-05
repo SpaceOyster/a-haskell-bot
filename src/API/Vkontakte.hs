@@ -91,15 +91,23 @@ getUpdates hAPI = do
     let uri = API.baseURI hAPI
     pure . API.GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
 
-data MessageNew =
-    MessageNew
-        { message :: Object
-        , client_info :: Object
+data Message =
+    Message
+        { id :: Integer
+        , date :: Integer
+        , peer_id :: Integer
+        , from_id :: Integer
+        , text :: String
+        , random_id :: Maybe Integer
+        , attachements :: Maybe [Value]
+        , payload :: Maybe String
+        , keyboard :: Maybe Object
+        , is_cropped :: Bool
         }
     deriving (Show, Generic, FromJSON)
 
 data GroupEvent
-    = Message MessageNew
+    = MessageNew Message
     | Other
     deriving (Show)
 
@@ -108,5 +116,5 @@ instance FromJSON GroupEvent where
         withObject "FromJSON API.Vkontakte" $ \o -> do
             String eventType <- o .: "type"
             case eventType of
-                "message_new" -> Message <$> o .: "object"
+                "message_new" -> MessageNew <$> o .: "object"
                 _ -> pure Other
