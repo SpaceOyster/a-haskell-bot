@@ -89,7 +89,7 @@ getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
     ts <- API.getState hAPI
     let uri = API.baseURI hAPI
-    pure . API.GET $ URI.addQueryParams uri [("ts", Just $ show ts)]
+    pure . API.GET $ URI.addQueryParams uri [("ts", Just $ ts)]
 
 data Message =
     Message
