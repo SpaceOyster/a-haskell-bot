@@ -99,7 +99,7 @@ data Message =
         , from_id :: Integer
         , text :: String
         , random_id :: Maybe Integer
-        , attachements :: Maybe [Value]
+        , attachements :: [Value]
         , payload :: Maybe String
         , keyboard :: Maybe Object
         , is_cropped :: Bool
