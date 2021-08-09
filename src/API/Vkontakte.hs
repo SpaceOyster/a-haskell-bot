@@ -118,3 +118,8 @@ instance FromJSON GroupEvent where
             case eventType of
                 "message_new" -> MessageNew <$> o .: "object"
                 _ -> pure Other
+
+apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
+apiMethod hAPI method qps =
+    flip URI.addQueryParams qps . URI.addPath (API.baseURI hAPI) . ('/' :) $
+    method
