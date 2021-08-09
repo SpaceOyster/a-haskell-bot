@@ -6,6 +6,7 @@ module API
     , sendRequest
     , getState
     , setState
+    , modifyState
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -45,5 +46,8 @@ sendRequest hAPI req =
 getState :: Handle s -> IO s
 getState = readIORef . apiState
 
+modifyState :: Handle s -> (s -> s) -> IO ()
+modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
+
 setState :: Handle s -> s -> IO ()
-setState hAPI newState = apiState hAPI `modifyIORef'` const newState
+setState hAPI newState = modifyState hAPI $ const newState
