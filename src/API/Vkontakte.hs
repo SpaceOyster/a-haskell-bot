@@ -102,7 +102,7 @@ data Message =
         , attachements :: [Value]
         , payload :: Maybe String
         , keyboard :: Maybe Object
-        , is_cropped :: Bool
+        , is_cropped :: Maybe Bool
         }
     deriving (Show, Generic, FromJSON)
 
