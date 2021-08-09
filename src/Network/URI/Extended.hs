@@ -2,6 +2,7 @@ module Network.URI.Extended
     ( module Network.URI
     , addPath
     , addQueryParams
+    , QueryParams
     ) where
 
 import Data.List (intercalate)
