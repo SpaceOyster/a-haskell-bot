@@ -21,9 +21,12 @@ import qualified HTTP
 import qualified Network.URI.Extended as URI
 import Utils (throwDecode)
 
-type APIState = String
+data VKState =
+    VKState
+        { lastTS :: String
+        }
 
-type Handle = API.Handle APIState
+type Handle = API.Handle VKState
 
 data Config =
     Config
@@ -32,12 +35,15 @@ data Config =
         , v :: String
         }
 
+initState :: String -> VKState
+initState ts = VKState {lastTS = ts}
+
 new :: Config -> IO Handle
 new cfg@Config {..} = do
     http <- HTTP.new $ HTTP.Config {}
     pollServer <- getLongPollServer http $ cfg {v = "5.86"}
     baseURI <- makeBaseURI pollServer
-    apiState <- newIORef $ ts (pollServer :: PollServer)
+    apiState <- newIORef $ initState $ ts (pollServer :: PollServer)
     pure $ API.Handle {http, hLog = undefined, baseURI, apiState}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
@@ -83,13 +89,14 @@ getLongPollServer http Config {..} = do
     pure $ response res
 
 rememberLastUpdate :: Handle -> PollResponse -> IO PollResponse
-rememberLastUpdate hAPI p@PollResponse {ts} = API.setState hAPI ts >> pure p
+rememberLastUpdate hAPI p@PollResponse {ts} =
+    API.modifyState hAPI (\s -> s {lastTS = ts}) >> pure p
 
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
-    ts <- API.getState hAPI
+    VKState {..} <- API.getState hAPI
     let uri = API.baseURI hAPI
-    pure . API.GET $ URI.addQueryParams uri [("ts", Just $ ts)]
+    pure . API.GET $ URI.addQueryParams uri [("ts", Just lastTS)]
 
 data Message =
     Message
