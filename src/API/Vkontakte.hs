@@ -24,6 +24,7 @@ import Utils (throwDecode)
 data VKState =
     VKState
         { lastTS :: String
+        , pollURI :: URI.URI
         }
 
 type Handle = API.Handle VKState
