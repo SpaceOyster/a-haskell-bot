@@ -93,12 +93,11 @@ makePollURI PollServer {..} = do
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
-getLongPollServer :: HTTP.Handle -> Config -> IO PollServer
-getLongPollServer http Config {..} = do
+getLongPollServer :: Handle -> IO PollServer
+getLongPollServer hAPI = do
     json <-
-        http & HTTP.get $
-        "https://api.vk.com/method/groups.getLongPollServer?v=" <>
-        v <> "&access_token=" <> key <> "&group_id=" <> show group_id
+        API.sendRequest hAPI $
+        API.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
     res <- throwDecode json
     pure $ response res
 
