@@ -36,8 +36,6 @@ data Config =
         , v :: String
         }
 
-initState :: String -> VKState
-initState ts = VKState {lastTS = ts}
 instance Semigroup VKState where
     a <> b = b
 
