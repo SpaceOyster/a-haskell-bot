@@ -86,6 +86,13 @@ data PollResponse =
         }
     deriving (Show, Generic, FromJSON)
 
+initiatePollServer :: Handle -> IO Handle
+initiatePollServer hAPI = do
+    ps@PollServer {ts} <- getLongPollServer hAPI
+    pollURI <- makePollURI ps
+    API.setState hAPI $ VKState {lastTS = ts, pollURI}
+    pure hAPI
+
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {..} = do
     maybe ex pure . URI.parseURI $
