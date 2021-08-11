@@ -113,8 +113,7 @@ rememberLastUpdate hAPI p@PollResponse {ts} =
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
     VKState {..} <- API.getState hAPI
-    let uri = API.baseURI hAPI
-    pure . API.GET $ URI.addQueryParams uri [("ts", Just lastTS)]
+    pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
 
 data Message =
     Message
