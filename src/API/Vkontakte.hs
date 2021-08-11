@@ -78,8 +78,8 @@ data PollResponse =
         }
     deriving (Show, Generic, FromJSON)
 
-makeBaseURI :: MonadThrow m => PollServer -> m URI.URI
-makeBaseURI PollServer {..} = do
+makePollURI :: MonadThrow m => PollServer -> m URI.URI
+makePollURI PollServer {..} = do
     maybe ex pure . URI.parseURI $
         server <> "?act=a_check&key=" <> key <> "&wait=25"
   where
