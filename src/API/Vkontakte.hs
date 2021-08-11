@@ -57,6 +57,14 @@ withHandle config io = do
     hAPI <- new config
     io hAPI
 
+makeBaseURI :: MonadThrow m => Config -> m URI.URI
+makeBaseURI Config {..} =
+    maybe ex pure . URI.parseURI $
+    "https://api.vk.com/method/?v=" <>
+    v <> "&access_token=" <> key <> "&group_id=" <> show group_id
+  where
+    ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte API URL"
+
 data PollServer =
     PollServer
         { key :: String
