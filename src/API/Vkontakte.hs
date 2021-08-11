@@ -142,5 +142,5 @@ instance FromJSON GroupEvent where
 
 apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
-    flip URI.addQueryParams qps . URI.addPath (API.baseURI hAPI) . ('/' :) $
-    method
+    flip URI.addQueryParams qps . URI.addPath (API.baseURI hAPI) $ method
+
