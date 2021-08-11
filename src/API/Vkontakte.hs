@@ -38,6 +38,11 @@ data Config =
 
 initState :: String -> VKState
 initState ts = VKState {lastTS = ts}
+instance Semigroup VKState where
+    a <> b = b
+
+instance Monoid VKState where
+    mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
 new :: Config -> IO Handle
 new cfg@Config {..} = do
