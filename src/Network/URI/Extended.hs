@@ -6,6 +6,7 @@ module Network.URI.Extended
   , QueryParam
   ) where
 
+import Control.Monad.Fail (fail)
 import Data.List (intercalate)
 import Network.URI
 
@@ -25,3 +26,11 @@ addQueryParams uri qs =
 
 stringifyQuery :: QueryParams -> String
 stringifyQuery = intercalate "&" . fmap (\(k, v) -> k <> maybe "" ('=' :) v)
+
+stringifyQueryPair :: MonadFail m => QueryParam -> m String
+stringifyQueryPair (k, Nothing) = fail $ "No value present for " <> show k
+stringifyQueryPair (k, Just v) = pure . (k <>) . ('=' :) . fmap spaceToPlus $ v
+  where
+    spaceToPlus :: Char -> Char
+    spaceToPlus ' ' = '+'
+    spaceToPlus c = c
