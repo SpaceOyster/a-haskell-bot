@@ -20,12 +20,12 @@ addPath uri p = uri {uriPath = uriPath uri <> p}
 addQueryParams :: URI -> QueryParams -> URI
 addQueryParams uri [] = uri
 addQueryParams uri qs =
-    case uriQuery uri of
-        [] -> uri {uriQuery = '?' : stringifyQuery qs}
-        q -> uri {uriQuery = q <> ('&' : stringifyQuery qs)}
+  case uriQuery uri of
+    [] -> uri {uriQuery = '?' : stringifyQueryList qs}
+    q -> uri {uriQuery = q <> ('&' : stringifyQueryList qs)}
 
-stringifyQuery :: QueryParams -> String
-stringifyQuery = intercalate "&" . fmap (\(k, v) -> k <> maybe "" ('=' :) v)
+stringifyQueryList :: QueryParams -> String
+stringifyQueryList = intercalate "&" . (stringifyQueryPair =<<)
 
 stringifyQueryPair :: MonadFail m => QueryParam -> m String
 stringifyQueryPair (k, Nothing) = fail $ "No value present for " <> show k
