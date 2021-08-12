@@ -1,14 +1,17 @@
 module Network.URI.Extended
-    ( module Network.URI
-    , addPath
-    , addQueryParams
-    , QueryParams
-    ) where
+  ( module Network.URI
+  , addPath
+  , addQueryParams
+  , QueryParams
+  , QueryParam
+  ) where
 
 import Data.List (intercalate)
 import Network.URI
 
-type QueryParams = [(String, Maybe String)]
+type QueryParam = (String, Maybe String)
+
+type QueryParams = [QueryParam]
 
 addPath :: URI -> String -> URI
 addPath uri p = uri {uriPath = uriPath uri <> p}
