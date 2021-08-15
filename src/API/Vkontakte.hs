@@ -123,13 +123,32 @@ data Message =
         , from_id :: Integer
         , text :: String
         , random_id :: Maybe Integer
-        , attachements :: [Value]
+        , attachments :: [Attachment]
         , payload :: Maybe String
         , keyboard :: Maybe Object
         , is_cropped :: Maybe Bool
         }
     deriving (Show, Generic, FromJSON)
 
+data MediaDoc =
+    MediaDoc
+        { id :: Integer
+        , owner_id :: Integer
+        , access_key :: Maybe String
+        }
+    deriving (Show, Generic, FromJSON)
+
+data Attachment
+    = Photo MediaDoc
+    | Audio MediaDoc
+    | Video MediaDoc
+    | Doc MediaDoc
+    | Sticker
+          { product_id :: Integer
+          , sticker_id :: Integer
+          }
+    | OtherA
+    deriving (Show)
 data GroupEvent
     = MessageNew Message
     | Other
