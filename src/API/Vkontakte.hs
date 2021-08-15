@@ -149,6 +149,20 @@ data Attachment
           }
     | OtherA
     deriving (Show)
+
+instance FromJSON Attachment where
+    parseJSON =
+        withObject "FromJSON API.Vkontakte Attachment" $ \o -> do
+            String media_type <- o .: "type"
+            o' <- o .: media_type
+            case media_type of
+                "sticker" ->
+                    Sticker <$> o' .: "product_id" <*> o' .: "sticker_id"
+                "photo" -> Photo <$> o .: media_type
+                "audio" -> Audio <$> o .: media_type
+                "video" -> Video <$> o .: media_type
+                "doc" -> Doc <$> o .: media_type
+                _ -> pure OtherA
 data GroupEvent
     = MessageNew Message
     | Other
