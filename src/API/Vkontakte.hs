@@ -156,7 +156,7 @@ data GroupEvent
 
 instance FromJSON GroupEvent where
     parseJSON =
-        withObject "FromJSON API.Vkontakte" $ \o -> do
+        withObject "FromJSON API.Vkontakte.GroupEvent" $ \o -> do
             String eventType <- o .: "type"
             case eventType of
                 "message_new" -> MessageNew <$> o .: "object"
