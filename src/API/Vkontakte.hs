@@ -196,3 +196,8 @@ apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
     flip URI.addQueryParams qps . URI.addPath (API.baseURI hAPI) $ method
 
+copyMessage :: (Monad m) => Handle -> Message -> m API.Request
+copyMessage hAPI Message {..} =
+    pure . API.GET . apiMethod hAPI "messages.send" $
+    [("peer_id", Just $ show peer_id), ("message", Just $ show text)] <>
+    fmap attachmentToQuery attachments
