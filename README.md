@@ -10,6 +10,9 @@ Bot can take commands from user:
 
 ## Things to consider
 ### Telegram
+
 Bot doesn't work in [inline mode](https://core.telegram.org/bots/api#inline-mode)
+
 ### Vkontakte
-Works only with API version `5.50`
+
+Works only with API version `5.86`
