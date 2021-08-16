@@ -11,6 +11,8 @@ data Config =
         { key :: String
         , echoMultiplier :: Int
         , strings :: Bot.Strings
+        , group_id :: Integer
+        , v :: String
         }
     deriving (Show)
 
