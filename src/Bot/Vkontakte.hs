@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 module Bot.Vkontakte where
 
 import qualified API
@@ -5,6 +6,7 @@ import qualified API.Vkontakte as VK
 import Bot hiding (strings)
 import qualified Bot (strings)
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.IORef (newIORef)
 
 data Config =
     Config
@@ -16,8 +18,12 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> IO Handle
-new cfg = undefined
+new :: Config -> IO (Handle VK.VKState)
+new cfg@Config {..} = do
+    let hLog = undefined
+    state <- newIORef $ BotState {userSettings = mempty}
+    hAPI <- VK.new VK.Config {..}
+    pure $ Handle {..}
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle config io = do
