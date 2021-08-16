@@ -25,7 +25,7 @@ new cfg@Config {..} = do
     hAPI <- VK.new VK.Config {..}
     pure $ Handle {..}
 
-withHandle :: Config -> (Handle -> IO a) -> IO a
+withHandle :: Config -> (Handle VK.VKState -> IO a) -> IO a
 withHandle config io = do
     hBot <- new config
     io hBot
