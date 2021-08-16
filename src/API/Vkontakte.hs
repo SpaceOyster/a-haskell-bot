@@ -6,7 +6,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module API.Vkontakte
-    (
+    ( Handle(..)
+    , new
+    , withHandle
+    , Config(..)
+    , PollResponse(..)
+    , Message(..)
+    , Attachment(..)
+    , getUpdates
+    , rememberLastUpdate
+    , copyMessage
+    , GroupEvent(..)
+    , VKState(..)
     ) where
 
 import qualified API
