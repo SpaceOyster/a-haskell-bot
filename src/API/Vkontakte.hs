@@ -55,10 +55,11 @@ instance Monoid VKState where
 
 new :: Config -> IO Handle
 new cfg@Config {..} = do
+    let hLog = undefined
     http <- HTTP.new $ HTTP.Config {}
     baseURI <- makeBaseURI cfg
     apiState <- newIORef mempty
-    let hAPI = API.Handle {http, hLog = undefined, baseURI, apiState}
+    let hAPI = API.Handle {..}
     initiatePollServer hAPI
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
