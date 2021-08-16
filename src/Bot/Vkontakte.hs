@@ -1,4 +1,6 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+
 module Bot.Vkontakte where
 
 import qualified API
@@ -6,7 +8,9 @@ import qualified API.Vkontakte as VK
 import Bot hiding (strings)
 import qualified Bot (strings)
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Function ((&))
 import Data.IORef (newIORef)
+import qualified Logger
 
 data Config =
     Config
@@ -30,5 +34,16 @@ withHandle config io = do
     hBot <- new config
     io hBot
 
-doBotThing :: Handle -> IO L8.ByteString
-doBotThing hBot = undefined
+doBotThing :: Handle VK.VKState -> IO [L8.ByteString]
+doBotThing hBot@Handle {hLog} = do
+    updates <- fetchUpdates hBot
+    requests <- reactToUpdates hBot updates
+    Logger.info' hLog $
+        "Vkontakte: sending " <> show (length requests) <> " responses"
+    mapM (hBot & hAPI & API.sendRequest) requests
+
+fetchUpdates :: Handle VK.VKState -> IO [VK.GroupEvent]
+fetchUpdates hBot = undefined
+
+reactToUpdates :: Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
+reactToUpdates hBot updates = undefined
