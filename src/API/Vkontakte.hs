@@ -18,6 +18,7 @@ module API.Vkontakte
     , copyMessage
     , GroupEvent(..)
     , VKState(..)
+    , extractUpdates
     ) where
 
 import qualified API
@@ -213,3 +214,6 @@ copyMessage hAPI Message {..} =
     pure . API.GET . apiMethod hAPI "messages.send" $
     [("peer_id", Just $ show peer_id), ("message", Just $ show text)] <>
     fmap attachmentToQuery attachments
+
+extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
+extractUpdates PollResponse {..} = pure updates
