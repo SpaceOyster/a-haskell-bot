@@ -24,7 +24,7 @@ module API.Vkontakte
 import qualified API
 import Control.Applicative ((<|>))
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (modifyIORef', newIORef, readIORef)
@@ -83,17 +83,17 @@ data PollServer =
         , server :: String
         , ts :: String
         }
-    deriving (Show, Generic, FromJSON)
+    deriving (Show, Generic, A.FromJSON)
 
 data APIResponse
-    = APIError Value
+    = APIError A.Value
     | APIResponse PollServer
 
-instance FromJSON APIResponse where
+instance A.FromJSON APIResponse where
     parseJSON =
-        withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
-            let err = APIError <$> o .: "error"
-            let resp = APIResponse <$> o .: "response"
+        A.withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
+            let err = APIError <$> o A..: "error"
+            let resp = APIResponse <$> o A..: "response"
             err <|> resp
 
 data PollResponse =
@@ -101,7 +101,7 @@ data PollResponse =
         { ts :: String
         , updates :: [GroupEvent]
         }
-    deriving (Show, Generic, FromJSON)
+    deriving (Show, Generic, A.FromJSON)
 
 initiatePollServer :: Handle -> IO Handle
 initiatePollServer hAPI = do
@@ -146,10 +146,10 @@ data Message =
         , random_id :: Maybe Integer
         , attachments :: [Attachment]
         , payload :: Maybe String
-        , keyboard :: Maybe Object
+        , keyboard :: Maybe A.Object
         , is_cropped :: Maybe Bool
         }
-    deriving (Show, Generic, FromJSON)
+    deriving (Show, Generic, A.FromJSON)
 
 data MediaDoc =
     MediaDoc
@@ -157,7 +157,7 @@ data MediaDoc =
         , owner_id :: Integer
         , access_key :: Maybe String
         }
-    deriving (Show, Generic, FromJSON)
+    deriving (Show, Generic, A.FromJSON)
 
 data Attachment
     = Photo MediaDoc
@@ -171,18 +171,18 @@ data Attachment
     | OtherA
     deriving (Show)
 
-instance FromJSON Attachment where
+instance A.FromJSON Attachment where
     parseJSON =
-        withObject "FromJSON API.Vkontakte Attachment" $ \o -> do
-            String media_type <- o .: "type"
-            o' <- o .: media_type
+        A.withObject "FromJSON API.Vkontakte Attachment" $ \o -> do
+            A.String media_type <- o A..: "type"
+            o' <- o A..: media_type
             case media_type of
                 "sticker" ->
-                    Sticker <$> o' .: "product_id" <*> o' .: "sticker_id"
-                "photo" -> Photo <$> o .: media_type
-                "audio" -> Audio <$> o .: media_type
-                "video" -> Video <$> o .: media_type
-                "doc" -> Doc <$> o .: media_type
+                    Sticker <$> o' A..: "product_id" <*> o' A..: "sticker_id"
+                "photo" -> Photo <$> o A..: media_type
+                "audio" -> Audio <$> o A..: media_type
+                "video" -> Video <$> o A..: media_type
+                "doc" -> Doc <$> o A..: media_type
                 _ -> pure OtherA
 
 attachmentToQuery :: Attachment -> URI.QueryParam
@@ -205,12 +205,12 @@ data GroupEvent
     | Other
     deriving (Show)
 
-instance FromJSON GroupEvent where
+instance A.FromJSON GroupEvent where
     parseJSON =
-        withObject "FromJSON API.Vkontakte.GroupEvent" $ \o -> do
-            String eventType <- o .: "type"
+        A.withObject "FromJSON API.Vkontakte.GroupEvent" $ \o -> do
+            A.String eventType <- o A..: "type"
             case eventType of
-                "message_new" -> MessageNew <$> o .: "object"
+                "message_new" -> MessageNew <$> o A..: "object"
                 _ -> pure Other
 
 apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
