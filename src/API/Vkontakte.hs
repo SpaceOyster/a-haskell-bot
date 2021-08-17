@@ -22,6 +22,7 @@ module API.Vkontakte
     ) where
 
 import qualified API
+import Control.Applicative ((<|>))
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -84,11 +85,16 @@ data PollServer =
         }
     deriving (Show, Generic, FromJSON)
 
-newtype APIResponse =
-    Response
-        { response :: PollServer
-        }
-    deriving (Show, Generic, FromJSON)
+data APIResponse
+    = APIError Value
+    | APIResponse PollServer
+
+instance FromJSON APIResponse where
+    parseJSON =
+        withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
+            let err = APIError <$> o .: "error"
+            let resp = APIResponse <$> o .: "response"
+            err <|> resp
 
 data PollResponse =
     PollResponse
@@ -117,7 +123,9 @@ getLongPollServer hAPI = do
         API.sendRequest hAPI $
         API.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
     res <- throwDecode json
-    pure $ response res
+    case res of
+        APIError e -> throwM $ Ex.APIRespondedWithError $ show e
+        APIResponse r -> pure r
 
 rememberLastUpdate :: Handle -> PollResponse -> IO PollResponse
 rememberLastUpdate hAPI p@PollResponse {ts} =
