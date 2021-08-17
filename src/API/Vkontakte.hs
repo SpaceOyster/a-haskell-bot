@@ -86,14 +86,14 @@ data PollServer =
     deriving (Show, Generic, A.FromJSON)
 
 data APIResponse
-    = APIError A.Value
-    | APIResponse PollServer
+    = Error A.Value
+    | Response PollServer
 
 instance A.FromJSON APIResponse where
     parseJSON =
         A.withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
-            let err = APIError <$> o A..: "error"
-            let resp = APIResponse <$> o A..: "response"
+            let err = Error <$> o A..: "error"
+            let resp = Response <$> o A..: "response"
             err <|> resp
 
 data PollResponse =
@@ -124,8 +124,8 @@ getLongPollServer hAPI = do
         API.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
     res <- throwDecode json
     case res of
-        APIError e -> throwM $ Ex.APIRespondedWithError $ show e
-        APIResponse r -> pure r
+        Error e -> throwM $ Ex.APIRespondedWithError $ show e
+        Response r -> pure r
 
 rememberLastUpdate :: Handle -> PollResponse -> IO PollResponse
 rememberLastUpdate hAPI p@PollResponse {ts} =
