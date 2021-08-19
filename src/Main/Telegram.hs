@@ -26,7 +26,7 @@ run configPath = do
     Logger.withHandle logger $ \hLog -> do
         Logger.info' hLog "Initiating Main Bot loop"
         Logger.info' hLog $
-            "API Pollig period is " <>
+            "API Polling period is " <>
             show (fromIntegral poll_period / 1000) <> "ms"
         TG.withHandle telegram hLog $ flip loop poll_period
 
