@@ -38,6 +38,7 @@ library
       HTTP
       Logger
       Main.Telegram
+      Main.Vkontakte
       Network.URI.Extended
       Utils
   other-modules:
