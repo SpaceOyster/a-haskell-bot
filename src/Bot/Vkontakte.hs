@@ -7,6 +7,7 @@ import qualified API
 import qualified API.Vkontakte as VK
 import Bot hiding (strings)
 import qualified Bot (strings)
+import Control.Monad (join)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
@@ -51,4 +52,6 @@ fetchUpdates hBot@Handle {hAPI} = do
     VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
 
 reactToUpdates :: Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
-reactToUpdates hBot updates = undefined
+reactToUpdates hBot updates = do
+    requests <- join <$> mapM (reactToUpdate hBot) updates
+    pure requests
