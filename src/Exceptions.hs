@@ -29,6 +29,7 @@ instance Show BotException where
 data APIException
     = APIStateSetting !String
     | APIRespondedWithError !String
+    | VKPollError !String
 
 instance Exception APIException
 
@@ -36,6 +37,7 @@ instance Show APIException where
     show (APIStateSetting description) = "APIStateSetting: " <> description
     show (APIRespondedWithError description) =
         "APIRespondedWithError: " <> description
+    show (VKPollError c) = "VKPollError: Code " <> c
 
 data ParsingException =
     ParsingException !String
