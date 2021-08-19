@@ -26,6 +26,7 @@ import Control.Applicative ((<|>))
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Foldable (asum)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import Data.IORef (modifyIORef', newIORef, readIORef)
@@ -96,10 +97,11 @@ data APIResponse a
 instance (A.FromJSON a) => A.FromJSON (APIResponse a) where
     parseJSON =
         A.withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
-            errO <- o A..: "error"
-            let err = Error <$> errO A..: "error_code" <*> errO A..: "error_msg"
-            let resp = Response <$> o A..: "response"
-            err <|> resp
+            errO <- o A..:? "error" A..!= mempty
+            asum
+                [ Error <$> errO A..: "error_code" <*> errO A..: "error_msg"
+                , Response <$> o A..: "response"
+                ]
 
 data PollResponse
     = PollResponse
@@ -111,10 +113,11 @@ data PollResponse
 
 instance A.FromJSON PollResponse where
     parseJSON =
-        A.withObject "FromJSON API.Vkontakte.PollResponse" $ \o -> do
-            let err = PollError <$> o A..: "failed"
-            let resp = PollResponse <$> o A..: "ts" <*> o A..: "updates"
-            resp <|> err
+        A.withObject "FromJSON API.Vkontakte.PollResponse" $ \o ->
+            asum
+                [ PollError <$> o A..: "failed"
+                , PollResponse <$> o A..: "ts" <*> o A..: "updates"
+                ]
 
 initiatePollServer :: Handle -> IO Handle
 initiatePollServer hAPI = do
