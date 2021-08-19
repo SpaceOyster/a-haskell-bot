@@ -24,6 +24,7 @@ import Data.Aeson
 import Data.Aeson.Types (Value)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
+import qualified Data.Hashable as H
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import GHC.Generics
@@ -118,8 +119,8 @@ instance ToJSON User where
 instance FromJSON User where
   parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 5}
 
-hashUser :: User -> L8.ByteString
-hashUser = encode . user_id
+instance H.Hashable User where
+  hash = user_id
 
 newtype Chat =
   Chat
