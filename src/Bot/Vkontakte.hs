@@ -104,5 +104,14 @@ qualifyQuery qstring =
     (qtype, qdata) = break (== '_') qstring
 
 -- diff
+reactToCallback :: Handle VK.VKState -> VK.Message -> IO API.Request
+reactToCallback hBot cq@VK.Message {id, from_id, payload} = do
+    let cdata = undefined
+    let user = from_id
+    case qualifyQuery cdata of
+        QDRepeat n -> undefined
+        QDOther s ->
+            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+-- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
