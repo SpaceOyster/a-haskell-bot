@@ -100,12 +100,20 @@ instance (A.FromJSON a) => A.FromJSON (APIResponse a) where
             let resp = Response <$> o A..: "response"
             err <|> resp
 
-data PollResponse =
-    PollResponse
-        { ts :: String
-        , updates :: [GroupEvent]
-        }
-    deriving (Show, Generic, A.FromJSON)
+data PollResponse
+    = PollResponse
+          { ts :: String
+          , updates :: [GroupEvent]
+          }
+    | PollError Integer
+    deriving (Show)
+
+instance A.FromJSON PollResponse where
+    parseJSON =
+        A.withObject "FromJSON API.Vkontakte.PollResponse" $ \o -> do
+            let err = PollError <$> o A..: "failed"
+            let resp = PollResponse <$> o A..: "ts" <*> o A..: "updates"
+            resp <|> err
 
 initiatePollServer :: Handle -> IO Handle
 initiatePollServer hAPI = do
