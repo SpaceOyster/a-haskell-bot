@@ -92,8 +92,7 @@ setUserMultiplier hBot@Handle {hLog} user repeats = do
 reactToUpdates :: Handle TG.APIState -> [Update] -> IO [API.Request]
 reactToUpdates hBot@Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
-    requests <- join <$> mapM (reactToUpdate hBot) updates
-    pure requests
+    join <$> mapM (reactToUpdate hBot) updates
 
 data Entity
     = EMessage Message

@@ -56,8 +56,7 @@ fetchUpdates hBot@Handle {hAPI} = do
 
 reactToUpdates :: Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
 reactToUpdates hBot updates = do
-    requests <- join <$> mapM (reactToUpdate hBot) updates
-    pure requests
+    join <$> mapM (reactToUpdate hBot) updates
 
 data Entity
     = EMessage VK.Message
