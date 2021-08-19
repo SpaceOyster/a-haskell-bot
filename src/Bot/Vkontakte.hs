@@ -15,6 +15,7 @@ import Data.IORef (newIORef)
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
 import qualified Logger
+import qualified Logger
 import Utils (throwDecode)
 
 data Config =
@@ -27,16 +28,15 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> IO (Handle VK.VKState)
-new cfg@Config {..} = do
-    let hLog = undefined
+new :: Config -> Logger.Handle -> IO (Handle VK.VKState)
+new cfg@Config {..} hLog = do
     state <- newIORef $ BotState {userSettings = mempty}
-    hAPI <- VK.new VK.Config {..}
+    hAPI <- VK.new VK.Config {..} hLog
     pure $ Handle {..}
 
-withHandle :: Config -> (Handle VK.VKState -> IO a) -> IO a
-withHandle config io = do
-    hBot <- new config
+withHandle :: Config -> Logger.Handle -> (Handle VK.VKState -> IO a) -> IO a
+withHandle config hLog io = do
+    hBot <- new config hLog
     io hBot
 
 doBotThing :: Handle VK.VKState -> IO [L8.ByteString]
@@ -48,9 +48,11 @@ doBotThing hBot@Handle {hLog} = do
     mapM (hBot & hAPI & API.sendRequest) requests
 
 fetchUpdates :: Handle VK.VKState -> IO [VK.GroupEvent]
-fetchUpdates hBot@Handle {hAPI} = do
+fetchUpdates hBot@Handle {hAPI, hLog} = do
+    Logger.info' hLog "Vkontakte: fetching Updates"
     req <- hAPI & VK.getUpdates
     json <- hAPI & API.sendRequest $ req
+    Logger.debug' hLog $ "Vkontakte: decoding json response: " <> L8.unpack json
     resp <- throwDecode json
     VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
 
