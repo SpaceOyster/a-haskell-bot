@@ -5,6 +5,7 @@
 module Logger
     ( Config(..)
     , Handle(..)
+    , Verbosity(..)
     , withHandle
     , log
     , log'
