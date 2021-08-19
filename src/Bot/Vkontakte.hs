@@ -64,5 +64,12 @@ data Entity
     deriving (Show)
 
 -- diff
+qualifyUpdate :: VK.GroupEvent -> Entity
+qualifyUpdate (VK.MessageNew m) =
+    if isCommandE m
+        then ECommand m
+        else EMessage m
+qualifyUpdate _ = EOther VK.Other -- TODO
+-- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
