@@ -136,12 +136,15 @@ getLongPollServer hAPI = do
         API.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
     res <- throwDecode json
     case res of
-        Error e -> throwM $ Ex.APIRespondedWithError $ show e
+        Error {..} ->
+            throwM $
+            Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
         Response r -> pure r
 
 rememberLastUpdate :: Handle -> PollResponse -> IO PollResponse
 rememberLastUpdate hAPI p@PollResponse {ts} =
     API.modifyState hAPI (\s -> s {lastTS = ts}) >> pure p
+rememberLastUpdate hAPI p = pure p
 
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
@@ -237,3 +240,4 @@ copyMessage hAPI Message {..} =
 
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates PollResponse {..} = pure updates
+extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
