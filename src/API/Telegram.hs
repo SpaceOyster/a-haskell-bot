@@ -70,7 +70,7 @@ getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@API.Handle {hLog} =
     bracket (API.getState hAPI) (const $ pure ()) $ \id -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
-        let json = encode . object $ ["offset" .= id]
+        let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
         pure $ API.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
