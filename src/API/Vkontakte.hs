@@ -248,7 +248,7 @@ apiMethod hAPI method qps =
 copyMessage :: (Monad m) => Handle -> Message -> m API.Request
 copyMessage hAPI Message {..} =
     pure . API.GET . apiMethod hAPI "messages.send" $
-    [("peer_id", Just $ show peer_id), ("message", Just $ show text)] <>
+    [("peer_id", Just $ show peer_id), ("message", Just text)] <>
     fmap attachmentToQuery attachments
 
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
