@@ -82,6 +82,15 @@ reactToUpdate hBot update = do
         EMessage msg -> reactToMessage hBot msg
         ECallback msg -> undefined
         EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
+
+reactToCommand :: Handle VK.VKState -> VK.Message -> IO API.Request
+reactToCommand hBot msg = do
+    undefined
+
+reactToMessage :: Handle VK.VKState -> VK.Message -> IO [API.Request]
+reactToMessage hBot msg = do
+    undefined
+
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
