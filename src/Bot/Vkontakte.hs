@@ -8,9 +8,12 @@ import qualified API.Vkontakte as VK
 import Bot hiding (strings)
 import qualified Bot (strings)
 import Control.Monad (join)
+import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
+import Exceptions (BotException(..))
+import qualified Exceptions as Priority (Priority(..))
 import qualified Logger
 import Utils (throwDecode)
 
@@ -70,6 +73,15 @@ qualifyUpdate (VK.MessageNew m) =
         then ECommand m
         else EMessage m
 qualifyUpdate _ = EOther VK.Other -- TODO
+
+reactToUpdate :: Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
+reactToUpdate hBot update = do
+    let qu = qualifyUpdate update
+    case qu of
+        ECommand msg -> (: []) <$> reactToCommand hBot msg
+        EMessage msg -> reactToMessage hBot msg
+        ECallback msg -> undefined
+        EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
