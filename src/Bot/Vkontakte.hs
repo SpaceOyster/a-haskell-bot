@@ -11,6 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import qualified Logger
+import Utils (throwDecode)
 
 data Config =
     Config
@@ -43,7 +44,11 @@ doBotThing hBot@Handle {hLog} = do
     mapM (hBot & hAPI & API.sendRequest) requests
 
 fetchUpdates :: Handle VK.VKState -> IO [VK.GroupEvent]
-fetchUpdates hBot = undefined
+fetchUpdates hBot@Handle {hAPI} = do
+    req <- hAPI & VK.getUpdates
+    json <- hAPI & API.sendRequest $ req
+    resp <- throwDecode json
+    VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
 
 reactToUpdates :: Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
 reactToUpdates hBot updates = undefined
