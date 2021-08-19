@@ -55,3 +55,10 @@ reactToUpdates :: Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
 reactToUpdates hBot updates = do
     requests <- join <$> mapM (reactToUpdate hBot) updates
     pure requests
+
+data Entity
+    = EMessage VK.Message
+    | ECommand VK.Message
+    | ECallback VK.Message -- TODO
+    | EOther VK.GroupEvent
+    deriving (Show)
