@@ -79,7 +79,7 @@ reactToUpdate hBot update = do
     case qu of
         ECommand msg -> (: []) <$> reactToCommand hBot msg
         EMessage msg -> reactToMessage hBot msg
-        ECallback msg -> undefined
+        ECallback cq -> (: []) <$> reactToCallback hBot cq
         EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
 
 reactToCommand :: Handle VK.VKState -> VK.Message -> IO API.Request
