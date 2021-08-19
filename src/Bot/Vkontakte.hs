@@ -95,6 +95,14 @@ data QueryData
     | QDOther String
     deriving (Show)
 
+qualifyQuery :: String -> QueryData
+qualifyQuery qstring =
+    case qtype of
+        "repeat" -> QDRepeat $ read (tail qdata)
+        _ -> QDOther qstring
+  where
+    (qtype, qdata) = break (== '_') qstring
+
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
