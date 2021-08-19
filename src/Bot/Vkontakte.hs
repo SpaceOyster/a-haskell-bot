@@ -62,3 +62,7 @@ data Entity
     | ECallback VK.Message -- TODO
     | EOther VK.GroupEvent
     deriving (Show)
+
+-- diff
+isCommandE :: VK.Message -> Bool
+isCommandE VK.Message {text} = isCommand text
