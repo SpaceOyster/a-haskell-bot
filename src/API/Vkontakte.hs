@@ -85,14 +85,18 @@ data PollServer =
         }
     deriving (Show, Generic, A.FromJSON)
 
-data APIResponse
-    = Error A.Value
-    | Response PollServer
+data APIResponse a
+    = Error
+          { error_code :: Integer
+          , error_msg :: String
+          }
+    | Response a
 
-instance A.FromJSON APIResponse where
+instance (A.FromJSON a) => A.FromJSON (APIResponse a) where
     parseJSON =
         A.withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
-            let err = Error <$> o A..: "error"
+            errO <- o A..: "error"
+            let err = Error <$> errO A..: "error_code" <*> errO A..: "error_msg"
             let resp = Response <$> o A..: "response"
             err <|> resp
 
