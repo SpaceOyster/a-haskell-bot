@@ -27,6 +27,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
+import qualified Data.Hashable as H
 import Data.IORef (modifyIORef', newIORef, readIORef)
 import qualified Exceptions as Ex
 import GHC.Generics
@@ -150,6 +151,14 @@ getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
     VKState {..} <- API.getState hAPI
     pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
+
+newtype User =
+    User
+        { unUser :: Integer
+        }
+
+instance H.Hashable User where
+    hash = unUser
 
 data Message =
     Message
