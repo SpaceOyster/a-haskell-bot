@@ -10,14 +10,15 @@ module API.Vkontakte
     , new
     , withHandle
     , Config(..)
+    , VKState(..)
+    , GroupEvent(..)
     , PollResponse(..)
+    , User(..)
     , Message(..)
     , Attachment(..)
     , getUpdates
     , rememberLastUpdate
     , copyMessage
-    , GroupEvent(..)
-    , VKState(..)
     , extractUpdates
     ) where
 
