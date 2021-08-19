@@ -90,6 +90,11 @@ reactToMessage :: Handle VK.VKState -> VK.Message -> IO [API.Request]
 reactToMessage hBot msg = do
     undefined
 
+data QueryData
+    = QDRepeat Int
+    | QDOther String
+    deriving (Show)
+
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
