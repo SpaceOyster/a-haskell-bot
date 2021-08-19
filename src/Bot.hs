@@ -5,8 +5,9 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
+import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, readIORef)
-import Data.Map (Map)
+import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import qualified Logger
@@ -73,11 +74,9 @@ hSetState hBot f = do
     Logger.debug' (hLog hBot) "Appying state BotState mutating function"
     state hBot `modifyIORef` f
 
-type Hash = L8.ByteString
-
 newtype BotState =
     BotState
-        { userSettings :: Map Hash Int
+        { userSettings :: Map.Map H.Hash Int
         }
 
 -- | command has to be between 1-32 chars long
