@@ -1,3 +1,5 @@
+{-# LANGUAGE NamedFieldPuns #-}
+
 module Bot where
 
 import qualified API (Handle)
@@ -5,6 +7,7 @@ import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
+import Data.Function ((&))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, readIORef)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
@@ -78,6 +81,31 @@ newtype BotState =
     BotState
         { userSettings :: Map.Map H.Hash Int
         }
+
+getUserMultiplier :: (H.Hashable u) => Handle s -> u -> IO Int
+getUserMultiplier hBot user = do
+    st <- Bot.hGetState hBot
+    let drepeats = Bot.echoMultiplier hBot
+        uhash = H.hash user
+        repeats = Map.findWithDefault drepeats uhash $ userSettings st
+    pure repeats
+
+getUserMultiplierM :: (H.Hashable u) => Handle s -> Maybe u -> IO Int
+getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
+getUserMultiplierM hBot@Handle {hLog} Nothing = do
+    Logger.warning'
+        hLog
+        "Telegram: No User info, returning default echo multiplier"
+    pure $ hBot & Bot.echoMultiplier
+
+setUserMultiplier :: (Show u, H.Hashable u) => Handle s -> u -> Int -> IO ()
+setUserMultiplier hBot@Handle {hLog} user repeats = do
+    Logger.debug' hLog $ "Setting echo multiplier to: " <> show repeats
+    Logger.debug' hLog $ "    For User: " <> show user
+    hBot `Bot.hSetState` \st ->
+        let uhash = H.hash user
+            usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
+         in st {userSettings = usettings}
 
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long

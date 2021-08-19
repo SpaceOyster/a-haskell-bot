@@ -20,7 +20,6 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import Data.List.Extended (replaceSubseq)
-import qualified Data.Map as Map (alter, findWithDefault)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified Logger
@@ -63,31 +62,6 @@ fetchUpdates hBot@Handle {hLog, hAPI} = do
     Logger.debug' hLog "Telegram: decoding json response"
     resp <- throwDecode json
     extractUpdates =<< TG.rememberLastUpdate hAPI resp
-
-getUserMultiplier :: Handle s -> User -> IO Int
-getUserMultiplier hBot user = do
-    st <- Bot.hGetState hBot
-    let drepeats = Bot.echoMultiplier hBot
-        uhash = hashUser user
-        repeats = Map.findWithDefault drepeats uhash $ userSettings st
-    pure repeats
-
-getUserMultiplierM :: Handle s -> Maybe User -> IO Int
-getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
-getUserMultiplierM hBot@Handle {hLog} Nothing = do
-    Logger.warning'
-        hLog
-        "Telegram: No User info, returning default echo multiplier"
-    pure $ hBot & Bot.echoMultiplier
-
-setUserMultiplier :: Handle s -> User -> Int -> IO ()
-setUserMultiplier hBot@Handle {hLog} user repeats = do
-    Logger.debug' hLog $ "Setting echo multiplier to: " <> show repeats
-    Logger.debug' hLog $ "    For User: " <> show user
-    hBot `Bot.hSetState` \st ->
-        let uhash = hashUser user
-            usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
-         in st {userSettings = usettings}
 
 reactToUpdates :: Handle TG.APIState -> [Update] -> IO [API.Request]
 reactToUpdates hBot@Handle {hLog} updates = do
