@@ -14,7 +14,6 @@ import qualified API.Telegram as TG
 import API.Telegram.Types
 import Bot hiding (strings)
 import qualified Bot (strings)
-import Control.Exception (finally)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -57,13 +56,13 @@ doBotThing hBot@Handle {hLog} = do
     mapM (hBot & hAPI & API.sendRequest) requests
 
 fetchUpdates :: Handle TG.APIState -> IO [Update]
-fetchUpdates hBot@Handle {hLog} = do
+fetchUpdates hBot@Handle {hLog, hAPI} = do
     Logger.info' hLog "Telegram: fetching Updates"
-    req <- hBot & hAPI & TG.getUpdates
-    json <- hBot & hAPI & API.sendRequest $ req
+    req <- hAPI & TG.getUpdates
+    json <- hAPI & API.sendRequest $ req
     Logger.debug' hLog "Telegram: decoding json response"
     resp <- throwDecode json
-    extractUpdates resp
+    extractUpdates =<< TG.rememberLastUpdate hAPI resp
 
 getUserMultiplier :: Handle s -> User -> IO Int
 getUserMultiplier hBot user = do
@@ -94,10 +93,7 @@ reactToUpdates :: Handle TG.APIState -> [Update] -> IO [API.Request]
 reactToUpdates hBot@Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
     requests <- join <$> mapM (reactToUpdate hBot) updates
-    pure requests `finally` remember updates
-  where
-    remember [] = pure ()
-    remember us = TG.rememberLastUpdate (hAPI hBot) $ last us
+    pure requests
 
 data Entity
     = EMessage Message
