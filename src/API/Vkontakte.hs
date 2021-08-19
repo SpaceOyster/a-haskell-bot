@@ -219,14 +219,14 @@ attachmentToQuery Sticker {..} = ("sticker_id", Just $ show sticker_id)
 attachmentToQuery a =
     (,) "attachment" . Just $
     case a of
-        Photo m -> "photo_" <> mediaToQuery m
-        Audio m -> "audio_" <> mediaToQuery m
-        Video m -> "video_" <> mediaToQuery m
-        Doc m -> "doc_" <> mediaToQuery m
+        Photo m -> "photo" <> mediaToQuery m
+        Audio m -> "audio" <> mediaToQuery m
+        Video m -> "video" <> mediaToQuery m
+        Doc m -> "doc" <> mediaToQuery m
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
-        show id <> "_" <> show owner_id <> maybe "" ('_' :) access_key
+        show owner_id <> "_" <> show id <> maybe "" ('_' :) access_key
 
 data GroupEvent
     = MessageNew Message
