@@ -112,6 +112,11 @@ reactToCallback hBot cq@VK.Message {id, from_id, payload} = do
         QDRepeat n -> undefined
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+newtype Action s m =
+    Action
+        { runAction :: Handle s -> VK.Message -> m API.Request
+        }
+
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
