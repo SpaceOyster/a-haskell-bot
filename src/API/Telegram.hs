@@ -62,8 +62,12 @@ withHandle config hLog io = do
 apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
-rememberLastUpdate :: Handle -> Update -> IO ()
-rememberLastUpdate hAPI u = hAPI `API.setState` (update_id u + 1)
+rememberLastUpdate :: Handle -> Response -> IO Response
+rememberLastUpdate hAPI res@Result {result} =
+    case result of
+        [] -> pure res
+        x -> API.setState hAPI ((1 +) . update_id . last $ result) >> pure res
+rememberLastUpdate hAPI err = pure err
 
 -- API method
 getUpdates :: Handle -> IO API.Request
