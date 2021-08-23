@@ -29,8 +29,5 @@ stringifyQueryList = intercalate "&" . (stringifyQueryPair =<<)
 
 stringifyQueryPair :: MonadFail m => QueryParam -> m String
 stringifyQueryPair (k, Nothing) = fail $ "No value present for " <> show k
-stringifyQueryPair (k, Just v) = pure . (k <>) . ('=' :) . fmap spaceToPlus $ v
-  where
-    spaceToPlus :: Char -> Char
-    spaceToPlus ' ' = '+'
-    spaceToPlus c = c
+stringifyQueryPair (k, Just v) =
+  pure . (k <>) . ('=' :) . escapeURIString isUnescapedInURIComponent $ v
