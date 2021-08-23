@@ -7,14 +7,13 @@ import qualified API
 import qualified API.Vkontakte as VK
 import Bot hiding (strings)
 import qualified Bot (strings)
-import Control.Monad (join)
+import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
-import qualified Logger
 import qualified Logger
 import Utils (throwDecode)
 
@@ -88,9 +87,15 @@ reactToCommand :: Handle VK.VKState -> VK.Message -> IO API.Request
 reactToCommand hBot msg = do
     undefined
 
+-- diff
 reactToMessage :: Handle VK.VKState -> VK.Message -> IO [API.Request]
-reactToMessage hBot msg = do
-    undefined
+reactToMessage hBot@Handle {hAPI, hLog} msg@VK.Message {..} = do
+    n <- getUserMultiplier hBot $ VK.User from_id
+    clone <- VK.copyMessage hAPI msg
+    Logger.debug' hLog $
+        "Vkontakte: generating " <> show n <> " echoes for Message: " <> show id
+    Logger.debug' hLog $ "  Multiplied request" <> show clone
+    n `replicateM` pure clone
 
 data QueryData
     = QDRepeat Int
