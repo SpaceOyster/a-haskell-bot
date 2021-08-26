@@ -171,8 +171,7 @@ repeatPrompt hBot userM = do
     pure $ replaceSubseq prompt' "%n" (show mult)
 
 repeatKeyboard :: InlineKeyboardMarkup
-repeatKeyboard =
-    InlineKeyboardMarkup [[button 1, button 2, button 3, button 4, button 5]]
+repeatKeyboard = InlineKeyboardMarkup [button <$> [1 .. 5]]
   where
     button x =
         InlineKeyboardButton
