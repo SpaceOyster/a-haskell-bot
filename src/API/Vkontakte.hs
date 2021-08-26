@@ -317,3 +317,8 @@ data KeyboardActionType
     | Location
     | Callback
     deriving (Show, Generic)
+
+instance A.ToJSON KeyboardActionType where
+    toJSON = A.genericToJSON options
+      where
+        options = A.defaultOptions {A.constructorTagModifier = fmap toLower}
