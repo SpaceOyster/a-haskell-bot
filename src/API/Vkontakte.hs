@@ -300,6 +300,17 @@ data KeyboardAction =
         }
     deriving (Show, Generic)
 
+instance A.ToJSON KeyboardAction where
+    toJSON KeyboardAction {..} =
+        A.object $
+        filter
+            (\(_, mv) -> mv /= A.Null) -- TODO do better
+            [ "type" A..= action_type
+            , "label" A..= label
+            , "payload" A..= payload
+            , "link" A..= link
+            ]
+
 data KeyboardActionType
     = Text
     | OpenLink
