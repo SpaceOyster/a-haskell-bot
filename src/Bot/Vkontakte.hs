@@ -130,7 +130,15 @@ getCommand :: VK.Message -> Command
 getCommand = parseCommand . takeWhile (/= ' ') . tail . VK.text
 
 commandAction :: Command -> Action VK.VKState IO
-commandAction cmd = undefined
+commandAction cmd =
+    Action $ \hBot@Handle {..} VK.Message {..} -> do
+        let address = peer_id
+        case cmd of
+            Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
+            Help -> VK.sendTextMessage hAPI address $ Bot.help strings
+            Repeat -> VK.sendKeyboard hAPI address "Hello World" repeatKeyboard
+            UnknownCommand ->
+                VK.sendTextMessage hAPI address $ Bot.unknown strings
 
 newtype Action s m =
     Action
