@@ -322,3 +322,10 @@ instance A.ToJSON KeyboardActionType where
     toJSON = A.genericToJSON options
       where
         options = A.defaultOptions {A.constructorTagModifier = fmap toLower}
+
+sendKeyboard ::
+       (Monad m) => Handle -> Integer -> String -> Keyboard -> m API.Request
+sendKeyboard hAPI peer_id prompt keyboard =
+    pure $
+    sendMessageWith hAPI peer_id prompt $
+    [("keyboard", Just $ L8.unpack $ A.encode keyboard)]
