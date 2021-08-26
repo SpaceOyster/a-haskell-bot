@@ -245,11 +245,19 @@ apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
     flip URI.addQueryParams qps . URI.addPath (API.baseURI hAPI) $ method
 
+sendMessageWith :: Handle -> Integer -> String -> URI.QueryParams -> API.Request
+sendMessageWith hAPI peer_id text qps =
+    API.GET . apiMethod hAPI "messages.send" $
+    [("peer_id", Just $ show peer_id), ("message", Just text)] <> qps
+
+sendTextMessage :: (Monad m) => Handle -> Integer -> String -> m API.Request
+sendTextMessage hAPI peer_id text =
+    pure $ sendMessageWith hAPI peer_id text mempty
+
 copyMessage :: (Monad m) => Handle -> Message -> m API.Request
 copyMessage hAPI Message {..} =
-    pure . API.GET . apiMethod hAPI "messages.send" $
-    [("peer_id", Just $ show peer_id), ("message", Just text)] <>
-    fmap attachmentToQuery attachments
+    pure $
+    sendMessageWith hAPI peer_id text $ fmap attachmentToQuery attachments
 
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates PollResponse {..} = pure updates
