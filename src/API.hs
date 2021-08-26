@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module API
     ( Handle(..)
@@ -38,10 +39,14 @@ post :: Handle s -> URI.URI -> L8.ByteString -> IO L8.ByteString
 post hAPI = hAPI & http & HTTP.post'
 
 sendRequest :: Handle s -> Request -> IO L8.ByteString
-sendRequest hAPI req =
-    case req of
-        GET method -> get hAPI method
-        POST method body -> post hAPI method body
+sendRequest hAPI@Handle {hLog} req = do
+    Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
+    res <-
+        case req of
+            GET method -> get hAPI method
+            POST method body -> post hAPI method body
+    Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    pure res
 
 getState :: Handle s -> IO s
 getState = readIORef . apiState
