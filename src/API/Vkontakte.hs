@@ -262,3 +262,41 @@ copyMessage hAPI Message {..} =
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates PollResponse {..} = pure updates
 extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
+
+data Keyboard =
+    Keyboard
+        { one_time :: Bool
+        , buttons :: [[KeyboardButton]]
+        , inline :: Bool
+        }
+    deriving (Show, Generic, A.ToJSON)
+
+data KeyboardButton =
+    KeyboardButton
+        { action :: KeyboardAction
+        , color :: ButtonColor
+        }
+    deriving (Show, Generic, A.ToJSON)
+
+data ButtonColor
+    = Primary
+    | Secondary
+    | Negative
+    | Positive
+    deriving (Show, Generic)
+
+data KeyboardAction =
+    KeyboardAction
+        { action_type :: KeyboardActionType
+        , label :: Maybe String
+        , payload :: Maybe String
+        , link :: Maybe String
+        }
+    deriving (Show, Generic)
+
+data KeyboardActionType
+    = Text
+    | OpenLink
+    | Location
+    | Callback
+    deriving (Show, Generic)
