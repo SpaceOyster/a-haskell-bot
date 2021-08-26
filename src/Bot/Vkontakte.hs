@@ -145,6 +145,21 @@ newtype Action s m =
         { runAction :: Handle s -> VK.Message -> m API.Request
         }
 
+repeatKeyboard :: VK.Keyboard
+repeatKeyboard =
+    VK.Keyboard
+        {one_time = False, inline = True, buttons = [repeatButton <$> [1 .. 5]]}
+  where
+    repeatButton i =
+        VK.KeyboardButton {color = VK.Primary, action = repeatAction i}
+    repeatAction i =
+        VK.KeyboardAction
+            { action_type = VK.Callback
+            , label = Just $ show i
+            , payload = Just $ "{\"repeat\":" <> show i <> "}"
+            , link = Nothing
+            }
+
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
