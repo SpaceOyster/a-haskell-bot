@@ -126,6 +126,9 @@ reactToCallback hBot cq@VK.Message {id, from_id, payload} = do
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
+getCommand :: VK.Message -> Command
+getCommand = parseCommand . takeWhile (/= ' ') . tail . VK.text
+
 commandAction :: Command -> Action VK.VKState IO
 commandAction cmd = undefined
 
