@@ -84,8 +84,14 @@ reactToUpdate hBot update = do
         EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
 
 reactToCommand :: Handle VK.VKState -> VK.Message -> IO API.Request
-reactToCommand hBot msg = do
-    undefined
+reactToCommand hBot@Handle {hLog} msg@VK.Message {id, peer_id} = do
+    let cmd = getCommand msg
+    Logger.debug' hLog $
+        "Vkontakte: Got command" <>
+        show cmd <>
+        " in message id " <> show id <> " , peer_id: " <> show peer_id
+    let action = commandAction cmd
+    runAction action hBot msg
 
 -- diff
 reactToMessage :: Handle VK.VKState -> VK.Message -> IO [API.Request]
