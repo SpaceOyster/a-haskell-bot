@@ -27,6 +27,7 @@ import Control.Applicative ((<|>))
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Char (toLower)
 import Data.Foldable (asum)
 import Data.Function ((&))
 import qualified Data.Hashable as H
@@ -284,6 +285,11 @@ data ButtonColor
     | Negative
     | Positive
     deriving (Show, Generic)
+
+instance A.ToJSON ButtonColor where
+    toJSON = A.genericToJSON options
+      where
+        options = A.defaultOptions {A.constructorTagModifier = fmap toLower} -- TODO do better
 
 data KeyboardAction =
     KeyboardAction
