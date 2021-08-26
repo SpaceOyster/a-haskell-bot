@@ -20,6 +20,13 @@ module API.Vkontakte
     , rememberLastUpdate
     , copyMessage
     , extractUpdates
+    , sendTextMessage
+    , Keyboard(..)
+    , KeyboardButton(..)
+    , ButtonColor(..)
+    , KeyboardAction(..)
+    , KeyboardActionType(..)
+    , sendKeyboard
     ) where
 
 import qualified API
