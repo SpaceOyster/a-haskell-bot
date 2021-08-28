@@ -19,7 +19,6 @@ import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
-import Data.List.Extended (replaceSubseq)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified Logger
@@ -150,7 +149,7 @@ commandAction cmd =
             Start -> TG.sendMessage hAPI address $ Bot.greeting strings
             Help -> TG.sendMessage hAPI address $ Bot.help strings
             Repeat -> do
-                prompt <- hBot & repeatPrompt $ from
+                prompt <- repeatPrompt hBot from
                 TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
             UnknownCommand -> TG.sendMessage hAPI address $ Bot.unknown strings
 
@@ -163,12 +162,6 @@ newtype Action s m =
     Action
         { runAction :: Handle s -> Message -> m API.Request
         }
-
-repeatPrompt :: Handle s -> Maybe User -> IO String
-repeatPrompt hBot userM = do
-    mult <- hBot & getUserMultiplierM $ userM
-    let prompt' = hBot & Bot.strings & Bot.repeat
-    pure $ replaceSubseq prompt' "%n" (show mult)
 
 repeatKeyboard :: InlineKeyboardMarkup
 repeatKeyboard = InlineKeyboardMarkup [button <$> [1 .. 5]]

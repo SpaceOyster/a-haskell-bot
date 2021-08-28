@@ -10,6 +10,7 @@ import Data.Char (toLower)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, readIORef)
+import Data.List.Extended (replaceSubseq)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
@@ -97,6 +98,12 @@ getUserMultiplierM hBot@Handle {hLog} Nothing = do
         hLog
         "Telegram: No User info, returning default echo multiplier"
     pure $ hBot & Bot.echoMultiplier
+
+repeatPrompt :: (H.Hashable u) => Handle s -> Maybe u -> IO String
+repeatPrompt hBot userM = do
+    mult <- hBot & getUserMultiplierM $ userM
+    let prompt' = hBot & Bot.strings & Bot.repeat
+    pure $ replaceSubseq prompt' "%n" (show mult)
 
 setUserMultiplier :: (Show u, H.Hashable u) => Handle s -> u -> Int -> IO ()
 setUserMultiplier hBot@Handle {hLog} user repeats = do
