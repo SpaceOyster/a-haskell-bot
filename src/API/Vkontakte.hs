@@ -181,8 +181,8 @@ data Message =
         , text :: String
         , random_id :: Maybe Integer
         , attachments :: [Attachment]
-        , payload :: Maybe String
-        , keyboard :: Maybe A.Object
+        , payload :: Maybe A.Value
+        , keyboard :: Maybe Keyboard
         , is_cropped :: Maybe Bool
         }
     deriving (Show, Generic, A.FromJSON)
