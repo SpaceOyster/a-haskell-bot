@@ -136,7 +136,9 @@ commandAction cmd =
         case cmd of
             Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
             Help -> VK.sendTextMessage hAPI address $ Bot.help strings
-            Repeat -> VK.sendKeyboard hAPI address "Hello World" repeatKeyboard
+            Repeat -> do
+                prompt <- repeatPrompt hBot $ Just $ VK.User from_id
+                VK.sendKeyboard hAPI address prompt repeatKeyboard
             UnknownCommand ->
                 VK.sendTextMessage hAPI address $ Bot.unknown strings
 
