@@ -302,7 +302,7 @@ data KeyboardAction =
     KeyboardAction
         { action_type :: KeyboardActionType
         , label :: Maybe String
-        , payload :: Maybe String
+        , payload :: Maybe A.Value
         , link :: Maybe String
         }
     deriving (Show, Generic)
