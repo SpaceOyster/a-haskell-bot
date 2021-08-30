@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Bot.Vkontakte where
 
@@ -9,6 +10,7 @@ import Bot hiding (strings)
 import qualified Bot (strings)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
@@ -147,6 +149,12 @@ newtype Action s m =
         { runAction :: Handle s -> VK.Message -> m API.Request
         }
 
+data Callback =
+    RepeatCallBack Integer
+
+instance A.ToJSON Callback where
+    toJSON (RepeatCallBack i) = A.object ["repeat" A..= i]
+
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
     VK.Keyboard
@@ -158,7 +166,7 @@ repeatKeyboard =
         VK.KeyboardAction
             { action_type = VK.Callback
             , label = Just $ show i
-            , payload = Just $ "{\"repeat\":" <> show i <> "}"
+            , payload = Just $ A.toJSON $ RepeatCallBack i
             , link = Nothing
             }
 
