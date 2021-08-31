@@ -155,6 +155,11 @@ data Callback =
 instance A.ToJSON Callback where
     toJSON (RepeatCallBack i) = A.object ["repeat" A..= i]
 
+instance A.FromJSON Callback where
+    parseJSON =
+        A.withObject "FromJSON Bot.Vkontakte.Callback" $ \o ->
+            RepeatCallBack <$> o A..: "repeat"
+
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
     VK.Keyboard
