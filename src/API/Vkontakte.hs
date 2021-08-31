@@ -277,14 +277,14 @@ data Keyboard =
         , buttons :: [[KeyboardButton]]
         , inline :: Bool
         }
-    deriving (Show, Generic, A.ToJSON)
+    deriving (Show, Generic, A.ToJSON, A.FromJSON)
 
 data KeyboardButton =
     KeyboardButton
         { action :: KeyboardAction
         , color :: ButtonColor
         }
-    deriving (Show, Generic, A.ToJSON)
+    deriving (Show, Generic, A.ToJSON, A.FromJSON)
 
 data ButtonColor
     = Primary
@@ -297,6 +297,16 @@ instance A.ToJSON ButtonColor where
     toJSON = A.genericToJSON options
       where
         options = A.defaultOptions {A.constructorTagModifier = fmap toLower} -- TODO do better
+
+instance A.FromJSON ButtonColor where
+    parseJSON =
+        A.withText "FromJSON API.Vkontakte.ButtonColor" $ \t ->
+            case t of
+                "primary" -> pure Primary
+                "secondary" -> pure Secondary
+                "negative" -> pure Negative
+                "positive" -> pure Positive
+                _ -> fail "Unknown color"
 
 data KeyboardAction =
     KeyboardAction
@@ -318,6 +328,15 @@ instance A.ToJSON KeyboardAction where
             , "link" A..= link
             ]
 
+instance A.FromJSON KeyboardAction where
+    parseJSON =
+        A.withObject "FromJSON API.Vkontakte.KeyboardAction" $ \o -> do
+            action_type <- o A..: "type"
+            label <- o A..:? "label"
+            payload <- o A..:? "payload"
+            link <- o A..:? "link"
+            pure KeyboardAction {..}
+
 data KeyboardActionType
     = Text
     | OpenLink
@@ -329,6 +348,16 @@ instance A.ToJSON KeyboardActionType where
     toJSON = A.genericToJSON options
       where
         options = A.defaultOptions {A.constructorTagModifier = fmap toLower}
+
+instance A.FromJSON KeyboardActionType where
+    parseJSON =
+        A.withText "FromJSON API.Vkontakte.KeyboardActionType" $ \t ->
+            case t of
+                "text" -> pure Text
+                "openlink" -> pure OpenLink
+                "location" -> pure Location
+                "callback" -> pure Callback
+                _ -> fail "Unknown Action Type"
 
 sendKeyboard ::
        (Monad m) => Handle -> Integer -> String -> Keyboard -> m API.Request
