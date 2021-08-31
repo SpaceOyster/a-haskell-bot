@@ -14,6 +14,7 @@ import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
+import Data.Maybe (isJust)
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
 import qualified Logger
@@ -178,3 +179,6 @@ repeatKeyboard =
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
+
+isCallbackE :: VK.Message -> Bool
+isCallbackE VK.Message {payload} = isJust payload
