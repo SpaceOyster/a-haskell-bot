@@ -119,16 +119,16 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
-newtype Callback =
-    RepeatCallBack Integer
+newtype Payload =
+    RepeatPayload Int
 
-instance A.ToJSON Callback where
-    toJSON (RepeatCallBack i) = A.object ["repeat" A..= i]
+instance A.ToJSON Payload where
+    toJSON (RepeatPayload i) = A.object ["repeat" A..= i]
 
-instance A.FromJSON Callback where
+instance A.FromJSON Payload where
     parseJSON =
-        A.withObject "FromJSON Bot.Vkontakte.Callback" $ \o ->
-            RepeatCallBack <$> o A..: "repeat"
+        A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
+            RepeatPayload <$> o A..: "repeat"
 
 -- diff
 reactToCallback :: Handle VK.VKState -> VK.Message -> IO API.Request
@@ -172,7 +172,7 @@ repeatKeyboard =
         VK.KeyboardAction
             { action_type = VK.Callback
             , label = Just $ show i
-            , payload = Just $ A.toJSON $ RepeatCallBack i
+            , payload = Just $ A.toJSON $ RepeatPayload i
             , link = Nothing
             }
 
