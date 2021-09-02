@@ -11,6 +11,7 @@ import qualified Bot (strings)
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
+import qualified Data.Aeson.Types as A (parseMaybe)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
@@ -133,14 +134,19 @@ instance A.FromJSON Payload where
             RepeatPayload <$> o A..: "repeat"
 
 -- diff
-reactToCallback :: Handle VK.VKState -> VK.Message -> IO API.Request
-reactToCallback hBot cq@VK.Message {id, from_id, payload} = do
-    let cdata = undefined
-    let user = from_id
-    case qualifyQuery cdata of
-        QDRepeat n -> undefined
-        QDOther s ->
-            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+reactToCallback :: Handle VK.VKState -> VK.CallbackEvent -> IO [API.Request]
+reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
+    let callback = A.parseMaybe A.parseJSON payload
+    let user = VK.User user_id
+    case callback of
+        Just (RepeatPayload n) -> do
+            Logger.info' (hLog hBot) $
+                "Setting echo multiplier = " <> show n <> " for " <> show user
+            setUserMultiplier hBot user n
+            pure []
+        Nothing ->
+            throwM $
+            Ex Priority.Info $ "Unknown CallbackQuery type: " <> show payload
 
 getCommand :: VK.Message -> Command
 getCommand = parseCommand . takeWhile (/= ' ') . tail . VK.text
