@@ -16,6 +16,7 @@ module API.Vkontakte
     , User(..)
     , Message(..)
     , Attachment(..)
+    , CallbackEvent(..)
     , getUpdates
     , rememberLastUpdate
     , copyMessage
@@ -168,6 +169,7 @@ newtype User =
     User
         { unUser :: Integer
         }
+    deriving (Show)
 
 instance H.Hashable User where
     hash = unUser
@@ -236,8 +238,19 @@ attachmentToQuery a =
     mediaToQuery MediaDoc {..} =
         show owner_id <> "_" <> show id <> maybe "" ('_' :) access_key
 
+data CallbackEvent =
+    CallbackEvent
+        { user_id :: Integer
+        , peer_id :: Integer
+        , event_id :: String
+        , payload :: A.Value
+        , conversation_message_id :: Integer
+        }
+    deriving (Show, Generic, A.FromJSON)
+
 data GroupEvent
     = MessageNew Message
+    | MessageEvent CallbackEvent
     | Other
     deriving (Show)
 
@@ -247,7 +260,8 @@ instance A.FromJSON GroupEvent where
             A.String eventType <- o A..: "type"
             case eventType of
                 "message_new" -> MessageNew <$> o A..: "object"
-                _ -> pure Other
+                "message_event" -> MessageEvent <$> o A..: "object"
+                _ -> fail "Unknown GroupEvent type"
 
 apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
