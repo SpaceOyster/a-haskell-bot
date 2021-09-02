@@ -65,7 +65,7 @@ reactToUpdates hBot updates = do
 data Entity
     = EMessage VK.Message
     | ECommand VK.Message
-    | ECallback VK.Message -- TODO
+    | ECallback VK.CallbackEvent
     | EOther VK.GroupEvent
     deriving (Show)
 
