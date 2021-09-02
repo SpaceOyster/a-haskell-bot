@@ -22,6 +22,7 @@ module API.Vkontakte
     , copyMessage
     , extractUpdates
     , sendTextMessage
+    , sendMessageEventAnswer
     , Keyboard(..)
     , KeyboardButton(..)
     , ButtonColor(..)
@@ -262,6 +263,19 @@ instance A.FromJSON GroupEvent where
                 "message_new" -> MessageNew <$> o A..: "object"
                 "message_event" -> MessageEvent <$> o A..: "object"
                 _ -> fail "Unknown GroupEvent type"
+
+sendMessageEventAnswer :: Handle -> CallbackEvent -> String -> API.Request
+sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
+    API.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
+    [ ("event_id", Just event_id)
+    , ("user_id", Just $ show user_id)
+    , ("peer_id", Just $ show peer_id)
+    , ( "event_data"
+      , Just $
+        L8.unpack $
+        A.encode $
+        A.object ["type" A..= ("show_snackbar" :: String), "text" A..= prompt])
+    ]
 
 apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
