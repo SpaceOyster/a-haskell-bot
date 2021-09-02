@@ -181,6 +181,3 @@ repeatKeyboard =
 -- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = isCommand text
-
-isCallbackE :: VK.Message -> Bool
-isCallbackE VK.Message {payload} = isJust payload
