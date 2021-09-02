@@ -143,7 +143,12 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
             Logger.info' (hLog hBot) $
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             setUserMultiplier hBot user n
-            pure []
+            pure
+                [ VK.sendMessageEventAnswer
+                      (hAPI hBot)
+                      cq
+                      "Repeat Settings were saved (Don't forget to change it, Alan)" -- TODO get it from strings object
+                ]
         Nothing ->
             throwM $
             Ex Priority.Info $ "Unknown CallbackQuery type: " <> show payload
