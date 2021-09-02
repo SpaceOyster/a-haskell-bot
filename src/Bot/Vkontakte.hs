@@ -78,8 +78,10 @@ qualifyUpdate (VK.MessageNew m)
 qualifyUpdate _ = EOther VK.Other -- TODO
 
 reactToUpdate :: Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
-reactToUpdate hBot update = do
+reactToUpdate hBot@Handle {hLog} update = do
+    Logger.info' hLog $ "VK got Update: " <> show update
     let qu = qualifyUpdate update
+    Logger.info' hLog $ "VK qualified Update: " <> show qu
     case qu of
         ECommand msg -> (: []) <$> reactToCommand hBot msg
         EMessage msg -> reactToMessage hBot msg
