@@ -72,9 +72,9 @@ data Entity
 -- diff
 qualifyUpdate :: VK.GroupEvent -> Entity
 qualifyUpdate (VK.MessageNew m)
-    | isCallbackE m = ECallback m
     | isCommandE m = ECommand m
     | otherwise = EMessage m
+qualifyUpdate (VK.MessageEvent c) = ECallback c
 qualifyUpdate _ = EOther VK.Other -- TODO
 
 reactToUpdate :: Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
