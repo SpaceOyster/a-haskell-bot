@@ -46,7 +46,7 @@ instance A.FromJSON AppConfig where
     parseJSON =
         A.withObject "FromJSON Main.AppConfig" $ \o -> do
             defaults <- o A..: "defaults"
-            poll_period_ms <- defaults A..: "poll_period_ms"
+            poll_period_ms <- defaults A..: "poll-period-ms"
             let poll_period = (1000 *) $ max 500 poll_period_ms
             strings <- o A..:? "strings" A..!= mempty
             logger <- o A..:? "logger" A..!= mempty
@@ -58,7 +58,7 @@ instance A.FromJSON TG.Config where
     parseJSON =
         A.withObject "FromJSON Bot.Telegram" $ \o -> do
             echoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
-            key <- o A..:? "api_key" A..!= ""
+            key <- o A..:? "api-key" A..!= ""
             strings <- o A..:? "strings" A..!= mempty
             pure $ TG.Config {..}
 
@@ -69,4 +69,5 @@ instance A.FromJSON Bot.Strings where
             greetingM <- o A..:? "greeting"
             repeatM <- o A..:? "repeat"
             unknownM <- o A..:? "unknown"
+            settingsSavedM <- o A..:? "settings-saved"
             pure $ Bot.Strings {..}
