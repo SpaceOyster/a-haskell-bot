@@ -31,6 +31,7 @@ data Strings =
         , greetingM :: Maybe String
         , repeatM :: Maybe String
         , unknownM :: Maybe String
+        , settingsSavedM :: Maybe String
         }
     deriving (Show)
 
@@ -49,6 +50,9 @@ repeat = getterStringM repeatM ""
 unknown :: Strings -> String
 unknown = getterStringM unknownM ""
 
+settingsSaved :: Strings -> String
+settingsSaved = getterStringM settingsSavedM ""
+
 instance Semigroup Strings where
     s0 <> s1 =
         Strings
@@ -56,6 +60,7 @@ instance Semigroup Strings where
             , greetingM = greetingM s0 <|> greetingM s1
             , repeatM = repeatM s0 <|> repeatM s1
             , unknownM = unknownM s0 <|> unknownM s1
+            , settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
             }
 
 instance Monoid Strings where
@@ -65,6 +70,7 @@ instance Monoid Strings where
             , greetingM = mempty
             , repeatM = mempty
             , unknownM = mempty
+            , settingsSavedM = mempty
             }
 
 hGetState :: Handle s -> IO BotState
