@@ -11,7 +11,7 @@ module Bot.Telegram
 
 import qualified API
 import qualified API.Telegram as TG
-import API.Telegram.Types
+import qualified API.Telegram.Types as TG
 import Bot hiding (strings)
 import qualified Bot (strings)
 import Control.Monad (join, replicateM)
@@ -32,6 +32,7 @@ data Config =
         }
     deriving (Show)
 
+-- diff
 new :: Config -> Logger.Handle -> IO (Handle TG.APIState)
 new cfg@Config {..} hLog = do
     Logger.info' hLog "Initiating Telegram Bot"
@@ -53,29 +54,30 @@ doBotThing hBot@Handle {hLog} = do
         "Telegram: sending " <> show (length requests) <> " responses"
     mapM (hBot & hAPI & API.sendRequest) requests
 
-fetchUpdates :: Handle TG.APIState -> IO [Update]
+fetchUpdates :: Handle TG.APIState -> IO [TG.Update]
 fetchUpdates hBot@Handle {hLog, hAPI} = do
     Logger.info' hLog "Telegram: fetching Updates"
     req <- hAPI & TG.getUpdates
     json <- hAPI & API.sendRequest $ req
     Logger.debug' hLog "Telegram: decoding json response"
     resp <- throwDecode json
-    extractUpdates =<< TG.rememberLastUpdate hAPI resp
+    TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
 
-reactToUpdates :: Handle TG.APIState -> [Update] -> IO [API.Request]
+reactToUpdates :: Handle TG.APIState -> [TG.Update] -> IO [API.Request]
 reactToUpdates hBot@Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
     join <$> mapM (reactToUpdate hBot) updates
 
 data Entity
-    = EMessage Message
-    | ECommand Message
-    | ECallback CallbackQuery
-    | EOther Update
+    = EMessage TG.Message
+    | ECommand TG.Message
+    | ECallback TG.CallbackQuery
+    | EOther TG.Update
     deriving (Show)
 
-qualifyUpdate :: Update -> Entity
-qualifyUpdate u@Update {message, callback_query}
+-- diff
+qualifyUpdate :: TG.Update -> Entity
+qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = ECallback cq
     | Just msg <- message =
         if isCommandE msg
@@ -83,21 +85,23 @@ qualifyUpdate u@Update {message, callback_query}
             else EMessage msg
     | otherwise = EOther u
 
-reactToUpdate :: Handle TG.APIState -> Update -> IO [API.Request]
+-- diff
+reactToUpdate :: Handle TG.APIState -> TG.Update -> IO [API.Request]
 reactToUpdate hBot@Handle {hLog} update = do
     Logger.debug' hLog $
-        "Telegram: Qualifying Update with id " <> show (update_id update)
+        "Telegram: Qualifying Update with id " <> show (TG.update_id update)
     let qu = qualifyUpdate update
     case qu of
         ECommand msg -> (: []) <$> reactToCommand hBot msg
         EMessage msg -> reactToMessage hBot msg
         ECallback cq -> (: []) <$> reactToCallback hBot cq
-        EOther Update {update_id} ->
+        EOther TG.Update {update_id} ->
             throwM $
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
-reactToCommand :: Handle TG.APIState -> Message -> IO API.Request
-reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
+-- diff
+reactToCommand :: Handle TG.APIState -> TG.Message -> IO API.Request
+reactToCommand hBot@Handle {hLog} msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
     Logger.debug' hLog $
         "Telegram: Got command" <>
@@ -105,9 +109,10 @@ reactToCommand hBot@Handle {hLog} msg@Message {message_id} = do
     let action = commandAction cmd
     runAction action hBot msg
 
-reactToMessage :: Handle TG.APIState -> Message -> IO [API.Request]
-reactToMessage hBot@Handle {..} msg@Message {message_id} = do
-    author <- getAuthorThrow msg
+-- diff
+reactToMessage :: Handle TG.APIState -> TG.Message -> IO [API.Request]
+reactToMessage hBot@Handle {..} msg@TG.Message {message_id} = do
+    author <- TG.getAuthorThrow msg
     n <- hBot `getUserMultiplier` author
     Logger.debug' hLog $
         "Telegram: generating " <>
@@ -127,10 +132,11 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = break (== '_') qstring
 
-reactToCallback :: Handle TG.APIState -> CallbackQuery -> IO API.Request
-reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
+-- diff
+reactToCallback :: Handle TG.APIState -> TG.CallbackQuery -> IO API.Request
+reactToCallback hBot@Handle {hLog} cq@TG.CallbackQuery {id, from} = do
     Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
-    cdata <- getQDataThrow cq
+    cdata <- TG.getQDataThrow cq
     let user = from
     case qualifyQuery cdata of
         QDRepeat n -> do
@@ -141,10 +147,11 @@ reactToCallback hBot@Handle {hLog} cq@CallbackQuery {id, from} = do
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
+-- diff
 commandAction :: Command -> Action TG.APIState IO
 commandAction cmd =
-    Action $ \hBot@Handle {..} Message {..} -> do
-        let address = (chat :: Chat) & chat_id
+    Action $ \hBot@Handle {..} TG.Message {..} -> do
+        let address = (chat :: TG.Chat) & TG.chat_id
         case cmd of
             Start -> TG.sendMessage hAPI address $ Bot.greeting strings
             Help -> TG.sendMessage hAPI address $ Bot.help strings
@@ -153,22 +160,25 @@ commandAction cmd =
                 TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
             UnknownCommand -> TG.sendMessage hAPI address $ Bot.unknown strings
 
-getCommandThrow :: (MonadThrow m) => Message -> m Command
+-- diff
+getCommandThrow :: (MonadThrow m) => TG.Message -> m Command
 getCommandThrow msg = do
-    t <- getTextThrow msg
+    t <- TG.getTextThrow msg
     pure . parseCommand . takeWhile (/= ' ') . tail $ t
 
 newtype Action s m =
     Action
-        { runAction :: Handle s -> Message -> m API.Request
+        { runAction :: Handle s -> TG.Message -> m API.Request
         }
 
-repeatKeyboard :: InlineKeyboardMarkup
-repeatKeyboard = InlineKeyboardMarkup [button <$> [1 .. 5]]
+-- diff
+repeatKeyboard :: TG.InlineKeyboardMarkup
+repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
   where
     button x =
-        InlineKeyboardButton
+        TG.InlineKeyboardButton
             {text = show x, callback_data = "repeat_" ++ show x}
 
-isCommandE :: Message -> Bool
-isCommandE Message {text} = maybe False isCommand text
+-- diff
+isCommandE :: TG.Message -> Bool
+isCommandE TG.Message {text} = maybe False isCommand text
