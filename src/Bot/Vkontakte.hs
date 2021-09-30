@@ -6,8 +6,7 @@ module Bot.Vkontakte where
 
 import qualified API
 import qualified API.Vkontakte as VK
-import Bot hiding (strings)
-import qualified Bot (strings)
+import qualified Bot
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
@@ -31,27 +30,28 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> Logger.Handle -> IO (Handle VK.VKState)
+-- diff
+new :: Config -> Logger.Handle -> IO (Bot.Handle VK.VKState)
 new cfg@Config {..} hLog = do
-    state <- newIORef $ BotState {userSettings = mempty}
+    state <- newIORef $ Bot.BotState {userSettings = mempty}
     hAPI <- VK.new VK.Config {..} hLog
-    pure $ Handle {..}
+    pure $ Bot.Handle {..}
 
-withHandle :: Config -> Logger.Handle -> (Handle VK.VKState -> IO a) -> IO a
+withHandle :: Config -> Logger.Handle -> (Bot.Handle VK.VKState -> IO a) -> IO a
 withHandle config hLog io = do
     hBot <- new config hLog
     io hBot
 
-doBotThing :: Handle VK.VKState -> IO [L8.ByteString]
-doBotThing hBot@Handle {hLog} = do
+doBotThing :: Bot.Handle VK.VKState -> IO [L8.ByteString]
+doBotThing hBot@Bot.Handle {hLog} = do
     updates <- fetchUpdates hBot
     requests <- reactToUpdates hBot updates
     Logger.info' hLog $
         "Vkontakte: sending " <> show (length requests) <> " responses"
-    mapM (hBot & hAPI & API.sendRequest) requests
+    mapM (hBot & Bot.hAPI & API.sendRequest) requests
 
-fetchUpdates :: Handle VK.VKState -> IO [VK.GroupEvent]
-fetchUpdates hBot@Handle {hAPI, hLog} = do
+fetchUpdates :: Bot.Handle VK.VKState -> IO [VK.GroupEvent]
+fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
     Logger.info' hLog "Vkontakte: fetching Updates"
     req <- hAPI & VK.getUpdates
     json <- hAPI & API.sendRequest $ req
@@ -59,7 +59,7 @@ fetchUpdates hBot@Handle {hAPI, hLog} = do
     resp <- throwDecode json
     VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
 
-reactToUpdates :: Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
+reactToUpdates :: Bot.Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
 reactToUpdates hBot updates = do
     join <$> mapM (reactToUpdate hBot) updates
 
@@ -78,8 +78,9 @@ qualifyUpdate (VK.MessageNew m)
 qualifyUpdate (VK.MessageEvent c) = ECallback c
 qualifyUpdate _ = EOther VK.Other -- TODO
 
-reactToUpdate :: Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
-reactToUpdate hBot@Handle {hLog} update = do
+-- diff
+reactToUpdate :: Bot.Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
+reactToUpdate hBot@Bot.Handle {hLog} update = do
     Logger.info' hLog $ "VK got Update: " <> show update
     let qu = qualifyUpdate update
     Logger.info' hLog $ "VK qualified Update: " <> show qu
@@ -89,8 +90,9 @@ reactToUpdate hBot@Handle {hLog} update = do
         ECallback cq -> reactToCallback hBot cq
         EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
 
-reactToCommand :: Handle VK.VKState -> VK.Message -> IO API.Request
-reactToCommand hBot@Handle {hLog} msg@VK.Message {id, peer_id} = do
+-- diff
+reactToCommand :: Bot.Handle VK.VKState -> VK.Message -> IO API.Request
+reactToCommand hBot@Bot.Handle {hLog} msg@VK.Message {id, peer_id} = do
     let cmd = getCommand msg
     Logger.debug' hLog $
         "Vkontakte: Got command" <>
@@ -100,9 +102,9 @@ reactToCommand hBot@Handle {hLog} msg@VK.Message {id, peer_id} = do
     runAction action hBot msg
 
 -- diff
-reactToMessage :: Handle VK.VKState -> VK.Message -> IO [API.Request]
-reactToMessage hBot@Handle {hAPI, hLog} msg@VK.Message {..} = do
-    n <- getUserMultiplier hBot $ VK.User from_id
+reactToMessage :: Bot.Handle VK.VKState -> VK.Message -> IO [API.Request]
+reactToMessage hBot@Bot.Handle {hAPI, hLog} msg@VK.Message {..} = do
+    n <- Bot.getUserMultiplier hBot $ VK.User from_id
     clone <- VK.copyMessage hAPI msg
     Logger.debug' hLog $
         "Vkontakte: generating " <> show n <> " echoes for Message: " <> show id
@@ -134,42 +136,45 @@ instance A.FromJSON Payload where
             RepeatPayload <$> o A..: "repeat"
 
 -- diff
-reactToCallback :: Handle VK.VKState -> VK.CallbackEvent -> IO [API.Request]
+reactToCallback :: Bot.Handle VK.VKState -> VK.CallbackEvent -> IO [API.Request]
 reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
     let callback = A.parseMaybe A.parseJSON payload
     let user = VK.User user_id
     case callback of
         Just (RepeatPayload n) -> do
-            Logger.info' (hLog hBot) $
+            Logger.info' (Bot.hLog hBot) $
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
-            setUserMultiplier hBot user n
-            pure [VK.sendMessageEventAnswer (hAPI hBot) cq prompt]
+            Bot.setUserMultiplier hBot user n
+            pure [VK.sendMessageEventAnswer (Bot.hAPI hBot) cq prompt]
         Nothing ->
             throwM $
             Ex Priority.Info $ "Unknown CallbackQuery type: " <> show payload
 
-getCommand :: VK.Message -> Command
-getCommand = parseCommand . takeWhile (/= ' ') . tail . VK.text
+-- diff
+getCommand :: VK.Message -> Bot.Command
+getCommand = Bot.parseCommand . takeWhile (/= ' ') . tail . VK.text
 
-commandAction :: Command -> Action VK.VKState IO
+-- diff
+commandAction :: Bot.Command -> Action VK.VKState IO
 commandAction cmd =
-    Action $ \hBot@Handle {..} VK.Message {..} -> do
+    Action $ \hBot@Bot.Handle {..} VK.Message {..} -> do
         let address = peer_id
         case cmd of
-            Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
-            Help -> VK.sendTextMessage hAPI address $ Bot.help strings
-            Repeat -> do
-                prompt <- repeatPrompt hBot $ Just $ VK.User from_id
+            Bot.Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
+            Bot.Help -> VK.sendTextMessage hAPI address $ Bot.help strings
+            Bot.Repeat -> do
+                prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
                 VK.sendKeyboard hAPI address prompt repeatKeyboard
-            UnknownCommand ->
+            Bot.UnknownCommand ->
                 VK.sendTextMessage hAPI address $ Bot.unknown strings
 
 newtype Action s m =
     Action
-        { runAction :: Handle s -> VK.Message -> m API.Request
+        { runAction :: Bot.Handle s -> VK.Message -> m API.Request
         }
 
+-- diff
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
     VK.Keyboard
@@ -187,4 +192,4 @@ repeatKeyboard =
 
 -- diff
 isCommandE :: VK.Message -> Bool
-isCommandE VK.Message {text} = isCommand text
+isCommandE VK.Message {text} = Bot.isCommand text
