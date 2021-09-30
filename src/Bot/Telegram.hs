@@ -1,6 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module Bot.Telegram
     ( module Bot
@@ -31,6 +34,12 @@ data Config =
         , strings :: Bot.Strings
         }
     deriving (Show)
+
+instance BotHandle (Handle TG.APIState) where
+    type Update (Handle TG.APIState) = TG.Update
+    logger = hLog
+    reactToUpdate' :: Handle TG.APIState -> TG.Update -> IO [API.Request]
+    reactToUpdate' = reactToUpdate
 
 -- diff
 new :: Config -> Logger.Handle -> IO (Handle TG.APIState)
