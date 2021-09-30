@@ -1,9 +1,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Bot where
 
-import qualified API (Handle)
+import qualified API (Handle, Request)
 import Control.Applicative ((<|>))
+import Control.Monad (join)
 import Data.Aeson (FromJSON)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -146,3 +148,13 @@ parseCommand s =
 isCommand :: String -> Bool
 isCommand "" = False
 isCommand s = (== '/') . head $ s
+
+class BotHandle a where
+    type Update a
+    logger :: a -> Logger.Handle
+    reactToUpdate' :: a -> Update a -> IO [API.Request]
+    reactToUpdates' :: a -> [Update a] -> IO [API.Request]
+    reactToUpdates' hBot updates = do
+        Logger.info' (logger hBot) "Telegram: processing each update"
+        join <$> mapM (reactToUpdate' hBot) updates
+
