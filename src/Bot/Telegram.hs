@@ -15,8 +15,7 @@ module Bot.Telegram
 import qualified API
 import qualified API.Telegram as TG
 import qualified API.Telegram.Types as TG
-import Bot hiding (strings)
-import qualified Bot (strings)
+import qualified Bot
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -35,36 +34,37 @@ data Config =
         }
     deriving (Show)
 
-instance BotHandle (Handle TG.APIState) where
-    type Update (Handle TG.APIState) = TG.Update
-    logger = hLog
-    reactToUpdate' :: Handle TG.APIState -> TG.Update -> IO [API.Request]
+instance Bot.BotHandle (Bot.Handle TG.APIState) where
+    type Update (Bot.Handle TG.APIState) = TG.Update
+    logger = Bot.hLog
+    reactToUpdate' :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
     reactToUpdate' = reactToUpdate
 
 -- diff
-new :: Config -> Logger.Handle -> IO (Handle TG.APIState)
+new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
 new cfg@Config {..} hLog = do
     Logger.info' hLog "Initiating Telegram Bot"
     Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
-    state <- newIORef $ BotState {userSettings = mempty}
+    state <- newIORef $ Bot.BotState {userSettings = mempty}
     hAPI <- TG.new TG.Config {..} hLog
-    pure $ Handle {..}
+    pure $ Bot.Handle {..}
 
-withHandle :: Config -> Logger.Handle -> (Handle TG.APIState -> IO a) -> IO a
+withHandle ::
+       Config -> Logger.Handle -> (Bot.Handle TG.APIState -> IO a) -> IO a
 withHandle config hLog io = do
     hBot <- new config hLog
     io hBot
 
-doBotThing :: Handle TG.APIState -> IO [L8.ByteString]
-doBotThing hBot@Handle {hLog} = do
+doBotThing :: Bot.Handle TG.APIState -> IO [L8.ByteString]
+doBotThing hBot@Bot.Handle {hLog} = do
     updates <- fetchUpdates hBot
     requests <- reactToUpdates hBot updates
     Logger.info' hLog $
         "Telegram: sending " <> show (length requests) <> " responses"
-    mapM (hBot & hAPI & API.sendRequest) requests
+    mapM (hBot & Bot.hAPI & API.sendRequest) requests
 
-fetchUpdates :: Handle TG.APIState -> IO [TG.Update]
-fetchUpdates hBot@Handle {hLog, hAPI} = do
+fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
+fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
     Logger.info' hLog "Telegram: fetching Updates"
     req <- hAPI & TG.getUpdates
     json <- hAPI & API.sendRequest $ req
@@ -72,8 +72,8 @@ fetchUpdates hBot@Handle {hLog, hAPI} = do
     resp <- throwDecode json
     TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
 
-reactToUpdates :: Handle TG.APIState -> [TG.Update] -> IO [API.Request]
-reactToUpdates hBot@Handle {hLog} updates = do
+reactToUpdates :: Bot.Handle TG.APIState -> [TG.Update] -> IO [API.Request]
+reactToUpdates hBot@Bot.Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
     join <$> mapM (reactToUpdate hBot) updates
 
@@ -95,8 +95,8 @@ qualifyUpdate u@TG.Update {message, callback_query}
     | otherwise = EOther u
 
 -- diff
-reactToUpdate :: Handle TG.APIState -> TG.Update -> IO [API.Request]
-reactToUpdate hBot@Handle {hLog} update = do
+reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
+reactToUpdate hBot@Bot.Handle {hLog} update = do
     Logger.debug' hLog $
         "Telegram: Qualifying Update with id " <> show (TG.update_id update)
     let qu = qualifyUpdate update
@@ -109,8 +109,8 @@ reactToUpdate hBot@Handle {hLog} update = do
             Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
 -- diff
-reactToCommand :: Handle TG.APIState -> TG.Message -> IO API.Request
-reactToCommand hBot@Handle {hLog} msg@TG.Message {message_id} = do
+reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
+reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
     Logger.debug' hLog $
         "Telegram: Got command" <>
@@ -119,10 +119,10 @@ reactToCommand hBot@Handle {hLog} msg@TG.Message {message_id} = do
     runAction action hBot msg
 
 -- diff
-reactToMessage :: Handle TG.APIState -> TG.Message -> IO [API.Request]
-reactToMessage hBot@Handle {..} msg@TG.Message {message_id} = do
+reactToMessage :: Bot.Handle TG.APIState -> TG.Message -> IO [API.Request]
+reactToMessage hBot@Bot.Handle {..} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
-    n <- hBot `getUserMultiplier` author
+    n <- Bot.getUserMultiplier hBot author
     Logger.debug' hLog $
         "Telegram: generating " <>
         show n <> " echoes for Message: " <> show message_id
@@ -142,8 +142,8 @@ qualifyQuery qstring =
     (qtype, qdata) = break (== '_') qstring
 
 -- diff
-reactToCallback :: Handle TG.APIState -> TG.CallbackQuery -> IO API.Request
-reactToCallback hBot@Handle {hLog} cq@TG.CallbackQuery {id, from} = do
+reactToCallback :: Bot.Handle TG.APIState -> TG.CallbackQuery -> IO API.Request
+reactToCallback hBot@Bot.Handle {hLog} cq@TG.CallbackQuery {id, from} = do
     Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
     cdata <- TG.getQDataThrow cq
     let user = from
@@ -151,33 +151,34 @@ reactToCallback hBot@Handle {hLog} cq@TG.CallbackQuery {id, from} = do
         QDRepeat n -> do
             Logger.info' hLog $
                 "Setting echo multiplier = " <> show n <> " for " <> show user
-            setUserMultiplier hBot user n
-            TG.answerCallbackQuery (hAPI hBot) id
+            Bot.setUserMultiplier hBot user n
+            TG.answerCallbackQuery (Bot.hAPI hBot) id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
-commandAction :: Command -> Action TG.APIState IO
+commandAction :: Bot.Command -> Action TG.APIState IO
 commandAction cmd =
-    Action $ \hBot@Handle {..} TG.Message {..} -> do
+    Action $ \hBot@Bot.Handle {..} TG.Message {..} -> do
         let address = (chat :: TG.Chat) & TG.chat_id
         case cmd of
-            Start -> TG.sendMessage hAPI address $ Bot.greeting strings
-            Help -> TG.sendMessage hAPI address $ Bot.help strings
-            Repeat -> do
-                prompt <- repeatPrompt hBot from
+            Bot.Start -> TG.sendMessage hAPI address $ Bot.greeting strings
+            Bot.Help -> TG.sendMessage hAPI address $ Bot.help strings
+            Bot.Repeat -> do
+                prompt <- Bot.repeatPrompt hBot from
                 TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
-            UnknownCommand -> TG.sendMessage hAPI address $ Bot.unknown strings
+            Bot.UnknownCommand ->
+                TG.sendMessage hAPI address $ Bot.unknown strings
 
 -- diff
-getCommandThrow :: (MonadThrow m) => TG.Message -> m Command
+getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
 getCommandThrow msg = do
     t <- TG.getTextThrow msg
-    pure . parseCommand . takeWhile (/= ' ') . tail $ t
+    pure . Bot.parseCommand . takeWhile (/= ' ') . tail $ t
 
 newtype Action s m =
     Action
-        { runAction :: Handle s -> TG.Message -> m API.Request
+        { runAction :: Bot.Handle s -> TG.Message -> m API.Request
         }
 
 -- diff
@@ -190,4 +191,4 @@ repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
 
 -- diff
 isCommandE :: TG.Message -> Bool
-isCommandE TG.Message {text} = maybe False isCommand text
+isCommandE TG.Message {text} = maybe False Bot.isCommand text
