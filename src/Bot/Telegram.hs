@@ -63,6 +63,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                 throwM $
                 Ex Priority.Info $
                 "Unknown Update Type. Update: " ++ show update_id
+    type Message (Bot.Handle TG.APIState) = TG.Message
 
 -- diff
 new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)

@@ -159,3 +159,4 @@ class BotHandle a where
     reactToUpdates hBot updates = do
         Logger.info' (logger hBot) "Telegram: processing each update"
         join <$> mapM (reactToUpdate hBot) updates
+    type Message a
