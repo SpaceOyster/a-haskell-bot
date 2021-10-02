@@ -64,6 +64,20 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                 Ex Priority.Info $
                 "Unknown Update Type. Update: " ++ show update_id
     type Message (Bot.Handle TG.APIState) = TG.Message
+    execCommand ::
+           Bot.Handle TG.APIState
+        -> Bot.Command
+        -> (TG.Message -> IO API.Request)
+    execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
+        let address = (chat :: TG.Chat) & TG.chat_id
+        case cmd of
+            Bot.Start -> TG.sendMessage hAPI address $ Bot.greeting strings
+            Bot.Help -> TG.sendMessage hAPI address $ Bot.help strings
+            Bot.Repeat -> do
+                prompt <- Bot.repeatPrompt hBot from
+                TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
+            Bot.UnknownCommand ->
+                TG.sendMessage hAPI address $ Bot.unknown strings
 
 -- diff
 new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
