@@ -82,7 +82,7 @@ withHandle config hLog io = do
 doBotThing :: Bot.Handle TG.APIState -> IO [L8.ByteString]
 doBotThing hBot@Bot.Handle {hLog} = do
     updates <- fetchUpdates hBot
-    requests <- reactToUpdates hBot updates
+    requests <- Bot.reactToUpdates hBot updates
     Logger.info' hLog $
         "Telegram: sending " <> show (length requests) <> " responses"
     mapM (hBot & Bot.hAPI & API.sendRequest) requests
@@ -95,25 +95,6 @@ fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
     Logger.debug' hLog "Telegram: decoding json response"
     resp <- throwDecode json
     TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
-
-reactToUpdates :: Bot.Handle TG.APIState -> [TG.Update] -> IO [API.Request]
-reactToUpdates hBot@Bot.Handle {hLog} updates = do
-    Logger.info' hLog "Telegram: processing each update"
-    join <$> mapM (reactToUpdate hBot) updates
-
--- diff
-reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
-reactToUpdate hBot@Bot.Handle {hLog} update = do
-    Logger.debug' hLog $
-        "Telegram: Qualifying Update with id " <> show (TG.update_id update)
-    let qu = qualifyUpdate update
-    case qu of
-        ECommand msg -> (: []) <$> reactToCommand hBot msg
-        EMessage msg -> reactToMessage hBot msg
-        ECallback cq -> (: []) <$> reactToCallback hBot cq
-        EOther TG.Update {update_id} ->
-            throwM $
-            Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
 
 -- diff
 reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
