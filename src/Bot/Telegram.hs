@@ -42,6 +42,14 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                                      | ECallback TG.CallbackQuery
                                      | EOther TG.Update
                                          deriving (Show)
+    qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.APIState)
+    qualifyUpdate u@TG.Update {message, callback_query}
+        | Just cq <- callback_query = ECallback cq
+        | Just msg <- message =
+            if isCommandE msg
+                then ECommand msg
+                else EMessage msg
+        | otherwise = EOther u
     reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         Logger.debug' hLog $
@@ -92,23 +100,6 @@ reactToUpdates :: Bot.Handle TG.APIState -> [TG.Update] -> IO [API.Request]
 reactToUpdates hBot@Bot.Handle {hLog} updates = do
     Logger.info' hLog "Telegram: processing each update"
     join <$> mapM (reactToUpdate hBot) updates
-
-data Entity
-    = EMessage TG.Message
-    | ECommand TG.Message
-    | ECallback TG.CallbackQuery
-    | EOther TG.Update
-    deriving (Show)
-
--- diff
-qualifyUpdate :: TG.Update -> Entity
-qualifyUpdate u@TG.Update {message, callback_query}
-    | Just cq <- callback_query = ECallback cq
-    | Just msg <- message =
-        if isCommandE msg
-            then ECommand msg
-            else EMessage msg
-    | otherwise = EOther u
 
 -- diff
 reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
