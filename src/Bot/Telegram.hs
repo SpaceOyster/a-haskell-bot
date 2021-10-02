@@ -37,6 +37,11 @@ data Config =
 instance Bot.BotHandle (Bot.Handle TG.APIState) where
     type Update (Bot.Handle TG.APIState) = TG.Update
     logger = Bot.hLog
+    data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
+                                     | ECommand TG.Message
+                                     | ECallback TG.CallbackQuery
+                                     | EOther TG.Update
+                                         deriving (Show)
     reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         Logger.debug' hLog $

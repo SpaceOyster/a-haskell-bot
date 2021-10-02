@@ -152,6 +152,7 @@ isCommand s = (== '/') . head $ s
 class BotHandle a where
     type Update a
     logger :: a -> Logger.Handle
+    data Entity a
     reactToUpdate :: a -> Update a -> IO [API.Request]
     reactToUpdates :: a -> [Update a] -> IO [API.Request]
     reactToUpdates hBot updates = do
