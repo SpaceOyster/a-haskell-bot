@@ -160,3 +160,4 @@ class BotHandle a where
         Logger.info' (logger hBot) "Telegram: processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message a
+    execCommand :: a -> Command -> (Message a -> IO API.Request)
