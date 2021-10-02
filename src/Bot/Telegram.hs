@@ -37,8 +37,19 @@ data Config =
 instance Bot.BotHandle (Bot.Handle TG.APIState) where
     type Update (Bot.Handle TG.APIState) = TG.Update
     logger = Bot.hLog
-    reactToUpdate' :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
-    reactToUpdate' = reactToUpdate
+    reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
+    reactToUpdate hBot@Bot.Handle {hLog} update = do
+        Logger.debug' hLog $
+            "Telegram: Qualifying Update with id " <> show (TG.update_id update)
+        let qu = Bot.qualifyUpdate update
+        case qu of
+            ECommand msg -> (: []) <$> reactToCommand hBot msg
+            EMessage msg -> reactToMessage hBot msg
+            ECallback cq -> (: []) <$> reactToCallback hBot cq
+            EOther TG.Update {update_id} ->
+                throwM $
+                Ex Priority.Info $
+                "Unknown Update Type. Update: " ++ show update_id
 
 -- diff
 new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)

@@ -152,9 +152,8 @@ isCommand s = (== '/') . head $ s
 class BotHandle a where
     type Update a
     logger :: a -> Logger.Handle
-    reactToUpdate' :: a -> Update a -> IO [API.Request]
-    reactToUpdates' :: a -> [Update a] -> IO [API.Request]
-    reactToUpdates' hBot updates = do
+    reactToUpdate :: a -> Update a -> IO [API.Request]
+    reactToUpdates :: a -> [Update a] -> IO [API.Request]
+    reactToUpdates hBot updates = do
         Logger.info' (logger hBot) "Telegram: processing each update"
-        join <$> mapM (reactToUpdate' hBot) updates
-
+        join <$> mapM (reactToUpdate hBot) updates
