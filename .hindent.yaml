@@ -6,3 +6,5 @@ extensions:
   - DataKinds
   - GADTs
   - TypeApplications
+  - TypeFamilies
+  - InstanceSigs
