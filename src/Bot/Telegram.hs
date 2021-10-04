@@ -36,6 +36,13 @@ data Config =
 
 instance Bot.BotHandle (Bot.Handle TG.APIState) where
     type Config (Bot.Handle TG.APIState) = Config
+    new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
+    new cfg@Config {..} hLog = do
+        Logger.info' hLog "Initiating Telegram Bot"
+        Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
+        state <- newIORef $ Bot.BotState {userSettings = mempty}
+        hAPI <- TG.new TG.Config {..} hLog
+        pure $ Bot.Handle {..}
     type Update (Bot.Handle TG.APIState) = TG.Update
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
@@ -79,15 +86,6 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                 TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
             Bot.UnknownCommand ->
                 TG.sendMessage hAPI address $ Bot.unknown strings
-
--- diff
-new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
-new cfg@Config {..} hLog = do
-    Logger.info' hLog "Initiating Telegram Bot"
-    Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
-    state <- newIORef $ Bot.BotState {userSettings = mempty}
-    hAPI <- TG.new TG.Config {..} hLog
-    pure $ Bot.Handle {..}
 
 withHandle ::
        Config -> Logger.Handle -> (Bot.Handle TG.APIState -> IO a) -> IO a

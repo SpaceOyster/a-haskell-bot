@@ -151,6 +151,7 @@ isCommand s = (== '/') . head $ s
 
 class BotHandle a where
     type Config a
+    new :: Config a -> Logger.Handle -> IO a
     type Update a
     logger :: a -> Logger.Handle
     data Entity a
