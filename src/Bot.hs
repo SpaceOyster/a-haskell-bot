@@ -150,6 +150,7 @@ isCommand "" = False
 isCommand s = (== '/') . head $ s
 
 class BotHandle a where
+    type Config a
     type Update a
     logger :: a -> Logger.Handle
     data Entity a

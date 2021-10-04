@@ -35,6 +35,7 @@ data Config =
     deriving (Show)
 
 instance Bot.BotHandle (Bot.Handle TG.APIState) where
+    type Config (Bot.Handle TG.APIState) = Config
     type Update (Bot.Handle TG.APIState) = TG.Update
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
