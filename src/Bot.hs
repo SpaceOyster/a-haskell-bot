@@ -158,6 +158,7 @@ class BotHandle a where
         io hBot
     sendRequest :: a -> API.Request -> IO L8.ByteString
     type Update a
+    fetchUpdates :: a -> IO [Update a]
     logger :: a -> Logger.Handle
     data Entity a
     qualifyUpdate :: Update a -> Entity a

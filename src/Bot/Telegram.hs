@@ -46,6 +46,14 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     sendRequest :: Bot.Handle TG.APIState -> API.Request -> IO L8.ByteString
     sendRequest = API.sendRequest . Bot.hAPI
     type Update (Bot.Handle TG.APIState) = TG.Update
+    fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
+    fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
+        Logger.info' hLog "Telegram: fetching Updates"
+        req <- hAPI & TG.getUpdates
+        json <- hAPI & API.sendRequest $ req
+        Logger.debug' hLog "Telegram: decoding json response"
+        resp <- throwDecode json
+        TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
                                      | ECommand TG.Message
@@ -97,16 +105,6 @@ doBotThing hBot@Bot.Handle {hLog} = do
     Logger.info' hLog $
         "Telegram: sending " <> show (length requests) <> " responses"
     mapM (hBot & Bot.hAPI & API.sendRequest) requests
-
-fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
-fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
-    Logger.info' hLog "Telegram: fetching Updates"
-    req <- hAPI & TG.getUpdates
-    json <- hAPI & API.sendRequest $ req
-    Logger.debug' hLog "Telegram: decoding json response"
-    resp <- throwDecode json
-    TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
-
 -- diff
 reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
 reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
