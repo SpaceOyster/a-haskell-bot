@@ -152,6 +152,10 @@ isCommand s = (== '/') . head $ s
 class BotHandle a where
     type Config a
     new :: Config a -> Logger.Handle -> IO a
+    withHandle :: Config a -> Logger.Handle -> (a -> IO b) -> IO b
+    withHandle config hLog io = do
+        hBot <- new config hLog
+        io hBot
     type Update a
     logger :: a -> Logger.Handle
     data Entity a

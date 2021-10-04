@@ -8,7 +8,7 @@
 module Bot.Telegram
     ( module Bot
     , doBotThing
-    , withHandle
+    , Bot.withHandle
     , Config(..)
     ) where
 
@@ -87,11 +87,6 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
             Bot.UnknownCommand ->
                 TG.sendMessage hAPI address $ Bot.unknown strings
 
-withHandle ::
-       Config -> Logger.Handle -> (Bot.Handle TG.APIState -> IO a) -> IO a
-withHandle config hLog io = do
-    hBot <- new config hLog
-    io hBot
 
 doBotThing :: Bot.Handle TG.APIState -> IO [L8.ByteString]
 doBotThing hBot@Bot.Handle {hLog} = do
