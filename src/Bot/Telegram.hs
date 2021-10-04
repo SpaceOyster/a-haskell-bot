@@ -7,7 +7,7 @@
 
 module Bot.Telegram
     ( module Bot
-    , doBotThing
+    , Bot.doBotThing
     , Bot.withHandle
     , Config(..)
     ) where
@@ -97,14 +97,6 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
             Bot.UnknownCommand ->
                 TG.sendMessage hAPI address $ Bot.unknown strings
 
-
-doBotThing :: Bot.Handle TG.APIState -> IO [L8.ByteString]
-doBotThing hBot@Bot.Handle {hLog} = do
-    updates <- fetchUpdates hBot
-    requests <- Bot.reactToUpdates hBot updates
-    Logger.info' hLog $
-        "Telegram: sending " <> show (length requests) <> " responses"
-    mapM (hBot & Bot.hAPI & API.sendRequest) requests
 -- diff
 reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
 reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do

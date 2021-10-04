@@ -159,6 +159,13 @@ class BotHandle a where
     sendRequest :: a -> API.Request -> IO L8.ByteString
     type Update a
     fetchUpdates :: a -> IO [Update a]
+    doBotThing :: a -> IO [L8.ByteString]
+    doBotThing hBot = do
+        updates <- fetchUpdates hBot
+        requests <- reactToUpdates hBot updates
+        Logger.info' (logger hBot) $
+            "Telegram: sending " <> show (length requests) <> " responses"
+        mapM (sendRequest hBot) requests
     logger :: a -> Logger.Handle
     data Entity a
     qualifyUpdate :: Update a -> Entity a
