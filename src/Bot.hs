@@ -156,6 +156,7 @@ class BotHandle a where
     withHandle config hLog io = do
         hBot <- new config hLog
         io hBot
+    sendRequest :: a -> API.Request -> IO L8.ByteString
     type Update a
     logger :: a -> Logger.Handle
     data Entity a

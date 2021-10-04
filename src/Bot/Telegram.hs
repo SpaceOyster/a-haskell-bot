@@ -43,6 +43,8 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
         state <- newIORef $ Bot.BotState {userSettings = mempty}
         hAPI <- TG.new TG.Config {..} hLog
         pure $ Bot.Handle {..}
+    sendRequest :: Bot.Handle TG.APIState -> API.Request -> IO L8.ByteString
+    sendRequest = API.sendRequest . Bot.hAPI
     type Update (Bot.Handle TG.APIState) = TG.Update
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
