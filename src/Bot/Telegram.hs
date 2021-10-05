@@ -56,6 +56,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
         Logger.debug' hLog "Telegram: decoding json response"
         resp <- throwDecode json
         TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
+    logger :: Bot.Handle TG.APIState -> Logger.Handle
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
                                      | ECommand TG.Message
