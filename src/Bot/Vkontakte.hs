@@ -1,8 +1,16 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE InstanceSigs #-}
 
-module Bot.Vkontakte where
+module Bot.Vkontakte
+    ( module Bot
+    , Bot.doBotThing
+    , Bot.withHandle
+    , Config(..)
+    ) where
 
 import qualified API
 import qualified API.Vkontakte as VK
@@ -30,65 +38,65 @@ data Config =
         }
     deriving (Show)
 
--- diff
-new :: Config -> Logger.Handle -> IO (Bot.Handle VK.VKState)
-new cfg@Config {..} hLog = do
-    state <- newIORef $ Bot.BotState {userSettings = mempty}
-    hAPI <- VK.new VK.Config {..} hLog
-    pure $ Bot.Handle {..}
+instance Bot.HandleConfig Config where
+    type HandleType Config = Bot.Handle VK.VKState
+    new :: Config -> Logger.Handle -> IO (Bot.Handle VK.VKState)
+    new cfg@Config {..} hLog = do
+        state <- newIORef $ Bot.BotState {userSettings = mempty}
+        hAPI <- VK.new VK.Config {..} hLog
+        pure $ Bot.Handle {..}
 
-withHandle :: Config -> Logger.Handle -> (Bot.Handle VK.VKState -> IO a) -> IO a
-withHandle config hLog io = do
-    hBot <- new config hLog
-    io hBot
-
-doBotThing :: Bot.Handle VK.VKState -> IO [L8.ByteString]
-doBotThing hBot@Bot.Handle {hLog} = do
-    updates <- fetchUpdates hBot
-    requests <- reactToUpdates hBot updates
-    Logger.info' hLog $
-        "Vkontakte: sending " <> show (length requests) <> " responses"
-    mapM (hBot & Bot.hAPI & API.sendRequest) requests
-
-fetchUpdates :: Bot.Handle VK.VKState -> IO [VK.GroupEvent]
-fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
-    Logger.info' hLog "Vkontakte: fetching Updates"
-    req <- hAPI & VK.getUpdates
-    json <- hAPI & API.sendRequest $ req
-    Logger.debug' hLog $ "Vkontakte: decoding json response: " <> L8.unpack json
-    resp <- throwDecode json
-    VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
-
-reactToUpdates :: Bot.Handle VK.VKState -> [VK.GroupEvent] -> IO [API.Request]
-reactToUpdates hBot updates = do
-    join <$> mapM (reactToUpdate hBot) updates
-
-data Entity
-    = EMessage VK.Message
-    | ECommand VK.Message
-    | ECallback VK.CallbackEvent
-    | EOther VK.GroupEvent
-    deriving (Show)
-
--- diff
-qualifyUpdate :: VK.GroupEvent -> Entity
-qualifyUpdate (VK.MessageNew m)
-    | isCommandE m = ECommand m
-    | otherwise = EMessage m
-qualifyUpdate (VK.MessageEvent c) = ECallback c
-qualifyUpdate _ = EOther VK.Other -- TODO
-
--- diff
-reactToUpdate :: Bot.Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
-reactToUpdate hBot@Bot.Handle {hLog} update = do
-    Logger.info' hLog $ "VK got Update: " <> show update
-    let qu = qualifyUpdate update
-    Logger.info' hLog $ "VK qualified Update: " <> show qu
-    case qu of
-        ECommand msg -> (: []) <$> reactToCommand hBot msg
-        EMessage msg -> reactToMessage hBot msg
-        ECallback cq -> reactToCallback hBot cq
-        EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
+instance Bot.BotHandle (Bot.Handle VK.VKState) where
+    sendRequest :: Bot.Handle VK.VKState -> API.Request -> IO L8.ByteString
+    sendRequest = API.sendRequest . Bot.hAPI
+    type Update (Bot.Handle VK.VKState) = VK.GroupEvent
+    fetchUpdates :: Bot.Handle VK.VKState -> IO [VK.GroupEvent]
+    fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
+        Logger.info' hLog "Vkontakte: fetching Updates"
+        req <- hAPI & VK.getUpdates
+        json <- hAPI & API.sendRequest $ req
+        Logger.debug' hLog $
+            "Vkontakte: decoding json response: " <> L8.unpack json
+        resp <- throwDecode json
+        VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
+    logger :: Bot.Handle VK.VKState -> Logger.Handle
+    logger = Bot.hLog
+    data Entity (Bot.Handle VK.VKState) = EMessage VK.Message
+                                    | ECommand VK.Message
+                                    | ECallback VK.CallbackEvent
+                                    | EOther VK.GroupEvent
+                                        deriving (Show)
+    qualifyUpdate :: VK.GroupEvent -> Bot.Entity (Bot.Handle VK.VKState)
+    qualifyUpdate (VK.MessageNew m)
+        | isCommandE m = ECommand m
+        | otherwise = EMessage m
+    qualifyUpdate (VK.MessageEvent c) = ECallback c
+    qualifyUpdate _ = EOther VK.Other -- TODO
+    reactToUpdate :: Bot.Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
+    reactToUpdate hBot@Bot.Handle {hLog} update = do
+        Logger.info' hLog $ "VK got Update: " <> show update
+        let qu = Bot.qualifyUpdate update
+        Logger.info' hLog $ "VK qualified Update: " <> show qu
+        case qu of
+            ECommand msg -> (: []) <$> reactToCommand hBot msg
+            EMessage msg -> reactToMessage hBot msg
+            ECallback cq -> reactToCallback hBot cq
+            EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
+    type Message (Bot.Handle VK.VKState) = VK.Message
+    execCommand ::
+           Bot.Handle VK.VKState
+        -> Bot.Command
+        -> (VK.Message -> IO API.Request)
+    execCommand hBot@Bot.Handle {..} cmd VK.Message {..} = do
+        let address = peer_id
+        case cmd of
+            Bot.Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
+            Bot.Help -> VK.sendTextMessage hAPI address $ Bot.help strings
+            Bot.Repeat -> do
+                prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
+                VK.sendKeyboard hAPI address prompt repeatKeyboard
+            Bot.UnknownCommand ->
+                VK.sendTextMessage hAPI address $ Bot.unknown strings
 
 -- diff
 reactToCommand :: Bot.Handle VK.VKState -> VK.Message -> IO API.Request
@@ -98,8 +106,7 @@ reactToCommand hBot@Bot.Handle {hLog} msg@VK.Message {id, peer_id} = do
         "Vkontakte: Got command" <>
         show cmd <>
         " in message id " <> show id <> " , peer_id: " <> show peer_id
-    let action = commandAction cmd
-    runAction action hBot msg
+    Bot.execCommand hBot cmd msg
 
 -- diff
 reactToMessage :: Bot.Handle VK.VKState -> VK.Message -> IO [API.Request]
