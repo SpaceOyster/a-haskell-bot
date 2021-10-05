@@ -150,12 +150,6 @@ isCommand "" = False
 isCommand s = (== '/') . head $ s
 
 class BotHandle a where
-    type Config a
-    new :: Config a -> Logger.Handle -> IO a
-    withHandle :: Config a -> Logger.Handle -> (a -> IO b) -> IO b
-    withHandle config hLog io = do
-        hBot <- new config hLog
-        io hBot
     sendRequest :: a -> API.Request -> IO L8.ByteString
     type Update a
     fetchUpdates :: a -> IO [Update a]
@@ -176,3 +170,11 @@ class BotHandle a where
         join <$> mapM (reactToUpdate hBot) updates
     type Message a
     execCommand :: a -> Command -> (Message a -> IO API.Request)
+
+class HandleConfig cfg where
+    type HandleType cfg
+    new :: cfg -> Logger.Handle -> IO (HandleType cfg)
+    withHandle :: cfg -> Logger.Handle -> (HandleType cfg -> IO b) -> IO b
+    withHandle config hLog io = do
+        hBot <- new config hLog
+        io hBot
