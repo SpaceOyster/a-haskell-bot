@@ -34,8 +34,8 @@ data Config =
         }
     deriving (Show)
 
-instance Bot.BotHandle (Bot.Handle TG.APIState) where
-    type Config (Bot.Handle TG.APIState) = Config
+instance Bot.HandleConfig Config where
+    type HandleType Config = Bot.Handle TG.APIState
     new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
     new cfg@Config {..} hLog = do
         Logger.info' hLog "Initiating Telegram Bot"
@@ -43,6 +43,8 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
         state <- newIORef $ Bot.BotState {userSettings = mempty}
         hAPI <- TG.new TG.Config {..} hLog
         pure $ Bot.Handle {..}
+
+instance Bot.BotHandle (Bot.Handle TG.APIState) where
     sendRequest :: Bot.Handle TG.APIState -> API.Request -> IO L8.ByteString
     sendRequest = API.sendRequest . Bot.hAPI
     type Update (Bot.Handle TG.APIState) = TG.Update
