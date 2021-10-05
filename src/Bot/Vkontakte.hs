@@ -111,19 +111,6 @@ reactToMessage hBot@Bot.Handle {hAPI, hLog} msg@VK.Message {..} = do
     Logger.debug' hLog $ "  Multiplied request" <> show clone
     n `replicateM` pure clone
 
-data QueryData
-    = QDRepeat Int
-    | QDOther String
-    deriving (Show)
-
-qualifyQuery :: String -> QueryData
-qualifyQuery qstring =
-    case qtype of
-        "repeat" -> QDRepeat $ read (tail qdata)
-        _ -> QDOther qstring
-  where
-    (qtype, qdata) = break (== '_') qstring
-
 newtype Payload =
     RepeatPayload Int
 
