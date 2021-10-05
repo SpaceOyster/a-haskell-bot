@@ -104,8 +104,7 @@ reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
     Logger.debug' hLog $
         "Telegram: Got command" <>
         show cmd <> " in message id " <> show message_id
-    let action = commandAction cmd
-    runAction action hBot msg
+    Bot.execCommand hBot cmd msg
 
 -- diff
 reactToMessage :: Bot.Handle TG.APIState -> TG.Message -> IO [API.Request]
