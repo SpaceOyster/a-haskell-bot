@@ -77,6 +77,16 @@ data Method
     | SendInlineKeyboard Integer String InlineKeyboardMarkup
     deriving (Show)
 
+runMethod :: Handle -> Method -> IO API.Request
+runMethod hAPI m =
+    case m of
+        GetUpdates -> getUpdates hAPI
+        AnswerCallbackQuery id -> answerCallbackQuery hAPI id
+        CopyMessage msg -> copyMessage hAPI msg
+        SendMessage chatId msg -> sendMessage hAPI chatId msg
+        SendInlineKeyboard chatId prompt keyboard ->
+            sendInlineKeyboard hAPI chatId prompt keyboard
+
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@API.Handle {hLog} =
