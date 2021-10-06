@@ -14,6 +14,8 @@ module API.Telegram
     , sendInlineKeyboard
     , Config(..)
     , APIState(..)
+    , Method(..)
+    , runMethod
     ) where
 
 import qualified API
