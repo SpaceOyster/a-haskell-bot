@@ -7,11 +7,6 @@ module API.Telegram
     ( module API
     , new
     , rememberLastUpdate
-    , getUpdates
-    , answerCallbackQuery
-    , copyMessage
-    , sendMessage
-    , sendInlineKeyboard
     , Config(..)
     , APIState(..)
     , Method(..)
