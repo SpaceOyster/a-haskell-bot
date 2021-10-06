@@ -51,7 +51,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
     fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
         Logger.info' hLog "Telegram: fetching Updates"
-        req <- hAPI & TG.getUpdates
+        req <- TG.runMethod hAPI TG.GetUpdates
         json <- hAPI & API.sendRequest $ req
         Logger.debug' hLog "Telegram: decoding json response"
         resp <- throwDecode json
@@ -92,13 +92,17 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
         case cmd of
-            Bot.Start -> TG.sendMessage hAPI address $ Bot.greeting strings
-            Bot.Help -> TG.sendMessage hAPI address $ Bot.help strings
+            Bot.Start ->
+                TG.runMethod hAPI $
+                TG.SendMessage address (Bot.greeting strings)
+            Bot.Help ->
+                TG.runMethod hAPI $ TG.SendMessage address (Bot.help strings)
             Bot.Repeat -> do
                 prompt <- Bot.repeatPrompt hBot from
-                TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
+                TG.runMethod hAPI $
+                    TG.SendInlineKeyboard address prompt repeatKeyboard
             Bot.UnknownCommand ->
-                TG.sendMessage hAPI address $ Bot.unknown strings
+                TG.runMethod hAPI $ TG.SendMessage address (Bot.unknown strings)
 
 -- diff
 reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
@@ -117,7 +121,7 @@ reactToMessage hBot@Bot.Handle {..} msg@TG.Message {message_id} = do
     Logger.debug' hLog $
         "Telegram: generating " <>
         show n <> " echoes for Message: " <> show message_id
-    n `replicateM` TG.copyMessage hAPI msg
+    n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
 
 data QueryData
     = QDRepeat Int
@@ -134,7 +138,7 @@ qualifyQuery qstring =
 
 -- diff
 reactToCallback :: Bot.Handle TG.APIState -> TG.CallbackQuery -> IO API.Request
-reactToCallback hBot@Bot.Handle {hLog} cq@TG.CallbackQuery {id, from} = do
+reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
     Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
     cdata <- TG.getQDataThrow cq
     let user = from
@@ -143,7 +147,7 @@ reactToCallback hBot@Bot.Handle {hLog} cq@TG.CallbackQuery {id, from} = do
             Logger.info' hLog $
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             Bot.setUserMultiplier hBot user n
-            TG.answerCallbackQuery (Bot.hAPI hBot) id
+            TG.runMethod hAPI $ TG.AnswerCallbackQuery id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
@@ -153,13 +157,17 @@ commandAction cmd =
     Action $ \hBot@Bot.Handle {..} TG.Message {..} -> do
         let address = (chat :: TG.Chat) & TG.chat_id
         case cmd of
-            Bot.Start -> TG.sendMessage hAPI address $ Bot.greeting strings
-            Bot.Help -> TG.sendMessage hAPI address $ Bot.help strings
+            Bot.Start ->
+                TG.runMethod hAPI $
+                TG.SendMessage address (Bot.greeting strings)
+            Bot.Help ->
+                TG.runMethod hAPI $ TG.SendMessage address (Bot.help strings)
             Bot.Repeat -> do
                 prompt <- Bot.repeatPrompt hBot from
-                TG.sendInlineKeyboard hAPI address prompt repeatKeyboard
+                TG.runMethod hAPI $
+                    TG.SendInlineKeyboard address prompt repeatKeyboard
             Bot.UnknownCommand ->
-                TG.sendMessage hAPI address $ Bot.unknown strings
+                TG.runMethod hAPI $ TG.SendMessage address (Bot.unknown strings)
 
 -- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
