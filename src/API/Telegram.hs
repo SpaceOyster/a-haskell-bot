@@ -69,6 +69,14 @@ rememberLastUpdate hAPI res@Result {result} =
         x -> API.setState hAPI ((1 +) . update_id . last $ result) >> pure res
 rememberLastUpdate hAPI err = pure err
 
+data Method
+    = GetUpdates
+    | AnswerCallbackQuery String
+    | CopyMessage Message
+    | SendMessage Integer String
+    | SendInlineKeyboard Integer String InlineKeyboardMarkup
+    deriving (Show)
+
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@API.Handle {hLog} =
