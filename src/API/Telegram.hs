@@ -25,6 +25,7 @@ import qualified Exceptions as Ex
 import qualified HTTP
 import qualified Logger
 import qualified Network.URI.Extended as URI
+import Utils (throwDecode)
 
 type APIState = Integer
 
@@ -73,6 +74,11 @@ data Method
     | SendMessage Integer String
     | SendInlineKeyboard Integer String InlineKeyboardMarkup
     deriving (Show)
+
+runMethod' :: Handle -> Method -> IO Response
+runMethod' hAPI m =
+    rememberLastUpdate hAPI =<<
+    throwDecode =<< API.sendRequest hAPI =<< runMethod hAPI m
 
 runMethod :: Handle -> Method -> IO API.Request
 runMethod hAPI m =
