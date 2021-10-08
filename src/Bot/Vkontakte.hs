@@ -150,25 +150,6 @@ getCommand :: VK.Message -> Bot.Command
 getCommand = Bot.parseCommand . takeWhile (/= ' ') . tail . VK.text
 
 -- diff
-commandAction :: Bot.Command -> Action VK.VKState IO
-commandAction cmd =
-    Action $ \hBot@Bot.Handle {..} VK.Message {..} -> do
-        let address = peer_id
-        case cmd of
-            Bot.Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
-            Bot.Help -> VK.sendTextMessage hAPI address $ Bot.help strings
-            Bot.Repeat -> do
-                prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
-                VK.sendKeyboard hAPI address prompt repeatKeyboard
-            Bot.UnknownCommand ->
-                VK.sendTextMessage hAPI address $ Bot.unknown strings
-
-newtype Action s m =
-    Action
-        { runAction :: Bot.Handle s -> VK.Message -> m API.Request
-        }
-
--- diff
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
     VK.Keyboard
