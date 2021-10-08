@@ -174,4 +174,5 @@ extractUpdates res =
   case res of
     Error {error_code, description} ->
       throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
-    Result {result} -> pure result
+    Updates us -> pure us
+    x -> pure []

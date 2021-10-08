@@ -62,11 +62,11 @@ apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI res@Result {result} =
-    case result of
+rememberLastUpdate hAPI res@(Updates us) =
+    case us of
         [] -> pure res
-        x -> API.setState hAPI ((1 +) . update_id . last $ result) >> pure res
-rememberLastUpdate hAPI err = pure err
+        x -> API.setState hAPI ((1 +) . update_id . last $ us) >> pure res
+rememberLastUpdate hAPI x = pure x
 
 data Method
     = GetUpdates
