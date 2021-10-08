@@ -51,11 +51,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
     fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
         Logger.info' hLog "Telegram: fetching Updates"
-        req <- TG.runMethod hAPI TG.GetUpdates
-        json <- hAPI & API.sendRequest $ req
-        Logger.debug' hLog "Telegram: decoding json response"
-        resp <- throwDecode json
-        TG.extractUpdates =<< TG.rememberLastUpdate hAPI resp
+        TG.runMethod' hAPI TG.GetUpdates >>= TG.extractUpdates
     logger :: Bot.Handle TG.APIState -> Logger.Handle
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
