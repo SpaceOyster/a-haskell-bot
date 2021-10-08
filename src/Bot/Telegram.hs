@@ -87,18 +87,15 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
         -> (TG.Message -> IO API.Request)
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
-        case cmd of
-            Bot.Start ->
-                TG.runMethod hAPI $
-                TG.SendMessage address (Bot.greeting strings)
-            Bot.Help ->
-                TG.runMethod hAPI $ TG.SendMessage address (Bot.help strings)
-            Bot.Repeat -> do
-                prompt <- Bot.repeatPrompt hBot from
-                TG.runMethod hAPI $
+        prompt <- Bot.repeatPrompt hBot from
+        TG.runMethod hAPI $
+            case cmd of
+                Bot.Start -> TG.SendMessage address (Bot.greeting strings)
+                Bot.Help -> TG.SendMessage address (Bot.help strings)
+                Bot.Repeat ->
                     TG.SendInlineKeyboard address prompt repeatKeyboard
-            Bot.UnknownCommand ->
-                TG.runMethod hAPI $ TG.SendMessage address (Bot.unknown strings)
+                Bot.UnknownCommand ->
+                    TG.SendMessage address (Bot.unknown strings)
 
 -- diff
 reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
