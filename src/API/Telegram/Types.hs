@@ -7,6 +7,7 @@
 
 module API.Telegram.Types where
 
+import Control.Applicative ((<|>))
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
   ( FromJSON(..)
@@ -163,7 +164,7 @@ instance FromJSON Response where
     withObject "Response" $ \o -> do
       ok <- o .: "ok"
       if ok
-        then Result <$> o .: "result"
+        then Updates <$> o .: "result" <|> OtherResponse <$> o .: "result"
         else Error <$> o .: "error_code" <*> o .: "description"
 
 -- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
