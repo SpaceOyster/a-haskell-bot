@@ -149,10 +149,14 @@ data Response
       { error_code :: Int
       , description :: String
       }
-  | Result
-      { result :: [Update]
-      }
+  | Updates [Update]
+  | OtherResponse Value
   deriving (Show)
+      -- ^actually either: 
+      -- 1. [Update] - for `getUpdates`
+      -- 2. Message - for `sendMessage` and `sendInlineKeyboard`
+      -- 3. True - for `answerCallbackQuery`
+      -- 4. `{"message_id": 12345}` - for `copyMessage`
 
 instance FromJSON Response where
   parseJSON =
