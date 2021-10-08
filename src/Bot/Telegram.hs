@@ -148,33 +148,10 @@ reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
-commandAction :: Bot.Command -> Action TG.APIState IO
-commandAction cmd =
-    Action $ \hBot@Bot.Handle {..} TG.Message {..} -> do
-        let address = (chat :: TG.Chat) & TG.chat_id
-        case cmd of
-            Bot.Start ->
-                TG.runMethod hAPI $
-                TG.SendMessage address (Bot.greeting strings)
-            Bot.Help ->
-                TG.runMethod hAPI $ TG.SendMessage address (Bot.help strings)
-            Bot.Repeat -> do
-                prompt <- Bot.repeatPrompt hBot from
-                TG.runMethod hAPI $
-                    TG.SendInlineKeyboard address prompt repeatKeyboard
-            Bot.UnknownCommand ->
-                TG.runMethod hAPI $ TG.SendMessage address (Bot.unknown strings)
-
--- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
 getCommandThrow msg = do
     t <- TG.getTextThrow msg
     pure . Bot.parseCommand . takeWhile (/= ' ') . tail $ t
-
-newtype Action s m =
-    Action
-        { runAction :: Bot.Handle s -> TG.Message -> m API.Request
-        }
 
 -- diff
 repeatKeyboard :: TG.InlineKeyboardMarkup
