@@ -169,6 +169,17 @@ data Method
     | SendKeyboard Integer String Keyboard
     deriving (Show)
 
+runMethod :: Handle -> Method -> IO API.Request
+runMethod hAPI m =
+    case m of
+        GetUpdates -> getUpdates hAPI
+        SendMessageEventAnswer ce prompt ->
+            sendMessageEventAnswer hAPI ce prompt
+        SendTextMessage peer_id text -> sendTextMessage hAPI peer_id text
+        CopyMessage msg -> copyMessage hAPI msg
+        SendKeyboard peer_id prompt keyboard ->
+            sendKeyboard hAPI peer_id prompt keyboard
+
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
     VKState {..} <- API.getState hAPI
