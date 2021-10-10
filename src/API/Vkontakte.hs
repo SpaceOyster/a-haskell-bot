@@ -161,6 +161,14 @@ rememberLastUpdate hAPI p@PollResponse {ts} =
     API.modifyState hAPI (\s -> s {lastTS = ts}) >> pure p
 rememberLastUpdate hAPI p = pure p
 
+data Method
+    = GetUpdates
+    | SendMessageEventAnswer CallbackEvent String
+    | SendTextMessage Integer String
+    | CopyMessage Message
+    | SendKeyboard Integer String Keyboard
+    deriving (Show)
+
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
     VKState {..} <- API.getState hAPI
