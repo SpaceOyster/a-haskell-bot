@@ -140,7 +140,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
-            pure [VK.sendMessageEventAnswer (Bot.hAPI hBot) cq prompt]
+            (: []) <$> VK.sendMessageEventAnswer (Bot.hAPI hBot) cq prompt
         Nothing ->
             throwM $
             Ex Priority.Info $ "Unknown CallbackQuery type: " <> show payload

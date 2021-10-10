@@ -264,9 +264,10 @@ instance A.FromJSON GroupEvent where
                 "message_event" -> MessageEvent <$> o A..: "object"
                 _ -> fail "Unknown GroupEvent type"
 
-sendMessageEventAnswer :: Handle -> CallbackEvent -> String -> API.Request
+sendMessageEventAnswer ::
+       (Monad m) => Handle -> CallbackEvent -> String -> m API.Request
 sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
-    API.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
+    pure . API.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
     [ ("event_id", Just event_id)
     , ("user_id", Just $ show user_id)
     , ("peer_id", Just $ show peer_id)
