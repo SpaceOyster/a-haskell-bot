@@ -12,7 +12,6 @@ module API.Vkontakte
     , Config(..)
     , VKState(..)
     , GroupEvent(..)
-    , PollResponse(..)
     , User(..)
     , Message(..)
     , Attachment(..)
@@ -98,36 +97,30 @@ data PollServer =
         }
     deriving (Show, Generic, A.FromJSON)
 
-data APIResponse a
+data Response
     = Error
           { error_code :: Integer
           , error_msg :: String
           }
-    | Response a
-
-instance (A.FromJSON a) => A.FromJSON (APIResponse a) where
-    parseJSON =
-        A.withObject "FromJSON API.Vkontakte.APIResponse" $ \o -> do
-            errO <- o A..:? "error" A..!= mempty
-            asum
-                [ Error <$> errO A..: "error_code" <*> errO A..: "error_msg"
-                , Response <$> o A..: "response"
-                ]
-
-data PollResponse
-    = PollResponse
+    | PollServ PollServer
+    | PollResponse
           { ts :: String
           , updates :: [GroupEvent]
           }
     | PollError Integer
+    | OtherResponse A.Object
     deriving (Show)
 
-instance A.FromJSON PollResponse where
+instance A.FromJSON Response where
     parseJSON =
-        A.withObject "FromJSON API.Vkontakte.PollResponse" $ \o ->
+        A.withObject "FromJSON API.Vkontakte.Response" $ \o -> do
+            errO <- o A..:? "error" A..!= mempty
             asum
-                [ PollError <$> o A..: "failed"
+                [ Error <$> errO A..: "error_code" <*> errO A..: "error_msg"
+                , PollServ <$> o A..: "response"
+                , PollError <$> o A..: "failed"
                 , PollResponse <$> o A..: "ts" <*> o A..: "updates"
+                , OtherResponse <$> o A..: "response"
                 ]
 
 initiatePollServer :: Handle -> IO Handle
@@ -154,9 +147,9 @@ getLongPollServer hAPI = do
         Error {..} ->
             throwM $
             Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
-        Response r -> pure r
+        PollServ r -> pure r
 
-rememberLastUpdate :: Handle -> PollResponse -> IO PollResponse
+rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI p@PollResponse {ts} =
     API.modifyState hAPI (\s -> s {lastTS = ts}) >> pure p
 rememberLastUpdate hAPI p = pure p
@@ -315,7 +308,7 @@ copyMessage hAPI Message {..} =
     pure $
     sendMessageWith hAPI peer_id text $ fmap attachmentToQuery attachments
 
-extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
+extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
 extractUpdates PollResponse {..} = pure updates
 extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
 
