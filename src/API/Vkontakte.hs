@@ -403,6 +403,5 @@ instance A.FromJSON KeyboardActionType where
 sendKeyboard ::
        (Monad m) => Handle -> Integer -> String -> Keyboard -> m API.Request
 sendKeyboard hAPI peer_id prompt keyboard =
-    pure $
-    sendMessageWith hAPI peer_id prompt $
+    pure . sendMessageWith hAPI peer_id prompt $
     [("keyboard", Just $ L8.unpack $ A.encode keyboard)]
