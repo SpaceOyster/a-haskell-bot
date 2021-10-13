@@ -53,12 +53,7 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
     fetchUpdates :: Bot.Handle VK.VKState -> IO [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
         Logger.info' hLog "Vkontakte: fetching Updates"
-        req <- hAPI & VK.getUpdates
-        json <- hAPI & API.sendRequest $ req
-        Logger.debug' hLog $
-            "Vkontakte: decoding json response: " <> L8.unpack json
-        resp <- throwDecode json
-        VK.extractUpdates =<< VK.rememberLastUpdate hAPI resp
+        VK.runMethod' hAPI VK.GetUpdates >>= VK.extractUpdates
     logger :: Bot.Handle VK.VKState -> Logger.Handle
     logger = Bot.hLog
     data Entity (Bot.Handle VK.VKState) = EMessage VK.Message
