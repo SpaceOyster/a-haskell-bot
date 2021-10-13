@@ -11,6 +11,9 @@ module API.Vkontakte
     , withHandle
     , Config(..)
     , VKState(..)
+    , Method(..)
+    , runMethod
+    , runMethod'
     , GroupEvent(..)
     , User(..)
     , Message(..)
