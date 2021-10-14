@@ -85,14 +85,14 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
         -> (VK.Message -> IO API.Request)
     execCommand hBot@Bot.Handle {..} cmd VK.Message {..} = do
         let address = peer_id
-        case cmd of
-            Bot.Start -> VK.sendTextMessage hAPI address $ Bot.greeting strings
-            Bot.Help -> VK.sendTextMessage hAPI address $ Bot.help strings
-            Bot.Repeat -> do
-                prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
-                VK.sendKeyboard hAPI address prompt repeatKeyboard
-            Bot.UnknownCommand ->
-                VK.sendTextMessage hAPI address $ Bot.unknown strings
+        prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
+        VK.runMethod hAPI $
+            case cmd of
+                Bot.Start -> VK.SendTextMessage address (Bot.greeting strings)
+                Bot.Help -> VK.SendTextMessage address (Bot.help strings)
+                Bot.Repeat -> VK.SendKeyboard address prompt repeatKeyboard
+                Bot.UnknownCommand ->
+                    VK.SendTextMessage address (Bot.unknown strings)
 
 -- diff
 reactToCommand :: Bot.Handle VK.VKState -> VK.Message -> IO API.Request
