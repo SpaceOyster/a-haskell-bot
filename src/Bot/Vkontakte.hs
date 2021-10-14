@@ -68,7 +68,7 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
         | otherwise = EMessage m
     qualifyUpdate (VK.MessageEvent c) = ECallback c
     qualifyUpdate _ = EOther VK.Other -- TODO
-    reactToUpdate :: Bot.Handle VK.VKState -> VK.GroupEvent -> IO [API.Request]
+    reactToUpdate :: Bot.Handle VK.VKState -> VK.GroupEvent -> IO [VK.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         Logger.info' hLog $ "VK got Update: " <> show update
         let qu = Bot.qualifyUpdate update
@@ -82,11 +82,11 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
     execCommand ::
            Bot.Handle VK.VKState
         -> Bot.Command
-        -> (VK.Message -> IO API.Request)
+        -> (VK.Message -> IO VK.Response)
     execCommand hBot@Bot.Handle {..} cmd VK.Message {..} = do
         let address = peer_id
         prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
-        VK.runMethod hAPI $
+        VK.runMethod' hAPI $
             case cmd of
                 Bot.Start -> VK.SendTextMessage address (Bot.greeting strings)
                 Bot.Help -> VK.SendTextMessage address (Bot.help strings)
@@ -95,7 +95,7 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
                     VK.SendTextMessage address (Bot.unknown strings)
 
 -- diff
-reactToCommand :: Bot.Handle VK.VKState -> VK.Message -> IO API.Request
+reactToCommand :: Bot.Handle VK.VKState -> VK.Message -> IO VK.Response
 reactToCommand hBot@Bot.Handle {hLog} msg@VK.Message {id, peer_id} = do
     let cmd = getCommand msg
     Logger.debug' hLog $
@@ -105,14 +105,12 @@ reactToCommand hBot@Bot.Handle {hLog} msg@VK.Message {id, peer_id} = do
     Bot.execCommand hBot cmd msg
 
 -- diff
-reactToMessage :: Bot.Handle VK.VKState -> VK.Message -> IO [API.Request]
+reactToMessage :: Bot.Handle VK.VKState -> VK.Message -> IO [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI, hLog} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
-    clone <- VK.copyMessage hAPI msg
     Logger.debug' hLog $
         "Vkontakte: generating " <> show n <> " echoes for Message: " <> show id
-    Logger.debug' hLog $ "  Multiplied request" <> show clone
-    n `replicateM` pure clone
+    n `replicateM` VK.runMethod' hAPI (VK.CopyMessage msg)
 
 newtype Payload =
     RepeatPayload Int
@@ -126,7 +124,7 @@ instance A.FromJSON Payload where
             RepeatPayload <$> o A..: "repeat"
 
 -- diff
-reactToCallback :: Bot.Handle VK.VKState -> VK.CallbackEvent -> IO [API.Request]
+reactToCallback :: Bot.Handle VK.VKState -> VK.CallbackEvent -> IO [VK.Response]
 reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
     let callback = A.parseMaybe A.parseJSON payload
     let user = VK.User user_id
@@ -136,7 +134,8 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
-            (: []) <$> VK.sendMessageEventAnswer (Bot.hAPI hBot) cq prompt
+            fmap (: []) . VK.runMethod' (Bot.hAPI hBot) $
+                VK.SendMessageEventAnswer cq prompt
         Nothing ->
             throwM $
             Ex Priority.Info $ "Unknown CallbackQuery type: " <> show payload
