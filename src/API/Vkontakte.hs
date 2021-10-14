@@ -14,6 +14,7 @@ module API.Vkontakte
     , Method(..)
     , runMethod
     , runMethod'
+    , Response(..)
     , GroupEvent(..)
     , User(..)
     , Message(..)
