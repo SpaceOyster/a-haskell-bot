@@ -162,6 +162,7 @@ class BotHandle a where
         mapM (sendRequest hBot) requests
     logger :: a -> Logger.Handle
     data Entity a
+    type Response a
     qualifyUpdate :: Update a -> Entity a
     reactToUpdate :: a -> Update a -> IO [API.Request]
     reactToUpdates :: a -> [Update a] -> IO [API.Request]

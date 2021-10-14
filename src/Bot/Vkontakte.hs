@@ -61,6 +61,7 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
                                     | ECallback VK.CallbackEvent
                                     | EOther VK.GroupEvent
                                         deriving (Show)
+    type Response (Bot.Handle VK.VKState) = VK.Response
     qualifyUpdate :: VK.GroupEvent -> Bot.Entity (Bot.Handle VK.VKState)
     qualifyUpdate (VK.MessageNew m)
         | isCommandE m = ECommand m

@@ -59,6 +59,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                                      | ECallback TG.CallbackQuery
                                      | EOther TG.Update
                                          deriving (Show)
+    type Response (Bot.Handle TG.APIState) = TG.Response
     qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.APIState)
     qualifyUpdate u@TG.Update {message, callback_query}
         | Just cq <- callback_query = ECallback cq
