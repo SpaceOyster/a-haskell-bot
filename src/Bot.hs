@@ -153,24 +153,19 @@ class BotHandle a where
     sendRequest :: a -> API.Request -> IO L8.ByteString
     type Update a
     fetchUpdates :: a -> IO [Update a]
-    doBotThing :: a -> IO [L8.ByteString]
-    doBotThing hBot = do
-        updates <- fetchUpdates hBot
-        requests <- reactToUpdates hBot updates
-        Logger.info' (logger hBot) $
-            "Telegram: sending " <> show (length requests) <> " responses"
-        mapM (sendRequest hBot) requests
+    doBotThing :: a -> IO [Response a]
+    doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
     logger :: a -> Logger.Handle
     data Entity a
     type Response a
     qualifyUpdate :: Update a -> Entity a
-    reactToUpdate :: a -> Update a -> IO [API.Request]
-    reactToUpdates :: a -> [Update a] -> IO [API.Request]
+    reactToUpdate :: a -> Update a -> IO [Response a]
+    reactToUpdates :: a -> [Update a] -> IO [Response a]
     reactToUpdates hBot updates = do
         Logger.info' (logger hBot) "Telegram: processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message a
-    execCommand :: a -> Command -> (Message a -> IO API.Request)
+    execCommand :: a -> Command -> (Message a -> IO (Response a))
 
 class HandleConfig cfg where
     type HandleType cfg
