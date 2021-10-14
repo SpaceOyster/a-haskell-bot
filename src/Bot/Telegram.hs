@@ -68,7 +68,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                 then ECommand msg
                 else EMessage msg
         | otherwise = EOther u
-    reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [API.Request]
+    reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [TG.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         Logger.debug' hLog $
             "Telegram: Qualifying Update with id " <> show (TG.update_id update)
@@ -85,11 +85,11 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     execCommand ::
            Bot.Handle TG.APIState
         -> Bot.Command
-        -> (TG.Message -> IO API.Request)
+        -> (TG.Message -> IO TG.Response)
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
         prompt <- Bot.repeatPrompt hBot from
-        TG.runMethod hAPI $
+        TG.runMethod' hAPI $
             case cmd of
                 Bot.Start -> TG.SendMessage address (Bot.greeting strings)
                 Bot.Help -> TG.SendMessage address (Bot.help strings)
@@ -99,7 +99,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                     TG.SendMessage address (Bot.unknown strings)
 
 -- diff
-reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO API.Request
+reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO TG.Response
 reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
     Logger.debug' hLog $
@@ -108,14 +108,14 @@ reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
     Bot.execCommand hBot cmd msg
 
 -- diff
-reactToMessage :: Bot.Handle TG.APIState -> TG.Message -> IO [API.Request]
+reactToMessage :: Bot.Handle TG.APIState -> TG.Message -> IO [TG.Response]
 reactToMessage hBot@Bot.Handle {..} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
     n <- Bot.getUserMultiplier hBot author
     Logger.debug' hLog $
         "Telegram: generating " <>
         show n <> " echoes for Message: " <> show message_id
-    n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
+    n `replicateM` TG.runMethod' hAPI (TG.CopyMessage msg)
 
 data QueryData
     = QDRepeat Int
@@ -131,7 +131,7 @@ qualifyQuery qstring =
     (qtype, qdata) = break (== '_') qstring
 
 -- diff
-reactToCallback :: Bot.Handle TG.APIState -> TG.CallbackQuery -> IO API.Request
+reactToCallback :: Bot.Handle TG.APIState -> TG.CallbackQuery -> IO TG.Response
 reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
     Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
     cdata <- TG.getQDataThrow cq
@@ -141,7 +141,7 @@ reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
             Logger.info' hLog $
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             Bot.setUserMultiplier hBot user n
-            TG.runMethod hAPI $ TG.AnswerCallbackQuery id
+            TG.runMethod' hAPI $ TG.AnswerCallbackQuery id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
