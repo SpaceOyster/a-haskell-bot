@@ -6,7 +6,6 @@
 module API.Telegram
     ( module API
     , new
-    , rememberLastUpdate
     , Config(..)
     , APIState(..)
     , Method(..)
