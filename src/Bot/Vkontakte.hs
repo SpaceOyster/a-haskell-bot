@@ -47,8 +47,6 @@ instance Bot.HandleConfig Config where
         pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle VK.VKState) where
-    sendRequest :: Bot.Handle VK.VKState -> API.Request -> IO L8.ByteString
-    sendRequest = API.sendRequest . Bot.hAPI
     type Update (Bot.Handle VK.VKState) = VK.GroupEvent
     fetchUpdates :: Bot.Handle VK.VKState -> IO [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do

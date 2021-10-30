@@ -45,8 +45,6 @@ instance Bot.HandleConfig Config where
         pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle TG.APIState) where
-    sendRequest :: Bot.Handle TG.APIState -> API.Request -> IO L8.ByteString
-    sendRequest = API.sendRequest . Bot.hAPI
     type Update (Bot.Handle TG.APIState) = TG.Update
     fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
     fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do

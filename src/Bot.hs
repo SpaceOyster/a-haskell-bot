@@ -150,7 +150,6 @@ isCommand "" = False
 isCommand s = (== '/') . head $ s
 
 class BotHandle a where
-    sendRequest :: a -> API.Request -> IO L8.ByteString
     type Update a
     fetchUpdates :: a -> IO [Update a]
     doBotThing :: a -> IO [Response a]
