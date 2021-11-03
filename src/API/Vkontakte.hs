@@ -13,7 +13,6 @@ module API.Vkontakte
     , VKState(..)
     , Method(..)
     , runMethod
-    , runMethod'
     , Response(..)
     , GroupEvent(..)
     , User(..)
@@ -166,13 +165,13 @@ data Method
     | SendKeyboard Integer String Keyboard
     deriving (Show)
 
-runMethod' :: Handle -> Method -> IO Response
-runMethod' hAPI m =
-    rememberLastUpdate hAPI =<<
-    throwDecode =<< API.sendRequest hAPI =<< runMethod hAPI m
-
-runMethod :: Handle -> Method -> IO API.Request
+runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
+    rememberLastUpdate hAPI =<<
+    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+
+runMethod' :: Handle -> Method -> IO API.Request
+runMethod' hAPI m =
     case m of
         GetUpdates -> getUpdates hAPI
         SendMessageEventAnswer ce prompt ->

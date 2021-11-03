@@ -51,7 +51,7 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
     fetchUpdates :: Bot.Handle VK.VKState -> IO [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
         Logger.info' hLog "Vkontakte: fetching Updates"
-        VK.runMethod' hAPI VK.GetUpdates >>= VK.extractUpdates
+        VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
     logger :: Bot.Handle VK.VKState -> Logger.Handle
     logger = Bot.hLog
     data Entity (Bot.Handle VK.VKState) = EMessage VK.Message
@@ -84,7 +84,7 @@ instance Bot.BotHandle (Bot.Handle VK.VKState) where
     execCommand hBot@Bot.Handle {..} cmd VK.Message {..} = do
         let address = peer_id
         prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
-        VK.runMethod' hAPI $
+        VK.runMethod hAPI $
             case cmd of
                 Bot.Start -> VK.SendTextMessage address (Bot.greeting strings)
                 Bot.Help -> VK.SendTextMessage address (Bot.help strings)
@@ -108,7 +108,7 @@ reactToMessage hBot@Bot.Handle {hAPI, hLog} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
     Logger.debug' hLog $
         "Vkontakte: generating " <> show n <> " echoes for Message: " <> show id
-    n `replicateM` VK.runMethod' hAPI (VK.CopyMessage msg)
+    n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
 newtype Payload =
     RepeatPayload Int
@@ -132,7 +132,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
-            fmap (: []) . VK.runMethod' (Bot.hAPI hBot) $
+            fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->
             throwM $
