@@ -10,7 +10,6 @@ module API.Telegram
     , APIState(..)
     , Method(..)
     , runMethod
-    , runMethod'
     ) where
 
 import qualified API
@@ -75,13 +74,13 @@ data Method
     | SendInlineKeyboard Integer String InlineKeyboardMarkup
     deriving (Show)
 
-runMethod' :: Handle -> Method -> IO Response
-runMethod' hAPI m =
-    rememberLastUpdate hAPI =<<
-    throwDecode =<< API.sendRequest hAPI =<< runMethod hAPI m
-
-runMethod :: Handle -> Method -> IO API.Request
+runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
+    rememberLastUpdate hAPI =<<
+    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+
+runMethod' :: Handle -> Method -> IO API.Request
+runMethod' hAPI m =
     case m of
         GetUpdates -> getUpdates hAPI
         AnswerCallbackQuery id -> answerCallbackQuery hAPI id
