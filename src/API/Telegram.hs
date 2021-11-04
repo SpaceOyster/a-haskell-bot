@@ -12,7 +12,6 @@ module API.Telegram
     , Config(..)
     , APIState(..)
     , Method(..)
-    , runMethod
     ) where
 
 import qualified API
