@@ -4,6 +4,9 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module API.Vkontakte
     ( Handle(..)
@@ -12,7 +15,6 @@ module API.Vkontakte
     , Config(..)
     , VKState(..)
     , Method(..)
-    , runMethod
     , Response(..)
     , GroupEvent(..)
     , User(..)
@@ -157,6 +159,14 @@ rememberLastUpdate hAPI p@PollResponse {ts} =
     API.modifyState hAPI (\s -> s {lastTS = ts}) >> pure p
 rememberLastUpdate hAPI p = pure p
 
+instance API.StatefullAPI (API.Handle VKState) where
+    type Response (API.Handle VKState) = Response
+    type Method (API.Handle VKState) = Method
+    runMethod :: Handle -> Method -> IO Response
+    runMethod hAPI m =
+        rememberLastUpdate hAPI =<<
+        throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+
 data Method
     = GetUpdates
     | SendMessageEventAnswer CallbackEvent String
@@ -164,11 +174,6 @@ data Method
     | CopyMessage Message
     | SendKeyboard Integer String Keyboard
     deriving (Show)
-
-runMethod :: Handle -> Method -> IO Response
-runMethod hAPI m =
-    rememberLastUpdate hAPI =<<
-    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
 
 runMethod' :: Handle -> Method -> IO API.Request
 runMethod' hAPI m =
