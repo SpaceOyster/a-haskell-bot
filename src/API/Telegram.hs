@@ -2,6 +2,9 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE InstanceSigs #-}
 
 module API.Telegram
     ( module API
@@ -66,6 +69,14 @@ rememberLastUpdate hAPI res@(Updates us) =
         x -> API.setState hAPI ((1 +) . update_id . last $ us) >> pure res
 rememberLastUpdate hAPI x = pure x
 
+instance API.StatefullAPI (API.Handle APIState) where
+    type Response (API.Handle APIState) = Response
+    type Method (API.Handle APIState) = Method
+    runMethod :: Handle -> Method -> IO Response
+    runMethod hAPI m =
+        rememberLastUpdate hAPI =<<
+        throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+
 data Method
     = GetUpdates
     | AnswerCallbackQuery String
@@ -73,11 +84,6 @@ data Method
     | SendMessage Integer String
     | SendInlineKeyboard Integer String InlineKeyboardMarkup
     deriving (Show)
-
-runMethod :: Handle -> Method -> IO Response
-runMethod hAPI m =
-    rememberLastUpdate hAPI =<<
-    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
 
 runMethod' :: Handle -> Method -> IO API.Request
 runMethod' hAPI m =
