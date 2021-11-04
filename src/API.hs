@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module API
     ( Handle(..)
@@ -8,6 +9,7 @@ module API
     , getState
     , setState
     , modifyState
+    , StatefullAPI(..)
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -56,3 +58,8 @@ modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
 
 setState :: Handle s -> s -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
+
+class StatefullAPI h where
+    type Response h
+    type Method h
+    runMethod :: h -> Method h -> IO (Response h)
