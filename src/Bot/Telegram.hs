@@ -7,8 +7,6 @@
 
 module Bot.Telegram
     ( module Bot
-    , Bot.doBotThing
-    , Bot.withHandle
     , Config(..)
     ) where
 
