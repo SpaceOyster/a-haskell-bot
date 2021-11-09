@@ -7,8 +7,6 @@
 
 module Bot.Vkontakte
     ( module Bot
-    , Bot.doBotThing
-    , Bot.withHandle
     , Config(..)
     ) where
 
