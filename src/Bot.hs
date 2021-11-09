@@ -149,27 +149,27 @@ isCommand :: String -> Bool
 isCommand "" = False
 isCommand s = (== '/') . head $ s
 
-class BotHandle a where
-    type Update a
-    fetchUpdates :: a -> IO [Update a]
-    doBotThing :: a -> IO [Response a]
+class BotHandle h where
+    type Update h
+    fetchUpdates :: h -> IO [Update h]
+    doBotThing :: h -> IO [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
-    logger :: a -> Logger.Handle
-    data Entity a
-    type Response a
-    qualifyUpdate :: Update a -> Entity a
-    reactToUpdate :: a -> Update a -> IO [Response a]
-    reactToUpdates :: a -> [Update a] -> IO [Response a]
+    logger :: h -> Logger.Handle
+    data Entity h
+    type Response h
+    qualifyUpdate :: Update h -> Entity h
+    reactToUpdate :: h -> Update h -> IO [Response h]
+    reactToUpdates :: h -> [Update h] -> IO [Response h]
     reactToUpdates hBot updates = do
         Logger.info' (logger hBot) "Telegram: processing each update"
         join <$> mapM (reactToUpdate hBot) updates
-    type Message a
-    execCommand :: a -> Command -> (Message a -> IO (Response a))
+    type Message h
+    execCommand :: h -> Command -> (Message h -> IO (Response h))
 
 class HandleConfig cfg where
     type HandleType cfg
     new :: cfg -> Logger.Handle -> IO (HandleType cfg)
-    withHandle :: cfg -> Logger.Handle -> (HandleType cfg -> IO b) -> IO b
+    withHandle :: cfg -> Logger.Handle -> (HandleType cfg -> IO a) -> IO a
     withHandle config hLog io = do
         hBot <- new config hLog
         io hBot
