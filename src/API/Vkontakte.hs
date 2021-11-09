@@ -11,7 +11,6 @@
 module API.Vkontakte
     ( Handle(..)
     , new
-    , withHandle
     , Config(..)
     , VKState(..)
     , Method(..)
@@ -21,18 +20,12 @@ module API.Vkontakte
     , Message(..)
     , Attachment(..)
     , CallbackEvent(..)
-    , getUpdates
-    , rememberLastUpdate
-    , copyMessage
     , extractUpdates
-    , sendTextMessage
-    , sendMessageEventAnswer
     , Keyboard(..)
     , KeyboardButton(..)
     , ButtonColor(..)
     , KeyboardAction(..)
     , KeyboardActionType(..)
-    , sendKeyboard
     ) where
 
 import qualified API
