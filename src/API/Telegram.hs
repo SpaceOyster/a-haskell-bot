@@ -62,13 +62,15 @@ apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI res@(Updates us) =
-    case us of
-        [] -> pure res
-        x -> API.setState hAPI ((1 +) . update_id . last $ us) >> pure res
-rememberLastUpdate hAPI x = pure x
+rememberLastUpdate hAPI res =
+    maybe (pure ()) (API.setState hAPI) (newStateFromM res) >> pure res
+
+newStateFromM :: Response -> Maybe APIState
+newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
+newStateFromM _ = Nothing
 
 instance API.StatefullAPI (API.Handle APIState) where
+    type State (API.Handle APIState) = APIState
     type Response (API.Handle APIState) = Response
     type Method (API.Handle APIState) = Method
     runMethod :: Handle -> Method -> IO Response
