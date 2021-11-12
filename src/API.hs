@@ -48,6 +48,13 @@ credsToRequest p@PollCreds {body} =
   where
     uri = credsToURI p
 
+instance Semigroup PollCreds where
+    a <> b = b
+
+instance Monoid PollCreds where
+    mempty =
+        PollCreds {pollURI = URI.nullURI, queryParams = mempty, body = L8.empty}
+
 data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
