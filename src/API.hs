@@ -9,7 +9,12 @@ module API
     , getState
     , setState
     , modifyState
+    , getState2
+    , setState2
+    , modifyState2
+    , credsToRequest
     , StatefullAPI(..)
+    , PollCreds(..)
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
