@@ -87,6 +87,15 @@ setState :: Handle s -> s -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
 
 class StatefullAPI h where
+getState2 :: Handle s -> IO PollCreds
+getState2 = readIORef . apiState2
+
+modifyState2 :: Handle s -> (PollCreds -> PollCreds) -> IO ()
+modifyState2 hAPI morph = apiState2 hAPI `modifyIORef'` morph
+
+setState2 :: Handle s -> PollCreds -> IO ()
+setState2 hAPI newState = modifyState2 hAPI $ const newState
+
     type Response h
     type Method h
     runMethod :: h -> Method h -> IO (Response h)
