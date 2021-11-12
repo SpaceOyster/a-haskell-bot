@@ -40,6 +40,14 @@ credsToURI :: PollCreds -> URI.URI
 credsToURI PollCreds {pollURI, queryParams} =
     pollURI `URI.addQueryParams` queryParams
 
+credsToRequest :: PollCreds -> Request
+credsToRequest p@PollCreds {body} =
+    if L8.null body
+        then GET uri
+        else POST uri body
+  where
+    uri = credsToURI p
+
 data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
