@@ -36,6 +36,10 @@ data PollCreds =
         , body :: L8.ByteString
         }
 
+credsToURI :: PollCreds -> URI.URI
+credsToURI PollCreds {pollURI, queryParams} =
+    pollURI `URI.addQueryParams` queryParams
+
 data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
