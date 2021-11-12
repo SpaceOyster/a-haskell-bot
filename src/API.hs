@@ -29,6 +29,13 @@ data Handle state =
         , apiState :: IORef state
         }
 
+data PollCreds =
+    PollCreds
+        { pollURI :: URI.URI
+        , queryParams :: URI.QueryParams
+        , body :: L8.ByteString
+        }
+
 data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
