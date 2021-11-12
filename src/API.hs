@@ -27,6 +27,7 @@ data Handle state =
         , hLog :: Logger.Handle
         , baseURI :: URI.URI
         , apiState :: IORef state
+        , apiState2 :: IORef PollCreds
         }
 
 data PollCreds =
