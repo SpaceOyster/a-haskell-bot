@@ -51,6 +51,15 @@ new cfg@Config {key} hLog = do
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
     apiState <- newIORef 0
+    apiState2 <-
+        newIORef $
+        API.PollCreds
+            { pollURI = baseURI `URI.addPath` "getUpdates"
+            , queryParams = mempty
+            , body =
+                  encode . object $
+                  ["offset" .= (0 :: Int), "timeout" .= (25 :: Int)]
+            }
     pure $ API.Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
