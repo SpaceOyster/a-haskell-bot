@@ -196,8 +196,9 @@ runMethod' hAPI m =
 
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI = do
-    VKState {..} <- API.getState hAPI
-    pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
+    VKState {lastTS, pollURI} <- API.getState hAPI
+    -- pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
+    pure . API.credsToRequest =<< API.getState2 hAPI
 
 newtype User =
     User
