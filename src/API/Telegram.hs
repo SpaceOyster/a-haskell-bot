@@ -72,11 +72,23 @@ apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res =
-    maybe (pure ()) (API.setState hAPI) (newStateFromM res) >> pure res
+    maybe (pure ()) (API.setState hAPI) (newStateFromM res) >>
+    API.modifyState2 hAPI (updateCredsWith res) >>
+    pure res
 
 newStateFromM :: Response -> Maybe APIState
 newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
 newStateFromM _ = Nothing
+
+updateCredsWith :: Response -> (API.PollCreds -> API.PollCreds)
+updateCredsWith (Updates us@(_x:_xs)) = \p -> p {API.body = newBody}
+  where
+    newBody =
+        encode . object $
+        [ "offset" .= ((1 +) . update_id . last $ us :: Integer)
+        , "timeout" .= (25 :: Int)
+        ]
+updateCredsWith _ = Prelude.id
 
 instance API.StatefullAPI (API.Handle APIState) where
     type State (API.Handle APIState) = APIState
