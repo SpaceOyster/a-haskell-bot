@@ -70,7 +70,7 @@ new :: Config -> Logger.Handle -> IO Handle
 new cfg@Config {..} hLog = do
     http <- HTTP.new $ HTTP.Config {}
     baseURI <- makeBaseURI cfg
-    apiState2 <- newIORef mempty
+    apiState <- newIORef mempty
     let hAPI = API.Handle {..}
     initiatePollServer hAPI
 
@@ -128,7 +128,7 @@ initiatePollServer hAPI = do
     let pollCreds =
             API.PollCreds
                 {pollURI, queryParams = [("ts", Just ts)], body = mempty}
-    API.setState2 hAPI $ pollCreds
+    API.setState hAPI $ pollCreds
     pure hAPI
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
@@ -152,7 +152,7 @@ getLongPollServer hAPI = do
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res =
-    API.modifyState2 hAPI (updateCredsWith res) >> pure res
+    API.modifyState hAPI (updateCredsWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
@@ -192,7 +192,7 @@ runMethod' hAPI m =
 
 -- TODO use `bracket` maybe?
 getUpdates :: Handle -> IO API.Request
-getUpdates hAPI = API.credsToRequest <$> API.getState2 hAPI
+getUpdates hAPI = API.credsToRequest <$> API.getState hAPI
 
 newtype User =
     User

@@ -51,7 +51,7 @@ new cfg@Config {key} hLog = do
     http <- HTTP.new httpConfig
     Logger.info' hLog "HTTP handle initiated for Telegram API"
     apiState <- newIORef 0
-    apiState2 <-
+    apiState <-
         newIORef $
         API.PollCreds
             { pollURI = baseURI `URI.addPath` "getUpdates"
@@ -72,7 +72,7 @@ apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res =
-    API.modifyState2 hAPI (updateCredsWith res) >> pure res
+    API.modifyState hAPI (updateCredsWith res) >> pure res
 
 newStateFromM :: Response -> Maybe APIState
 newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
@@ -118,7 +118,7 @@ runMethod' hAPI m =
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@API.Handle {hLog} =
-    bracket (API.getState2 hAPI) (const $ pure ()) $ \creds -> do
+    bracket (API.getState hAPI) (const $ pure ()) $ \creds -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show creds
         pure $ API.credsToRequest creds
 
