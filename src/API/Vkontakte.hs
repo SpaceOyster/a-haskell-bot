@@ -106,7 +106,7 @@ data Response
           , updates :: [GroupEvent]
           }
     | PollError Integer
-    | OtherResponse A.Object
+    | OtherResponse A.Value
     deriving (Show)
 
 instance A.FromJSON Response where
