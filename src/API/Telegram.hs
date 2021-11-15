@@ -72,9 +72,7 @@ apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res =
-    maybe (pure ()) (API.setState hAPI) (newStateFromM res) >>
-    API.modifyState2 hAPI (updateCredsWith res) >>
-    pure res
+    API.modifyState2 hAPI (updateCredsWith res) >> pure res
 
 newStateFromM :: Response -> Maybe APIState
 newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
@@ -120,11 +118,9 @@ runMethod' hAPI m =
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@API.Handle {hLog} =
-    bracket (API.getState hAPI) (const $ pure ()) $ \id -> do
-        Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
-        let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
-        -- pure $ API.POST (apiMethod hAPI "getUpdates") json
-        pure . API.credsToRequest =<< API.getState2 hAPI
+    bracket (API.getState2 hAPI) (const $ pure ()) $ \creds -> do
+        Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show creds
+        pure $ API.credsToRequest creds
 
 -- API method
 answerCallbackQuery :: (Monad m) => Handle -> String -> m API.Request

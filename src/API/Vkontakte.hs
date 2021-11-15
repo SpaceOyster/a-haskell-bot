@@ -70,7 +70,6 @@ new :: Config -> Logger.Handle -> IO Handle
 new cfg@Config {..} hLog = do
     http <- HTTP.new $ HTTP.Config {}
     baseURI <- makeBaseURI cfg
-    apiState <- newIORef mempty
     apiState2 <- newIORef mempty
     let hAPI = API.Handle {..}
     initiatePollServer hAPI
@@ -129,7 +128,6 @@ initiatePollServer hAPI = do
     let pollCreds =
             API.PollCreds
                 {pollURI, queryParams = [("ts", Just ts)], body = mempty}
-    API.setState hAPI $ VKState {lastTS = ts, pollURI}
     API.setState2 hAPI $ pollCreds
     pure hAPI
 
@@ -154,9 +152,7 @@ getLongPollServer hAPI = do
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res =
-    API.modifyState hAPI (updateStateWith res) >>
-    API.modifyState2 hAPI (updateCredsWith res) >>
-    pure res
+    API.modifyState2 hAPI (updateCredsWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
@@ -194,11 +190,9 @@ runMethod' hAPI m =
         SendKeyboard peer_id prompt keyboard ->
             sendKeyboard hAPI peer_id prompt keyboard
 
+-- TODO use `bracket` maybe?
 getUpdates :: Handle -> IO API.Request
-getUpdates hAPI = do
-    VKState {lastTS, pollURI} <- API.getState hAPI
-    -- pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
-    pure . API.credsToRequest =<< API.getState2 hAPI
+getUpdates hAPI = API.credsToRequest <$> API.getState2 hAPI
 
 newtype User =
     User

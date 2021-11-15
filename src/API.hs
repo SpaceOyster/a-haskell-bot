@@ -6,9 +6,6 @@ module API
     ( Handle(..)
     , Request(..)
     , sendRequest
-    , getState
-    , setState
-    , modifyState
     , getState2
     , setState2
     , modifyState2
@@ -31,7 +28,6 @@ data Handle state =
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
         , baseURI :: URI.URI
-        , apiState :: IORef state
         , apiState2 :: IORef PollCreds
         }
 
@@ -82,16 +78,6 @@ sendRequest hAPI@Handle {hLog} req = do
     Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
     pure res
 
-getState :: Handle s -> IO s
-getState = readIORef . apiState
-
-modifyState :: Handle s -> (s -> s) -> IO ()
-modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
-
-setState :: Handle s -> s -> IO ()
-setState hAPI newState = modifyState hAPI $ const newState
-
-class StatefullAPI h where
 getState2 :: Handle s -> IO PollCreds
 getState2 = readIORef . apiState2
 
