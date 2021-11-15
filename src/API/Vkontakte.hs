@@ -148,9 +148,14 @@ getLongPollServer hAPI = do
         PollServ r -> pure r
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI p@PollResponse {ts} =
-    API.modifyState hAPI (\s -> s {lastTS = ts}) >> pure p
-rememberLastUpdate hAPI p = pure p
+rememberLastUpdate hAPI res =
+    API.modifyState hAPI (updateStateWith res) >>
+    pure res
+
+updateStateWith :: Response -> (VKState -> VKState)
+updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
+updateStateWith _ = Prelude.id
+
 
 instance API.StatefullAPI (API.Handle VKState) where
     type Response (API.Handle VKState) = Response
