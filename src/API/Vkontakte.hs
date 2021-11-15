@@ -71,6 +71,7 @@ new cfg@Config {..} hLog = do
     http <- HTTP.new $ HTTP.Config {}
     baseURI <- makeBaseURI cfg
     apiState <- newIORef mempty
+    apiState2 <- newIORef mempty
     let hAPI = API.Handle {..}
     initiatePollServer hAPI
 
@@ -125,7 +126,11 @@ initiatePollServer :: Handle -> IO Handle
 initiatePollServer hAPI = do
     ps@PollServer {ts} <- getLongPollServer hAPI
     pollURI <- makePollURI ps
+    let pollCreds =
+            API.PollCreds
+                {pollURI, queryParams = [("ts", Just ts)], body = mempty}
     API.setState hAPI $ VKState {lastTS = ts, pollURI}
+    API.setState2 hAPI $ pollCreds
     pure hAPI
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
