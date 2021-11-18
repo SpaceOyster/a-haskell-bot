@@ -25,6 +25,7 @@ import Data.Aeson (Value(..), (.=), encode, object)
 import Data.Function ((&))
 import qualified Exceptions as Ex
 import qualified HTTP
+import Handle.Class (IsHandle(..))
 import qualified Logger
 import qualified Network.URI.Extended as URI
 import Utils (throwDecode)
@@ -44,24 +45,25 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-new :: Config -> Logger.Handle -> IO Handle
-new cfg@Config {key} hLog = do
-    Logger.info' hLog "Initiating Telegram API handle"
-    baseURI <- makeBaseURI cfg
-    let httpConfig = HTTP.Config {}
-    http <- HTTP.new httpConfig
-    Logger.info' hLog "HTTP handle initiated for Telegram API"
-    apiState <- newIORef 0
-    apiState <-
-        newIORef $
-        API.PollCreds
-            { pollURI = baseURI `URI.addPath` "getUpdates"
-            , queryParams = mempty
-            , body =
-                  encode . object $
-                  ["offset" .= (0 :: Int), "timeout" .= (25 :: Int)]
-            }
-    pure $ API.Handle {..}
+instance IsHandle API.Handle Config where
+    new :: Config -> Logger.Handle -> IO Handle
+    new cfg@Config {key} hLog = do
+        Logger.info' hLog "Initiating Telegram API handle"
+        baseURI <- makeBaseURI cfg
+        let httpConfig = HTTP.Config {}
+        http <- HTTP.new httpConfig
+        Logger.info' hLog "HTTP handle initiated for Telegram API"
+        apiState <- newIORef 0
+        apiState <-
+            newIORef $
+            API.PollCreds
+                { pollURI = baseURI `URI.addPath` "getUpdates"
+                , queryParams = mempty
+                , body =
+                      encode . object $
+                      ["offset" .= (0 :: Int), "timeout" .= (25 :: Int)]
+                }
+        pure $ API.Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do
