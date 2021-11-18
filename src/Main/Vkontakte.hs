@@ -8,6 +8,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import Data.AppConfig
 import qualified Data.ByteString.Lazy as BL
+import Handle.Class (IsHandle(..))
 import qualified Logger
 import qualified Utils as U (throwDecode)
 
@@ -26,4 +27,4 @@ run configPath = do
         Logger.info' hLog $
             "API Polling period is " <>
             show (fromIntegral poll_period / 1000) <> "ms"
-        Bot.withHandle vkontakte hLog $ flip loop poll_period
+        withHandle vkontakte hLog $ flip loop poll_period
