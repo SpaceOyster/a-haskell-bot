@@ -1,5 +1,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 
 module Bot where
 
@@ -166,10 +168,9 @@ class BotHandle h where
     type Message h
     execCommand :: h -> Command -> (Message h -> IO (Response h))
 
-class HandleConfig cfg where
-    type HandleType cfg
-    new :: cfg -> Logger.Handle -> IO (HandleType cfg)
-    withHandle :: cfg -> Logger.Handle -> (HandleType cfg -> IO a) -> IO a
+class IsHandle h cfg | cfg -> h where
+    new :: cfg -> Logger.Handle -> IO h
+    withHandle :: cfg -> Logger.Handle -> (h -> IO a) -> IO a
     withHandle config hLog io = do
         hBot <- new config hLog
         io hBot

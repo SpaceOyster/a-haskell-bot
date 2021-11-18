@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Bot.Telegram
     ( module Bot
@@ -32,8 +33,7 @@ data Config =
         }
     deriving (Show)
 
-instance Bot.HandleConfig Config where
-    type HandleType Config = Bot.Handle TG.APIState
+instance Bot.IsHandle (Bot.Handle TG.APIState) Config where
     new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
     new cfg@Config {..} hLog = do
         Logger.info' hLog "Initiating Telegram Bot"

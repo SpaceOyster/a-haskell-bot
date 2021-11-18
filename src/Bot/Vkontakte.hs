@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Bot.Vkontakte
     ( module Bot
@@ -36,8 +37,7 @@ data Config =
         }
     deriving (Show)
 
-instance Bot.HandleConfig Config where
-    type HandleType Config = Bot.Handle VK.VKState
+instance Bot.IsHandle (Bot.Handle VK.VKState) Config where
     new :: Config -> Logger.Handle -> IO (Bot.Handle VK.VKState)
     new cfg@Config {..} hLog = do
         state <- newIORef $ Bot.BotState {userSettings = mempty}
