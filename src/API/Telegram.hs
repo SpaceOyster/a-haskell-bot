@@ -12,6 +12,7 @@ module API.Telegram
     , Config(..)
     , APIState(..)
     , Method(..)
+    , runMethod
     ) where
 
 import qualified API
@@ -30,7 +31,7 @@ import Utils (throwDecode)
 
 type APIState = Integer
 
-type Handle = API.Handle APIState
+type Handle = API.Handle
 
 newtype Config =
     Config
@@ -88,14 +89,10 @@ updateCredsWith (Updates us@(_x:_xs)) = \p -> p {API.body = newBody}
         ]
 updateCredsWith _ = Prelude.id
 
-instance API.StatefullAPI (API.Handle APIState) where
-    type State (API.Handle APIState) = APIState
-    type Response (API.Handle APIState) = Response
-    type Method (API.Handle APIState) = Method
-    runMethod :: Handle -> Method -> IO Response
-    runMethod hAPI m =
-        rememberLastUpdate hAPI =<<
-        throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+runMethod :: Handle -> Method -> IO Response
+runMethod hAPI m =
+    rememberLastUpdate hAPI =<<
+    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
 
 data Method
     = GetUpdates

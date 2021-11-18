@@ -23,7 +23,7 @@ import qualified HTTP
 import qualified Logger
 import qualified Network.URI.Extended as URI
 
-data Handle state =
+data Handle =
     Handle
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
@@ -62,13 +62,13 @@ data Request
     | POST URI.URI L8.ByteString
     deriving (Show)
 
-get :: Handle s -> URI.URI -> IO L8.ByteString
+get :: Handle -> URI.URI -> IO L8.ByteString
 get hAPI = hAPI & http & HTTP.get'
 
-post :: Handle s -> URI.URI -> L8.ByteString -> IO L8.ByteString
+post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
 post hAPI = hAPI & http & HTTP.post'
 
-sendRequest :: Handle s -> Request -> IO L8.ByteString
+sendRequest :: Handle -> Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
     Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
     res <-
@@ -78,13 +78,13 @@ sendRequest hAPI@Handle {hLog} req = do
     Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
     pure res
 
-getState :: Handle s -> IO PollCreds
+getState :: Handle -> IO PollCreds
 getState = readIORef . apiState
 
-modifyState :: Handle s -> (PollCreds -> PollCreds) -> IO ()
+modifyState :: Handle -> (PollCreds -> PollCreds) -> IO ()
 modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
 
-setState :: Handle s -> PollCreds -> IO ()
+setState :: Handle -> PollCreds -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
 
     type Response h

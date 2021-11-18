@@ -20,7 +20,7 @@ import qualified Logger
 
 data Handle apiState =
     Handle
-        { hAPI :: API.Handle apiState
+        { hAPI :: API.Handle
         , hLog :: Logger.Handle
         , state :: IORef BotState
         , strings :: Strings

@@ -26,6 +26,7 @@ module API.Vkontakte
     , ButtonColor(..)
     , KeyboardAction(..)
     , KeyboardActionType(..)
+    , runMethod
     ) where
 
 import qualified API
@@ -51,7 +52,7 @@ data VKState =
         , pollURI :: URI.URI
         }
 
-type Handle = API.Handle VKState
+type Handle = API.Handle
 
 data Config =
     Config
@@ -163,13 +164,10 @@ updateCredsWith PollResponse {ts} =
     \s -> s {API.queryParams = [("ts", Just ts)]}
 updateCredsWith _ = Prelude.id
 
-instance API.StatefullAPI (API.Handle VKState) where
-    type Response (API.Handle VKState) = Response
-    type Method (API.Handle VKState) = Method
-    runMethod :: Handle -> Method -> IO Response
-    runMethod hAPI m =
-        rememberLastUpdate hAPI =<<
-        throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+runMethod :: Handle -> Method -> IO Response
+runMethod hAPI m =
+    rememberLastUpdate hAPI =<<
+    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
 
 data Method
     = GetUpdates
