@@ -24,6 +24,7 @@ import Data.IORef (newIORef)
 import Data.Maybe (isJust)
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
+import Handle.Class (IsHandle(..))
 import qualified Logger
 import Utils (throwDecode)
 
@@ -37,7 +38,7 @@ data Config =
         }
     deriving (Show)
 
-instance Bot.IsHandle (Bot.Handle VK.VKState) Config where
+instance IsHandle (Bot.Handle VK.VKState) Config where
     new :: Config -> Logger.Handle -> IO (Bot.Handle VK.VKState)
     new cfg@Config {..} hLog = do
         state <- newIORef $ Bot.BotState {userSettings = mempty}

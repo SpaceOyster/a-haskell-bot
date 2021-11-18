@@ -22,6 +22,7 @@ import Data.Function ((&))
 import Data.IORef (newIORef)
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
+import Handle.Class (IsHandle(..))
 import qualified Logger
 import Utils (throwDecode)
 
@@ -33,7 +34,7 @@ data Config =
         }
     deriving (Show)
 
-instance Bot.IsHandle (Bot.Handle TG.APIState) Config where
+instance IsHandle (Bot.Handle TG.APIState) Config where
     new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
     new cfg@Config {..} hLog = do
         Logger.info' hLog "Initiating Telegram Bot"

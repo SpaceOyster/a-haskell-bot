@@ -1,7 +1,5 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE FunctionalDependencies #-}
 
 module Bot where
 
@@ -167,10 +165,3 @@ class BotHandle h where
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
     execCommand :: h -> Command -> (Message h -> IO (Response h))
-
-class IsHandle h cfg | cfg -> h where
-    new :: cfg -> Logger.Handle -> IO h
-    withHandle :: cfg -> Logger.Handle -> (h -> IO a) -> IO a
-    withHandle config hLog io = do
-        hBot <- new config hLog
-        io hBot

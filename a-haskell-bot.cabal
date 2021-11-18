@@ -36,6 +36,7 @@ library
       Data.Hashable
       Data.List.Extended
       Exceptions
+      Handle.Class
       HTTP
       Logger
       Main.Telegram
