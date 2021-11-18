@@ -42,6 +42,7 @@ import Data.IORef (modifyIORef', newIORef, readIORef)
 import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
+import Handle.Class (IsHandle(..))
 import qualified Logger
 import qualified Network.URI.Extended as URI
 import Utils (throwDecode)
@@ -67,13 +68,14 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-new :: Config -> Logger.Handle -> IO Handle
-new cfg@Config {..} hLog = do
-    http <- HTTP.new $ HTTP.Config {}
-    baseURI <- makeBaseURI cfg
-    apiState <- newIORef mempty
-    let hAPI = API.Handle {..}
-    initiatePollServer hAPI
+instance IsHandle API.Handle Config where
+    new :: Config -> Logger.Handle -> IO Handle
+    new cfg@Config {..} hLog = do
+        http <- HTTP.new $ HTTP.Config {}
+        baseURI <- makeBaseURI cfg
+        apiState <- newIORef mempty
+        let hAPI = API.Handle {..}
+        initiatePollServer hAPI
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do
