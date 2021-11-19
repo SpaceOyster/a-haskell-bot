@@ -16,7 +16,7 @@ module API.Telegram
     , runMethod
     ) where
 
-import qualified API
+import qualified API.Class as API
 import API.Telegram.Types
 import Control.Exception (bracket)
 import Data.IORef (modifyIORef', newIORef, readIORef)

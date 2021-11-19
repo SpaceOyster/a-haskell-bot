@@ -30,7 +30,7 @@ module API.Vkontakte
     , runMethod
     ) where
 
-import qualified API
+import qualified API.Class as API
 import Control.Applicative ((<|>))
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A

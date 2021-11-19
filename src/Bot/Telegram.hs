@@ -11,7 +11,7 @@ module Bot.Telegram
     , Config(..)
     ) where
 
-import qualified API
+import qualified API.Class as API
 import qualified API.Telegram as TG
 import qualified API.Telegram.Types as TG
 import qualified Bot

@@ -2,7 +2,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 
-module API
+module API.Class
     ( Handle(..)
     , Request(..)
     , sendRequest

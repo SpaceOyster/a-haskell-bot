@@ -25,7 +25,7 @@ source-repository head
 
 library
   exposed-modules:
-      API
+      API.Class
       API.Telegram
       API.Telegram.Types
       API.Vkontakte

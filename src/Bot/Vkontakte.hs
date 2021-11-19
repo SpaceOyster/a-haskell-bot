@@ -11,7 +11,7 @@ module Bot.Vkontakte
     , Config(..)
     ) where
 
-import qualified API
+import qualified API.Class as API
 import qualified API.Vkontakte as VK
 import qualified Bot
 import Control.Monad (join, replicateM)
