@@ -3,7 +3,7 @@
 
 module Bot where
 
-import qualified API.Class as API (Handle, Request)
+import qualified API.Class as API (Request)
 import Control.Applicative ((<|>))
 import Control.Monad (join)
 import Data.Aeson (FromJSON)
@@ -18,9 +18,9 @@ import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import qualified Logger
 
-data Handle apiState =
+data Handle apiHandle =
     Handle
-        { hAPI :: API.Handle
+        { hAPI :: apiHandle
         , hLog :: Logger.Handle
         , state :: IORef BotState
         , strings :: Strings

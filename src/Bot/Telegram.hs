@@ -34,8 +34,8 @@ data Config =
         }
     deriving (Show)
 
-instance IsHandle (Bot.Handle TG.APIState) Config where
-    new :: Config -> Logger.Handle -> IO (Bot.Handle TG.APIState)
+instance IsHandle (Bot.Handle TG.Handle) Config where
+    new :: Config -> Logger.Handle -> IO (Bot.Handle TG.Handle)
     new cfg@Config {..} hLog = do
         Logger.info' hLog "Initiating Telegram Bot"
         Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
@@ -43,21 +43,21 @@ instance IsHandle (Bot.Handle TG.APIState) Config where
         hAPI <- TG.new TG.Config {..} hLog
         pure $ Bot.Handle {..}
 
-instance Bot.BotHandle (Bot.Handle TG.APIState) where
-    type Update (Bot.Handle TG.APIState) = TG.Update
-    fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
+instance Bot.BotHandle (Bot.Handle TG.Handle) where
+    type Update (Bot.Handle TG.Handle) = TG.Update
+    fetchUpdates :: Bot.Handle TG.Handle -> IO [TG.Update]
     fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
         Logger.info' hLog "Telegram: fetching Updates"
         TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
-    logger :: Bot.Handle TG.APIState -> Logger.Handle
+    logger :: Bot.Handle TG.Handle -> Logger.Handle
     logger = Bot.hLog
-    data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
-                                     | ECommand TG.Message
-                                     | ECallback TG.CallbackQuery
-                                     | EOther TG.Update
-                                         deriving (Show)
-    type Response (Bot.Handle TG.APIState) = TG.Response
-    qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.APIState)
+    data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
+                                   | ECommand TG.Message
+                                   | ECallback TG.CallbackQuery
+                                   | EOther TG.Update
+                                       deriving (Show)
+    type Response (Bot.Handle TG.Handle) = TG.Response
+    qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.Handle)
     qualifyUpdate u@TG.Update {message, callback_query}
         | Just cq <- callback_query = ECallback cq
         | Just msg <- message =
@@ -65,7 +65,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                 then ECommand msg
                 else EMessage msg
         | otherwise = EOther u
-    reactToUpdate :: Bot.Handle TG.APIState -> TG.Update -> IO [TG.Response]
+    reactToUpdate :: Bot.Handle TG.Handle -> TG.Update -> IO [TG.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         Logger.debug' hLog $
             "Telegram: Qualifying Update with id " <> show (TG.update_id update)
@@ -78,11 +78,9 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                 throwM $
                 Ex Priority.Info $
                 "Unknown Update Type. Update: " ++ show update_id
-    type Message (Bot.Handle TG.APIState) = TG.Message
+    type Message (Bot.Handle TG.Handle) = TG.Message
     execCommand ::
-           Bot.Handle TG.APIState
-        -> Bot.Command
-        -> (TG.Message -> IO TG.Response)
+           Bot.Handle TG.Handle -> Bot.Command -> (TG.Message -> IO TG.Response)
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
         prompt <- Bot.repeatPrompt hBot from
@@ -96,7 +94,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
                     TG.SendMessage address (Bot.unknown strings)
 
 -- diff
-reactToCommand :: Bot.Handle TG.APIState -> TG.Message -> IO TG.Response
+reactToCommand :: Bot.Handle TG.Handle -> TG.Message -> IO TG.Response
 reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
     Logger.debug' hLog $
@@ -105,7 +103,7 @@ reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
     Bot.execCommand hBot cmd msg
 
 -- diff
-reactToMessage :: Bot.Handle TG.APIState -> TG.Message -> IO [TG.Response]
+reactToMessage :: Bot.Handle TG.Handle -> TG.Message -> IO [TG.Response]
 reactToMessage hBot@Bot.Handle {..} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
     n <- Bot.getUserMultiplier hBot author
@@ -128,7 +126,7 @@ qualifyQuery qstring =
     (qtype, qdata) = break (== '_') qstring
 
 -- diff
-reactToCallback :: Bot.Handle TG.APIState -> TG.CallbackQuery -> IO TG.Response
+reactToCallback :: Bot.Handle TG.Handle -> TG.CallbackQuery -> IO TG.Response
 reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
     Logger.debug' hLog $ "Getting query data from CallbackQuery: " <> show id
     cdata <- TG.getQDataThrow cq

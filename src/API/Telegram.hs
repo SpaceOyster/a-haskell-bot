@@ -13,16 +13,18 @@ module API.Telegram
     , Config(..)
     , APIState(..)
     , Method(..)
+    , Handle(..)
     , runMethod
     ) where
 
 import qualified API.Class as API
 import API.Telegram.Types
 import Control.Exception (bracket)
-import Data.IORef (modifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson (Value(..), (.=), encode, object)
+import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import qualified Exceptions as Ex
 import qualified HTTP
@@ -33,7 +35,40 @@ import Utils (throwDecode)
 
 type APIState = Integer
 
-type Handle = API.Handle
+data Handle =
+    Handle
+        { http :: HTTP.Handle
+        , hLog :: Logger.Handle
+        , baseURI :: URI.URI
+        , apiState :: IORef API.PollCreds
+        }
+
+instance API.APIHandle Handle
+
+getState :: Handle -> IO API.PollCreds
+getState = readIORef . apiState
+
+modifyState :: Handle -> (API.PollCreds -> API.PollCreds) -> IO ()
+modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
+
+setState :: Handle -> API.PollCreds -> IO ()
+setState hAPI newState = modifyState hAPI $ const newState
+
+get :: Handle -> URI.URI -> IO L8.ByteString
+get hAPI = hAPI & http & HTTP.get'
+
+post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
+post hAPI = hAPI & http & HTTP.post'
+
+sendRequest :: Handle -> API.Request -> IO L8.ByteString
+sendRequest hAPI@Handle {hLog} req = do
+    Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
+    res <-
+        case req of
+            API.GET method -> get hAPI method
+            API.POST method body -> post hAPI method body
+    Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    pure res
 
 newtype Config =
     Config
@@ -46,7 +81,7 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-instance IsHandle API.Handle Config where
+instance IsHandle Handle Config where
     new :: Config -> Logger.Handle -> IO Handle
     new cfg@Config {key} hLog = do
         Logger.info' hLog "Initiating Telegram API handle"
@@ -64,7 +99,7 @@ instance IsHandle API.Handle Config where
                       encode . object $
                       ["offset" .= (0 :: Int), "timeout" .= (25 :: Int)]
                 }
-        pure $ API.Handle {..}
+        pure $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do
@@ -72,11 +107,10 @@ withHandle config hLog io = do
     io hAPI
 
 apiMethod :: Handle -> String -> URI.URI
-apiMethod hAPI method = API.baseURI hAPI `URI.addPath` method
+apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI res =
-    API.modifyState hAPI (updateCredsWith res) >> pure res
+rememberLastUpdate hAPI res = modifyState hAPI (updateCredsWith res) >> pure res
 
 newStateFromM :: Response -> Maybe APIState
 newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
@@ -95,7 +129,7 @@ updateCredsWith _ = Prelude.id
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     rememberLastUpdate hAPI =<<
-    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+    throwDecode =<< sendRequest hAPI =<< runMethod' hAPI m
 
 data Method
     = GetUpdates
@@ -117,8 +151,8 @@ runMethod' hAPI m =
 
 -- API method
 getUpdates :: Handle -> IO API.Request
-getUpdates hAPI@API.Handle {hLog} =
-    bracket (API.getState hAPI) (const $ pure ()) $ \creds -> do
+getUpdates hAPI@Handle {hLog} =
+    bracket (getState hAPI) (const $ pure ()) $ \creds -> do
         Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show creds
         pure $ API.credsToRequest creds
 

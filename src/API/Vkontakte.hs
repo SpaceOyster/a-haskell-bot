@@ -39,7 +39,7 @@ import Data.Char (toLower)
 import Data.Foldable (asum)
 import Data.Function ((&))
 import qualified Data.Hashable as H
-import Data.IORef (modifyIORef', newIORef, readIORef)
+import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
@@ -54,7 +54,40 @@ data VKState =
         , pollURI :: URI.URI
         }
 
-type Handle = API.Handle
+data Handle =
+    Handle
+        { http :: HTTP.Handle
+        , hLog :: Logger.Handle
+        , baseURI :: URI.URI
+        , apiState :: IORef API.PollCreds
+        }
+
+instance API.APIHandle Handle
+
+getState :: Handle -> IO API.PollCreds
+getState = readIORef . apiState
+
+modifyState :: Handle -> (API.PollCreds -> API.PollCreds) -> IO ()
+modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
+
+setState :: Handle -> API.PollCreds -> IO ()
+setState hAPI newState = modifyState hAPI $ const newState
+
+get :: Handle -> URI.URI -> IO L8.ByteString
+get hAPI = hAPI & http & HTTP.get'
+
+post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
+post hAPI = hAPI & http & HTTP.post'
+
+sendRequest :: Handle -> API.Request -> IO L8.ByteString
+sendRequest hAPI@Handle {hLog} req = do
+    Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
+    res <-
+        case req of
+            API.GET method -> get hAPI method
+            API.POST method body -> post hAPI method body
+    Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    pure res
 
 data Config =
     Config
@@ -69,13 +102,13 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-instance IsHandle API.Handle Config where
+instance IsHandle Handle Config where
     new :: Config -> Logger.Handle -> IO Handle
     new cfg@Config {..} hLog = do
         http <- HTTP.new $ HTTP.Config {}
         baseURI <- makeBaseURI cfg
         apiState <- newIORef mempty
-        let hAPI = API.Handle {..}
+        let hAPI = Handle {..}
         initiatePollServer hAPI
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
@@ -132,7 +165,7 @@ initiatePollServer hAPI = do
     let pollCreds =
             API.PollCreds
                 {pollURI, queryParams = [("ts", Just ts)], body = mempty}
-    API.setState hAPI $ pollCreds
+    setState hAPI $ pollCreds
     pure hAPI
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
@@ -145,7 +178,7 @@ makePollURI PollServer {..} = do
 getLongPollServer :: Handle -> IO PollServer
 getLongPollServer hAPI = do
     json <-
-        API.sendRequest hAPI $
+        sendRequest hAPI $
         API.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
     res <- throwDecode json
     case res of
@@ -155,8 +188,7 @@ getLongPollServer hAPI = do
         PollServ r -> pure r
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI res =
-    API.modifyState hAPI (updateCredsWith res) >> pure res
+rememberLastUpdate hAPI res = modifyState hAPI (updateCredsWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
@@ -170,7 +202,7 @@ updateCredsWith _ = Prelude.id
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     rememberLastUpdate hAPI =<<
-    throwDecode =<< API.sendRequest hAPI =<< runMethod' hAPI m
+    throwDecode =<< sendRequest hAPI =<< runMethod' hAPI m
 
 data Method
     = GetUpdates
@@ -193,7 +225,7 @@ runMethod' hAPI m =
 
 -- TODO use `bracket` maybe?
 getUpdates :: Handle -> IO API.Request
-getUpdates hAPI = API.credsToRequest <$> API.getState hAPI
+getUpdates hAPI = API.credsToRequest <$> getState hAPI
 
 newtype User =
     User
@@ -309,7 +341,7 @@ sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
 
 apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
-    flip URI.addQueryParams qps . URI.addPath (API.baseURI hAPI) $ method
+    flip URI.addQueryParams qps . URI.addPath (baseURI hAPI) $ method
 
 sendMessageWith :: Handle -> Integer -> String -> URI.QueryParams -> API.Request
 sendMessageWith hAPI peer_id text qps =
