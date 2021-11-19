@@ -10,7 +10,6 @@ module API
     , setState
     , modifyState
     , credsToRequest
-    , StatefullAPI(..)
     , PollCreds(..)
     ) where
 
@@ -87,7 +86,3 @@ modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
 
 setState :: Handle -> PollCreds -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
-
-    type Response h
-    type Method h
-    runMethod :: h -> Method h -> IO (Response h)
