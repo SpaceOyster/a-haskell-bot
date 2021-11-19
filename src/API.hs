@@ -37,6 +37,7 @@ data PollCreds =
         , queryParams :: URI.QueryParams
         , body :: L8.ByteString
         }
+    deriving (Show)
 
 credsToURI :: PollCreds -> URI.URI
 credsToURI PollCreds {pollURI, queryParams} =
