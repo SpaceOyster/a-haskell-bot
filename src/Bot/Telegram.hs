@@ -48,7 +48,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     fetchUpdates :: Bot.Handle TG.APIState -> IO [TG.Update]
     fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
         Logger.info' hLog "Telegram: fetching Updates"
-        API.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
+        TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
     logger :: Bot.Handle TG.APIState -> Logger.Handle
     logger = Bot.hLog
     data Entity (Bot.Handle TG.APIState) = EMessage TG.Message
@@ -86,7 +86,7 @@ instance Bot.BotHandle (Bot.Handle TG.APIState) where
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
         prompt <- Bot.repeatPrompt hBot from
-        API.runMethod hAPI $
+        TG.runMethod hAPI $
             case cmd of
                 Bot.Start -> TG.SendMessage address (Bot.greeting strings)
                 Bot.Help -> TG.SendMessage address (Bot.help strings)
@@ -112,7 +112,7 @@ reactToMessage hBot@Bot.Handle {..} msg@TG.Message {message_id} = do
     Logger.debug' hLog $
         "Telegram: generating " <>
         show n <> " echoes for Message: " <> show message_id
-    n `replicateM` API.runMethod hAPI (TG.CopyMessage msg)
+    n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
 
 data QueryData
     = QDRepeat Int
@@ -138,7 +138,7 @@ reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
             Logger.info' hLog $
                 "Setting echo multiplier = " <> show n <> " for " <> show user
             Bot.setUserMultiplier hBot user n
-            API.runMethod hAPI $ TG.AnswerCallbackQuery id
+            TG.runMethod hAPI $ TG.AnswerCallbackQuery id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
