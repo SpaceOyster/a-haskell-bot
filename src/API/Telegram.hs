@@ -11,7 +11,6 @@ module API.Telegram
     ( module API
     , new
     , Config(..)
-    , APIState(..)
     , Method(..)
     , Handle(..)
     , runMethod
@@ -33,25 +32,25 @@ import qualified Logger
 import qualified Network.URI.Extended as URI
 import Utils (throwDecode)
 
-type APIState = Integer
+type TGState = Integer
 
 data Handle =
     Handle
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
         , baseURI :: URI.URI
-        , apiState :: IORef API.PollCreds
+        , apiState :: IORef TGState
         }
 
 instance API.APIHandle Handle
 
-getState :: Handle -> IO API.PollCreds
+getState :: Handle -> IO TGState
 getState = readIORef . apiState
 
-modifyState :: Handle -> (API.PollCreds -> API.PollCreds) -> IO ()
+modifyState :: Handle -> (TGState -> TGState) -> IO ()
 modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
 
-setState :: Handle -> API.PollCreds -> IO ()
+setState :: Handle -> TGState -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
 
 get :: Handle -> URI.URI -> IO L8.ByteString
@@ -90,15 +89,6 @@ instance IsHandle Handle Config where
         http <- HTTP.new httpConfig
         Logger.info' hLog "HTTP handle initiated for Telegram API"
         apiState <- newIORef 0
-        apiState <-
-            newIORef $
-            API.PollCreds
-                { pollURI = baseURI `URI.addPath` "getUpdates"
-                , queryParams = mempty
-                , body =
-                      encode . object $
-                      ["offset" .= (0 :: Int), "timeout" .= (25 :: Int)]
-                }
         pure $ Handle {..}
 
 withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
@@ -110,21 +100,12 @@ apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI res = modifyState hAPI (updateCredsWith res) >> pure res
+rememberLastUpdate hAPI res =
+    mapM_ (setState hAPI) (newStateFromM res) >> pure res
 
-newStateFromM :: Response -> Maybe APIState
+newStateFromM :: Response -> Maybe TGState
 newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
 newStateFromM _ = Nothing
-
-updateCredsWith :: Response -> (API.PollCreds -> API.PollCreds)
-updateCredsWith (Updates us@(_x:_xs)) = \p -> p {API.body = newBody}
-  where
-    newBody =
-        encode . object $
-        [ "offset" .= ((1 +) . update_id . last $ us :: Integer)
-        , "timeout" .= (25 :: Int)
-        ]
-updateCredsWith _ = Prelude.id
 
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
@@ -152,9 +133,10 @@ runMethod' hAPI m =
 -- API method
 getUpdates :: Handle -> IO API.Request
 getUpdates hAPI@Handle {hLog} =
-    bracket (getState hAPI) (const $ pure ()) $ \creds -> do
-        Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show creds
-        pure $ API.credsToRequest creds
+    bracket (getState hAPI) (const $ pure ()) $ \id -> do
+        Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
+        let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
+        pure $ API.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
 answerCallbackQuery :: (Monad m) => Handle -> String -> m API.Request
