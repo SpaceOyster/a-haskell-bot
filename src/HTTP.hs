@@ -9,8 +9,6 @@ module HTTP
     , new
     , get
     , post
-    , get'
-    , post'
     ) where
 
 import Data.ByteString (ByteString)
@@ -44,34 +42,16 @@ new _cfg = do
     manager <- H.newManager tlsManagerSettings
     pure $ Handle {..}
 
-get :: Handle -> String -> IO L8.ByteString
-get handle url =
-    let req = H.parseRequest_ url
-        req' = req {H.method = "GET"}
-     in H.responseBody <$> H.httpLbs req' (manager handle)
-
-post :: Handle -> String -> L8.ByteString -> IO L8.ByteString
-post handle url body =
-    let req = H.parseRequest_ url
-        req' =
-            req
-                { H.method = "POST"
-                , H.requestBody = H.RequestBodyLBS body
-                , H.requestHeaders =
-                      [("Content-Type", "application/json; charset=utf-8")]
-                }
-     in H.responseBody <$> H.httpLbs req' (manager handle)
-
-get' :: Handle -> URI.URI -> IO L8.ByteString
-get' handle uri = do
+get :: Handle -> URI.URI -> IO L8.ByteString
+get handle uri = do
     req <- H.requestFromURI uri
     let req' = bakeReq req
     H.responseBody <$> H.httpLbs req' (manager handle)
   where
     bakeReq req = req {H.method = "GET"}
 
-post' :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
-post' handle uri body = do
+post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
+post handle uri body = do
     req <- H.requestFromURI uri
     let req' = bakeReq req
     H.responseBody <$> H.httpLbs req' (manager handle)

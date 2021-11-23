@@ -75,10 +75,10 @@ setState :: Handle -> VKState -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
 
 get :: Handle -> URI.URI -> IO L8.ByteString
-get hAPI = hAPI & http & HTTP.get'
+get hAPI = hAPI & http & HTTP.get
 
 post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
-post hAPI = hAPI & http & HTTP.post'
+post hAPI = hAPI & http & HTTP.post
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
