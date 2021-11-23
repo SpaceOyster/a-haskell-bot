@@ -32,6 +32,7 @@ module API.Vkontakte
 
 import qualified API.Class as API
 import Control.Applicative ((<|>))
+import Control.Exception (bracket)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -59,18 +60,18 @@ data Handle =
         { http :: HTTP.Handle
         , hLog :: Logger.Handle
         , baseURI :: URI.URI
-        , apiState :: IORef API.PollCreds
+        , apiState :: IORef VKState
         }
 
 instance API.APIHandle Handle
 
-getState :: Handle -> IO API.PollCreds
+getState :: Handle -> IO VKState
 getState = readIORef . apiState
 
-modifyState :: Handle -> (API.PollCreds -> API.PollCreds) -> IO ()
+modifyState :: Handle -> (VKState -> VKState) -> IO ()
 modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
 
-setState :: Handle -> API.PollCreds -> IO ()
+setState :: Handle -> VKState -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
 
 get :: Handle -> URI.URI -> IO L8.ByteString
@@ -162,9 +163,7 @@ initiatePollServer :: Handle -> IO Handle
 initiatePollServer hAPI = do
     ps@PollServer {ts} <- getLongPollServer hAPI
     pollURI <- makePollURI ps
-    let pollCreds =
-            API.PollCreds
-                {pollURI, queryParams = [("ts", Just ts)], body = mempty}
+    let pollCreds = VKState {lastTS = ts, pollURI}
     setState hAPI $ pollCreds
     pure hAPI
 
@@ -188,16 +187,11 @@ getLongPollServer hAPI = do
         PollServ r -> pure r
 
 rememberLastUpdate :: Handle -> Response -> IO Response
-rememberLastUpdate hAPI res = modifyState hAPI (updateCredsWith res) >> pure res
+rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
 updateStateWith _ = Prelude.id
-
-updateCredsWith :: Response -> (API.PollCreds -> API.PollCreds)
-updateCredsWith PollResponse {ts} =
-    \s -> s {API.queryParams = [("ts", Just ts)]}
-updateCredsWith _ = Prelude.id
 
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
@@ -223,9 +217,12 @@ runMethod' hAPI m =
         SendKeyboard peer_id prompt keyboard ->
             sendKeyboard hAPI peer_id prompt keyboard
 
--- TODO use `bracket` maybe?
 getUpdates :: Handle -> IO API.Request
-getUpdates hAPI = API.credsToRequest <$> getState hAPI
+getUpdates hAPI@Handle {hLog} =
+    bracket (getState hAPI) (const $ pure ()) $ \VKState {..} -> do
+        Logger.debug' hLog $
+            "Vkontakte: last recieved Update TS: " <> show lastTS
+        pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
 
 newtype User =
     User
