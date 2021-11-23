@@ -3,7 +3,6 @@
 
 module Bot where
 
-import qualified API.Class as API (Request)
 import Control.Applicative ((<|>))
 import Control.Monad (join)
 import Data.Aeson (FromJSON)
