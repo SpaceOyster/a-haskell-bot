@@ -80,13 +80,13 @@ get hAPI = hAPI & http & HTTP.get'
 post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
 post hAPI = hAPI & http & HTTP.post'
 
-sendRequest :: Handle -> API.Request -> IO L8.ByteString
+sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
     Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
     res <-
         case req of
-            API.GET method -> get hAPI method
-            API.POST method body -> post hAPI method body
+            HTTP.GET method -> get hAPI method
+            HTTP.POST method body -> post hAPI method body
     Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
     pure res
 
@@ -178,7 +178,7 @@ getLongPollServer :: Handle -> IO PollServer
 getLongPollServer hAPI = do
     json <-
         sendRequest hAPI $
-        API.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
+        HTTP.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
     res <- throwDecode json
     case res of
         Error {..} ->
@@ -206,7 +206,7 @@ data Method
     | SendKeyboard Integer String Keyboard
     deriving (Show)
 
-runMethod' :: Handle -> Method -> IO API.Request
+runMethod' :: Handle -> Method -> IO HTTP.Request
 runMethod' hAPI m =
     case m of
         GetUpdates -> getUpdates hAPI
@@ -217,12 +217,12 @@ runMethod' hAPI m =
         SendKeyboard peer_id prompt keyboard ->
             sendKeyboard hAPI peer_id prompt keyboard
 
-getUpdates :: Handle -> IO API.Request
+getUpdates :: Handle -> IO HTTP.Request
 getUpdates hAPI@Handle {hLog} =
     bracket (getState hAPI) (const $ pure ()) $ \VKState {..} -> do
         Logger.debug' hLog $
             "Vkontakte: last recieved Update TS: " <> show lastTS
-        pure . API.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
+        pure . HTTP.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
 
 newtype User =
     User
@@ -323,9 +323,9 @@ instance A.FromJSON GroupEvent where
                 _ -> fail "Unknown GroupEvent type"
 
 sendMessageEventAnswer ::
-       (Monad m) => Handle -> CallbackEvent -> String -> m API.Request
+       (Monad m) => Handle -> CallbackEvent -> String -> m HTTP.Request
 sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
-    pure . API.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
+    pure . HTTP.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
     [ ("event_id", Just event_id)
     , ("user_id", Just $ show user_id)
     , ("peer_id", Just $ show peer_id)
@@ -340,16 +340,17 @@ apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
 apiMethod hAPI method qps =
     flip URI.addQueryParams qps . URI.addPath (baseURI hAPI) $ method
 
-sendMessageWith :: Handle -> Integer -> String -> URI.QueryParams -> API.Request
+sendMessageWith ::
+       Handle -> Integer -> String -> URI.QueryParams -> HTTP.Request
 sendMessageWith hAPI peer_id text qps =
-    API.GET . apiMethod hAPI "messages.send" $
+    HTTP.GET . apiMethod hAPI "messages.send" $
     [("peer_id", Just $ show peer_id), ("message", Just text)] <> qps
 
-sendTextMessage :: (Monad m) => Handle -> Integer -> String -> m API.Request
+sendTextMessage :: (Monad m) => Handle -> Integer -> String -> m HTTP.Request
 sendTextMessage hAPI peer_id text =
     pure $ sendMessageWith hAPI peer_id text mempty
 
-copyMessage :: (Monad m) => Handle -> Message -> m API.Request
+copyMessage :: (Monad m) => Handle -> Message -> m HTTP.Request
 copyMessage hAPI Message {..} =
     pure $
     sendMessageWith hAPI peer_id text $ fmap attachmentToQuery attachments
@@ -447,7 +448,7 @@ instance A.FromJSON KeyboardActionType where
                 _ -> fail "Unknown Action Type"
 
 sendKeyboard ::
-       (Monad m) => Handle -> Integer -> String -> Keyboard -> m API.Request
+       (Monad m) => Handle -> Integer -> String -> Keyboard -> m HTTP.Request
 sendKeyboard hAPI peer_id prompt keyboard =
     pure . sendMessageWith hAPI peer_id prompt $
     [("keyboard", Just $ L8.unpack $ A.encode keyboard)]

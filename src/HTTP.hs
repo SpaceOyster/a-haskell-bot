@@ -2,7 +2,16 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 
-module HTTP where
+module HTTP
+    ( Config(..)
+    , Handle(..)
+    , Request(..)
+    , new
+    , get
+    , post
+    , get'
+    , post'
+    ) where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -74,3 +83,8 @@ post' handle uri body = do
             , H.requestHeaders =
                   [("Content-Type", "application/json; charset=utf-8")]
             }
+
+data Request
+    = GET URI.URI
+    | POST URI.URI L8.ByteString
+    deriving (Show)
