@@ -23,7 +23,6 @@ import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import Handle.Class (IsHandle(..))
 import qualified Logger
-import Utils (throwDecode)
 
 data Config =
     Config

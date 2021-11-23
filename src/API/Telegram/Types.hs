@@ -29,7 +29,6 @@ import qualified Data.Hashable as H
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import GHC.Generics
-import Utils
 
 data Update =
   Update

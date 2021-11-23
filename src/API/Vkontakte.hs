@@ -34,7 +34,7 @@ import qualified API.Class as API
 import Control.Applicative ((<|>))
 import Control.Exception (bracket)
 import Control.Monad.Catch (MonadThrow(..))
-import qualified Data.Aeson as A
+import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Foldable (asum)
@@ -47,13 +47,13 @@ import qualified HTTP
 import Handle.Class (IsHandle(..))
 import qualified Logger
 import qualified Network.URI.Extended as URI
-import Utils (throwDecode)
 
 data VKState =
     VKState
         { lastTS :: String
         , pollURI :: URI.URI
         }
+    deriving (Show)
 
 data Handle =
     Handle
@@ -179,7 +179,7 @@ getLongPollServer hAPI = do
     json <-
         sendRequest hAPI $
         HTTP.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
-    res <- throwDecode json
+    res <- A.throwDecode json
     case res of
         Error {..} ->
             throwM $
@@ -196,7 +196,7 @@ updateStateWith _ = Prelude.id
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     rememberLastUpdate hAPI =<<
-    throwDecode =<< sendRequest hAPI =<< runMethod' hAPI m
+    A.throwDecode =<< sendRequest hAPI =<< runMethod' hAPI m
 
 data Method
     = GetUpdates

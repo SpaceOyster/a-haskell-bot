@@ -22,7 +22,7 @@ import Control.Exception (bracket)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (Value(..), (.=), encode, object)
+import Data.Aeson.Extended (Value(..), (.=), encode, object, throwDecode)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import qualified Exceptions as Ex
@@ -30,7 +30,6 @@ import qualified HTTP
 import Handle.Class (IsHandle(..))
 import qualified Logger
 import qualified Network.URI.Extended as URI
-import Utils (throwDecode)
 
 type TGState = Integer
 

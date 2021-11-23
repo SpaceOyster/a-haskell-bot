@@ -1,9 +1,10 @@
-module Utils
-    ( throwDecode
+module Data.Aeson.Extended
+    ( module Data.Aeson
+    , throwDecode
     ) where
 
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson (FromJSON(..), eitherDecode)
+import Data.Aeson
 import Data.ByteString.Lazy as LBS
 import qualified Exceptions as Priority
 import Exceptions (BotException(..), ParsingException(..))
