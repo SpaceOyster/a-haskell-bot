@@ -8,11 +8,10 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module API.Telegram
-    ( module API
-    , new
-    , Config(..)
+    ( Config(..)
     , Method(..)
     , Handle(..)
+    , new
     , runMethod
     ) where
 
