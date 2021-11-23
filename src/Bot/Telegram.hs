@@ -13,7 +13,6 @@ module Bot.Telegram
 
 import qualified API.Class as API
 import qualified API.Telegram as TG
-import qualified API.Telegram.Types as TG
 import qualified Bot
 import Control.Monad (join, replicateM)
 import Control.Monad.Catch (MonadThrow(..))

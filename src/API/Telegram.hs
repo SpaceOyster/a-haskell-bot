@@ -13,6 +13,7 @@ module API.Telegram
     , Handle(..)
     , new
     , runMethod
+    , module API.Telegram.Types
     ) where
 
 import qualified API.Class as API
