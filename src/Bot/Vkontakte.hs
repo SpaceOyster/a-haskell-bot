@@ -31,7 +31,7 @@ data Config =
     Config
         { key :: String
         , echoMultiplier :: Int
-        , strings :: Bot.Strings
+        , stringsM :: Bot.StringsM
         , group_id :: Integer
         , v :: String
         }
@@ -42,6 +42,7 @@ instance IsHandle (Bot.Handle VK.Handle) Config where
     new cfg@Config {..} hLog = do
         state <- newIORef $ Bot.BotState {userSettings = mempty}
         hAPI <- VK.new VK.Config {..} hLog
+        let strings = Bot.fromStrinsM stringsM
         pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where

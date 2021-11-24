@@ -1,5 +1,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Bot where
 
@@ -16,6 +17,7 @@ import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
 import GHC.Generics (Generic)
 import qualified Logger
+import Prelude hiding (repeat)
 
 data Handle apiHandle =
     Handle
@@ -26,8 +28,8 @@ data Handle apiHandle =
         , echoMultiplier :: Int
         }
 
-data Strings =
-    Strings
+data StringsM =
+    StringsM
         { helpM :: Maybe String
         , greetingM :: Maybe String
         , repeatM :: Maybe String
@@ -36,27 +38,29 @@ data Strings =
         }
     deriving (Show)
 
-getterStringM :: (Strings -> Maybe String) -> String -> (Strings -> String)
-getterStringM get deflt = fromMaybe deflt . get
+data Strings =
+    Strings
+        { help :: String
+        , greeting :: String
+        , repeat :: String
+        , unknown :: String
+        , settingsSaved :: String
+        }
+    deriving (Show)
 
-help :: Strings -> String
-help = getterStringM helpM ""
+fromStrinsM :: StringsM -> Strings
+fromStrinsM StringsM {..} =
+    Strings
+        { help = fromMaybe "" helpM
+        , greeting = fromMaybe "" greetingM
+        , repeat = fromMaybe "" repeatM
+        , unknown = fromMaybe "" unknownM
+        , settingsSaved = fromMaybe "" settingsSavedM
+        }
 
-greeting :: Strings -> String
-greeting = getterStringM greetingM ""
-
-repeat :: Strings -> String
-repeat = getterStringM repeatM ""
-
-unknown :: Strings -> String
-unknown = getterStringM unknownM ""
-
-settingsSaved :: Strings -> String
-settingsSaved = getterStringM settingsSavedM ""
-
-instance Semigroup Strings where
+instance Semigroup StringsM where
     s0 <> s1 =
-        Strings
+        StringsM
             { helpM = helpM s0 <|> helpM s1
             , greetingM = greetingM s0 <|> greetingM s1
             , repeatM = repeatM s0 <|> repeatM s1
@@ -64,9 +68,9 @@ instance Semigroup Strings where
             , settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
             }
 
-instance Monoid Strings where
+instance Monoid StringsM where
     mempty =
-        Strings
+        StringsM
             { helpM = mempty
             , greetingM = mempty
             , repeatM = mempty

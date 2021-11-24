@@ -28,7 +28,7 @@ data Config =
     Config
         { key :: String
         , echoMultiplier :: Int
-        , strings :: Bot.Strings
+        , stringsM :: Bot.StringsM
         }
     deriving (Show)
 
@@ -39,6 +39,7 @@ instance IsHandle (Bot.Handle TG.Handle) Config where
         Logger.debug' hLog $ "Telegram Bot config: " <> show cfg
         state <- newIORef $ Bot.BotState {userSettings = mempty}
         hAPI <- TG.new TG.Config {..} hLog
+        let strings = Bot.fromStrinsM stringsM
         pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
