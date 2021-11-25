@@ -108,8 +108,11 @@ newStateFromM _ = Nothing
 
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
-    rememberLastUpdate hAPI =<<
-    throwDecode =<< sendRequest hAPI =<< runMethod' hAPI m
+    bracket (getState hAPI) (const $ pure ()) $ \state -> do
+        Logger.debug' (hLog hAPI) $
+            "Telegram: last recieved Update id: " <> show state
+        runMethod' hAPI state m >>= sendRequest hAPI >>= throwDecode >>=
+            rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
@@ -119,10 +122,10 @@ data Method
     | SendInlineKeyboard Integer String InlineKeyboardMarkup
     deriving (Show)
 
-runMethod' :: Handle -> Method -> IO HTTP.Request
-runMethod' hAPI m =
+runMethod' :: (Monad m) => Handle -> TGState -> Method -> m HTTP.Request
+runMethod' hAPI s m =
     case m of
-        GetUpdates -> getUpdates hAPI
+        GetUpdates -> getUpdates hAPI s
         AnswerCallbackQuery id -> answerCallbackQuery hAPI id
         CopyMessage msg -> copyMessage hAPI msg
         SendMessage chatId msg -> sendMessage hAPI chatId msg
@@ -130,12 +133,10 @@ runMethod' hAPI m =
             sendInlineKeyboard hAPI chatId prompt keyboard
 
 -- API method
-getUpdates :: Handle -> IO HTTP.Request
-getUpdates hAPI@Handle {hLog} =
-    bracket (getState hAPI) (const $ pure ()) $ \id -> do
-        Logger.debug' hLog $ "Telegram: last recieved Update id: " <> show id
-        let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
-        pure $ HTTP.POST (apiMethod hAPI "getUpdates") json
+getUpdates :: (Monad m) => Handle -> TGState -> m HTTP.Request
+getUpdates hAPI id = do
+    let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
+    pure $ HTTP.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
 answerCallbackQuery :: (Monad m) => Handle -> String -> m HTTP.Request
