@@ -195,8 +195,11 @@ updateStateWith _ = Prelude.id
 
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
-    rememberLastUpdate hAPI =<<
-    A.throwDecode =<< sendRequest hAPI =<< runMethod' hAPI m
+    bracket (getState hAPI) (const $ pure ()) $ \state -> do
+        Logger.debug' (hLog hAPI) $
+            "Vkontakte: last recieved Update TS: " <> show (lastTS state)
+        runMethod' hAPI state m >>= sendRequest hAPI >>= A.throwDecode >>=
+            rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
@@ -206,10 +209,10 @@ data Method
     | SendKeyboard Integer String Keyboard
     deriving (Show)
 
-runMethod' :: Handle -> Method -> IO HTTP.Request
-runMethod' hAPI m =
+runMethod' :: (Monad m) => Handle -> VKState -> Method -> m HTTP.Request
+runMethod' hAPI s m =
     case m of
-        GetUpdates -> getUpdates hAPI
+        GetUpdates -> getUpdates hAPI s
         SendMessageEventAnswer ce prompt ->
             sendMessageEventAnswer hAPI ce prompt
         SendTextMessage peer_id text -> sendTextMessage hAPI peer_id text
@@ -217,12 +220,9 @@ runMethod' hAPI m =
         SendKeyboard peer_id prompt keyboard ->
             sendKeyboard hAPI peer_id prompt keyboard
 
-getUpdates :: Handle -> IO HTTP.Request
-getUpdates hAPI@Handle {hLog} =
-    bracket (getState hAPI) (const $ pure ()) $ \VKState {..} -> do
-        Logger.debug' hLog $
-            "Vkontakte: last recieved Update TS: " <> show lastTS
-        pure . HTTP.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
+getUpdates :: (Monad m) => Handle -> VKState -> m HTTP.Request
+getUpdates hAPI VKState {..} =
+    pure . HTTP.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
 
 newtype User =
     User
