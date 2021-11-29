@@ -96,7 +96,7 @@ data Handle =
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle Config {..} f =
     bracket
-        (newLogger . maybe LogTypeStdout LogTypeFile $ file)
+        (newLogger . maybe LTStdout LTFile $ file)
         closeLogger
         (\logger -> do
              let hLog = Handle {..}
@@ -116,18 +116,16 @@ noLog :: (Monad m) => m ()
 noLog = pure ()
 
 data LogType
-    = LogTypeFile FilePath
-    | LogTypeStdout
+    = LTFile FilePath
+    | LTStdout
 
 data Log
     = LogFile IO.Handle
     | LogStdout IO.Handle
 
 newLogger :: LogType -> IO Log
-newLogger ltype =
-    case ltype of
-        LogTypeStdout -> pure $ LogStdout IO.stdout
-        LogTypeFile path -> LogFile <$> IO.openFile path IO.AppendMode
+newLogger LTStdout = pure $ LogStdout IO.stdout
+newLogger (LTFile path) = LogFile <$> IO.openFile path IO.AppendMode
 
 closeLogger :: Log -> IO ()
 closeLogger ltype =
