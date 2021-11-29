@@ -16,6 +16,7 @@ module Logger
 
 import Control.Applicative ((<|>))
 import Control.Exception (bracket)
+import Control.Monad (when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Aeson as A
     ( FromJSON(..)
@@ -106,9 +107,7 @@ withHandle Config {..} f =
 log :: MonadIO m => Handle -> Priority -> T.Text -> m ()
 log Handle {..} p t =
     liftIO $
-    if p >= verbosity
-        then composeMessage p t >>= T.hPutStrLn (getLogIO logger)
-        else noLog
+    when (p >= verbosity) (composeMessage p t >>= T.hPutStrLn (getLogIO logger))
 
 composeMessage :: Priority -> T.Text -> IO T.Text
 composeMessage p t = do
