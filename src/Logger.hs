@@ -8,15 +8,10 @@ module Logger
     , Priority(..)
     , withHandle
     , log
-    , log'
     , logDebug
-    , logDebug'
     , logInfo
-    , logInfo'
     , logWarning
-    , logWarning'
     , logError
-    , logError'
     ) where
 
 import Control.Applicative ((<|>))
@@ -105,7 +100,7 @@ withHandle Config {..} f =
         closeLogger
         (\logger -> do
              let hLog = Handle {..}
-             logInfo' hLog "Logger initiated"
+             logInfo hLog "Logger initiated"
              f hLog)
 
 log :: MonadIO m => Handle -> Priority -> T.Text -> m ()
@@ -116,9 +111,6 @@ log Handle {..} v s =
             then T.hPutStrLn (getLogIO logger) $
                  ts <> " " <> prioToText v <> " " <> s
             else noLog
-
-log' :: MonadIO m => Handle -> Priority -> String -> m ()
-log' hLog v = log hLog v . T.pack
 
 noLog :: (Monad m) => m ()
 noLog = pure ()
@@ -165,15 +157,3 @@ logWarning h = log h Warning
 
 logError :: MonadIO m => Handle -> T.Text -> m ()
 logError h = log h Error
-
-logDebug' :: MonadIO m => Handle -> String -> m ()
-logDebug' h = log h Debug . T.pack
-
-logInfo' :: MonadIO m => Handle -> String -> m ()
-logInfo' h = log h Info . T.pack
-
-logWarning' :: MonadIO m => Handle -> String -> m ()
-logWarning' h = log h Warning . T.pack
-
-logError' :: MonadIO m => Handle -> String -> m ()
-logError' h = log h Error . T.pack

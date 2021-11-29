@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -15,6 +16,7 @@ import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.List.Extended (replaceSubseq)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
+import qualified Data.Text.Extended as T
 import GHC.Generics (Generic)
 import qualified Logger as L
 import Prelude hiding (repeat)
@@ -80,13 +82,13 @@ instance Monoid StringsM where
 
 hGetState :: Handle s -> IO BotState
 hGetState hBot = do
-    L.logDebug' (hLog hBot) "Getting BotState"
+    L.logDebug (hLog hBot) "Getting BotState"
     readIORef $ state hBot
 
 hSetState :: Handle s -> (BotState -> BotState) -> IO ()
 hSetState hBot f = do
-    L.logDebug' (hLog hBot) "Setting BotState"
-    L.logDebug' (hLog hBot) "Appying state BotState mutating function"
+    L.logDebug (hLog hBot) "Setting BotState"
+    L.logDebug (hLog hBot) "Appying state BotState mutating function"
     state hBot `modifyIORef` f
 
 newtype BotState =
@@ -105,7 +107,7 @@ getUserMultiplier hBot user = do
 getUserMultiplierM :: (H.Hashable u) => Handle s -> Maybe u -> IO Int
 getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
 getUserMultiplierM hBot@Handle {hLog} Nothing = do
-    L.logWarning'
+    L.logWarning
         hLog
         "Telegram: No User info, returning default echo multiplier"
     pure $ hBot & Bot.echoMultiplier
@@ -118,8 +120,8 @@ repeatPrompt hBot userM = do
 
 setUserMultiplier :: (Show u, H.Hashable u) => Handle s -> u -> Int -> IO ()
 setUserMultiplier hBot@Handle {hLog} user repeats = do
-    L.logDebug' hLog $ "Setting echo multiplier to: " <> show repeats
-    L.logDebug' hLog $ "    For User: " <> show user
+    L.logDebug hLog $ "Setting echo multiplier to: " <> T.tshow repeats
+    L.logDebug hLog $ "    For User: " <> T.tshow user
     hBot `Bot.hSetState` \st ->
         let uhash = H.hash user
             usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
@@ -164,7 +166,7 @@ class BotHandle h where
     reactToUpdate :: h -> Update h -> IO [Response h]
     reactToUpdates :: h -> [Update h] -> IO [Response h]
     reactToUpdates hBot updates = do
-        L.logInfo' (logger hBot) "Telegram: processing each update"
+        L.logInfo (logger hBot) "Telegram: processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
     execCommand :: h -> Command -> (Message h -> IO (Response h))

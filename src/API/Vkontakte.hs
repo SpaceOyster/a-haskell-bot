@@ -41,6 +41,7 @@ import Data.Foldable (asum)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
+import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
@@ -82,12 +83,12 @@ post hAPI = hAPI & http & HTTP.post
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
-    L.logDebug' hLog $ "Vkontakte: sending request: " <> show req
+    L.logDebug hLog $ "Vkontakte: sending request: " <> T.tshow req
     res <-
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    L.logDebug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    L.logDebug hLog $ "Vkontakte: got response: " <> (T.pack $ L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
     pure res
 
 data Config =
@@ -196,8 +197,8 @@ updateStateWith _ = Prelude.id
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        L.logDebug' (hLog hAPI) $
-            "Vkontakte: last recieved Update TS: " <> show (lastTS state)
+        L.logDebug (hLog hAPI) $
+            "Vkontakte: last recieved Update TS: " <> T.tshow (lastTS state)
         runMethod' hAPI state m >>= sendRequest hAPI >>= A.throwDecode >>=
             rememberLastUpdate hAPI
 

@@ -21,6 +21,7 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import Data.Maybe (isJust)
+import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
 import Handle.Class (IsHandle(..))
@@ -48,7 +49,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent
     fetchUpdates :: Bot.Handle VK.Handle -> IO [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
-        L.logInfo' hLog "Vkontakte: fetching Updates"
+        L.logInfo hLog "Vkontakte: fetching Updates"
         VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
     logger :: Bot.Handle VK.Handle -> L.Handle
     logger = Bot.hLog
@@ -66,9 +67,9 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     qualifyUpdate _ = EOther VK.Other -- TODO
     reactToUpdate :: Bot.Handle VK.Handle -> VK.GroupEvent -> IO [VK.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
-        L.logInfo' hLog $ "VK got Update: " <> show update
+        L.logInfo hLog $ "VK got Update: " <> T.tshow update
         let qu = Bot.qualifyUpdate update
-        L.logInfo' hLog $ "VK qualified Update: " <> show qu
+        L.logInfo hLog $ "VK qualified Update: " <> T.tshow qu
         case qu of
             ECommand msg -> (: []) <$> reactToCommand hBot msg
             EMessage msg -> reactToMessage hBot msg
@@ -92,18 +93,19 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
 reactToCommand :: Bot.Handle VK.Handle -> VK.Message -> IO VK.Response
 reactToCommand hBot@Bot.Handle {hLog} msg@VK.Message {id, peer_id} = do
     let cmd = getCommand msg
-    L.logDebug' hLog $
+    L.logDebug hLog $
         "Vkontakte: Got command" <>
-        show cmd <>
-        " in message id " <> show id <> " , peer_id: " <> show peer_id
+        T.tshow cmd <>
+        " in message id " <> T.tshow id <> " , peer_id: " <> T.tshow peer_id
     Bot.execCommand hBot cmd msg
 
 -- diff
 reactToMessage :: Bot.Handle VK.Handle -> VK.Message -> IO [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI, hLog} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
-    L.logDebug' hLog $
-        "Vkontakte: generating " <> show n <> " echoes for Message: " <> show id
+    L.logDebug hLog $
+        "Vkontakte: generating " <>
+        T.tshow n <> " echoes for Message: " <> T.tshow id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
 newtype Payload =
@@ -124,8 +126,9 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
     let user = VK.User user_id
     case callback of
         Just (RepeatPayload n) -> do
-            L.logInfo' (Bot.hLog hBot) $
-                "Setting echo multiplier = " <> show n <> " for " <> show user
+            L.logInfo (Bot.hLog hBot) $
+                "Setting echo multiplier = " <>
+                T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
             fmap (: []) . VK.runMethod (Bot.hAPI hBot) $

@@ -25,6 +25,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson.Extended (Value(..), (.=), encode, object, throwDecode)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
+import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import qualified HTTP
 import Handle.Class (IsHandle(..))
@@ -60,12 +61,12 @@ post hAPI = hAPI & http & HTTP.post
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
-    L.logDebug' hLog $ "Vkontakte: sending request: " <> show req
+    L.logDebug hLog $ "Vkontakte: sending request: " <> T.tshow req
     res <-
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    L.logDebug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    L.logDebug hLog $ "Vkontakte: got response: " <> (T.pack $ L8.unpack res)
     pure res
 
 newtype Config =
@@ -82,11 +83,11 @@ makeBaseURI Config {..} =
 instance IsHandle Handle Config where
     new :: Config -> L.Handle -> IO Handle
     new cfg@Config {key} hLog = do
-        L.logInfo' hLog "Initiating Telegram API handle"
+        L.logInfo hLog "Initiating Telegram API handle"
         baseURI <- makeBaseURI cfg
         let httpConfig = HTTP.Config {}
         http <- HTTP.new httpConfig
-        L.logInfo' hLog "HTTP handle initiated for Telegram API"
+        L.logInfo hLog "HTTP handle initiated for Telegram API"
         apiState <- newIORef 0
         pure $ Handle {..}
 
@@ -109,8 +110,8 @@ newStateFromM _ = Nothing
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        L.logDebug' (hLog hAPI) $
-            "Telegram: last recieved Update id: " <> show state
+        L.logDebug (hLog hAPI) $
+            "Telegram: last recieved Update id: " <> T.tshow state
         runMethod' hAPI state m >>= sendRequest hAPI >>= throwDecode >>=
             rememberLastUpdate hAPI
 
