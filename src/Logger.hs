@@ -104,13 +104,16 @@ withHandle Config {..} f =
              f hLog)
 
 log :: MonadIO m => Handle -> Priority -> T.Text -> m ()
-log Handle {..} v s =
-    liftIO $ do
-        ts <- timeStamp
-        if v >= verbosity
-            then T.hPutStrLn (getLogIO logger) $
-                 ts <> " " <> prioToText v <> " " <> s
-            else noLog
+log Handle {..} p t =
+    liftIO $
+    if p >= verbosity
+        then composeMessage p t >>= T.hPutStrLn (getLogIO logger)
+        else noLog
+
+composeMessage :: Priority -> T.Text -> IO T.Text
+composeMessage p t = do
+    ts <- timeStamp
+    pure $ ts <> " " <> prioToText p <> " " <> t
 
 noLog :: (Monad m) => m ()
 noLog = pure ()
