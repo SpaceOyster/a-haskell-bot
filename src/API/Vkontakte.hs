@@ -45,7 +45,7 @@ import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
 import Handle.Class (IsHandle(..))
-import qualified Logger
+import qualified Logger as L
 import qualified Network.URI.Extended as URI
 
 data VKState =
@@ -58,7 +58,7 @@ data VKState =
 data Handle =
     Handle
         { http :: HTTP.Handle
-        , hLog :: Logger.Handle
+        , hLog :: L.Handle
         , baseURI :: URI.URI
         , apiState :: IORef VKState
         }
@@ -82,12 +82,12 @@ post hAPI = hAPI & http & HTTP.post
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
-    Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
+    L.logDebug' hLog $ "Vkontakte: sending request: " <> show req
     res <-
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    L.logDebug' hLog $ "Vkontakte: got response: " <> L8.unpack res
     pure res
 
 data Config =
@@ -104,7 +104,7 @@ instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
 instance IsHandle Handle Config where
-    new :: Config -> Logger.Handle -> IO Handle
+    new :: Config -> L.Handle -> IO Handle
     new cfg@Config {..} hLog = do
         http <- HTTP.new $ HTTP.Config {}
         baseURI <- makeBaseURI cfg
@@ -112,7 +112,7 @@ instance IsHandle Handle Config where
         let hAPI = Handle {..}
         initiatePollServer hAPI
 
-withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
+withHandle :: Config -> L.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do
     hAPI <- new config hLog
     io hAPI
@@ -196,7 +196,7 @@ updateStateWith _ = Prelude.id
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        Logger.debug' (hLog hAPI) $
+        L.logDebug' (hLog hAPI) $
             "Vkontakte: last recieved Update TS: " <> show (lastTS state)
         runMethod' hAPI state m >>= sendRequest hAPI >>= A.throwDecode >>=
             rememberLastUpdate hAPI

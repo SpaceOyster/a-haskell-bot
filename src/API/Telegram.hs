@@ -28,7 +28,7 @@ import Data.Function ((&))
 import qualified Exceptions as Ex
 import qualified HTTP
 import Handle.Class (IsHandle(..))
-import qualified Logger
+import qualified Logger as L
 import qualified Network.URI.Extended as URI
 
 type TGState = Integer
@@ -36,7 +36,7 @@ type TGState = Integer
 data Handle =
     Handle
         { http :: HTTP.Handle
-        , hLog :: Logger.Handle
+        , hLog :: L.Handle
         , baseURI :: URI.URI
         , apiState :: IORef TGState
         }
@@ -60,12 +60,12 @@ post hAPI = hAPI & http & HTTP.post
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI@Handle {hLog} req = do
-    Logger.debug' hLog $ "Vkontakte: sending request: " <> show req
+    L.logDebug' hLog $ "Vkontakte: sending request: " <> show req
     res <-
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    Logger.debug' hLog $ "Vkontakte: got response: " <> L8.unpack res
+    L.logDebug' hLog $ "Vkontakte: got response: " <> L8.unpack res
     pure res
 
 newtype Config =
@@ -80,17 +80,17 @@ makeBaseURI Config {..} =
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
 instance IsHandle Handle Config where
-    new :: Config -> Logger.Handle -> IO Handle
+    new :: Config -> L.Handle -> IO Handle
     new cfg@Config {key} hLog = do
-        Logger.info' hLog "Initiating Telegram API handle"
+        L.logInfo' hLog "Initiating Telegram API handle"
         baseURI <- makeBaseURI cfg
         let httpConfig = HTTP.Config {}
         http <- HTTP.new httpConfig
-        Logger.info' hLog "HTTP handle initiated for Telegram API"
+        L.logInfo' hLog "HTTP handle initiated for Telegram API"
         apiState <- newIORef 0
         pure $ Handle {..}
 
-withHandle :: Config -> Logger.Handle -> (Handle -> IO a) -> IO a
+withHandle :: Config -> L.Handle -> (Handle -> IO a) -> IO a
 withHandle config hLog io = do
     hAPI <- new config hLog
     io hAPI
@@ -109,7 +109,7 @@ newStateFromM _ = Nothing
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        Logger.debug' (hLog hAPI) $
+        L.logDebug' (hLog hAPI) $
             "Telegram: last recieved Update id: " <> show state
         runMethod' hAPI state m >>= sendRequest hAPI >>= throwDecode >>=
             rememberLastUpdate hAPI
