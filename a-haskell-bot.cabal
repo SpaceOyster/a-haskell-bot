@@ -36,6 +36,7 @@ library
       Data.AppConfig
       Data.Hashable
       Data.List.Extended
+      Data.Text.Extended
       Exceptions
       Handle.Class
       HTTP
