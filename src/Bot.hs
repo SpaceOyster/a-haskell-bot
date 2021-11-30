@@ -107,9 +107,7 @@ getUserMultiplier hBot user = do
 getUserMultiplierM :: (H.Hashable u) => Handle s -> Maybe u -> IO Int
 getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
 getUserMultiplierM hBot@Handle {hLog} Nothing = do
-    L.logWarning
-        hLog
-        "Telegram: No User info, returning default echo multiplier"
+    L.logInfo hLog "No User info, returning default echo multiplier"
     pure $ hBot & Bot.echoMultiplier
 
 repeatPrompt :: (H.Hashable u) => Handle s -> Maybe u -> IO String
