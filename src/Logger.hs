@@ -96,13 +96,12 @@ data Handle =
 
 withHandle :: Config -> (Handle -> IO a) -> IO a
 withHandle Config {..} f =
-    bracket
-        (newLogger . maybe LTStdout LTFile $ file)
-        closeLogger
-        (\logger -> do
-             let hLog = Handle {..}
-             logInfo hLog "Logger initiated"
-             f hLog)
+    bracket (newLogger . maybe LTStdout LTFile $ file) closeLogger go
+  where
+    go logger = do
+        let hLog = Handle {..}
+        logInfo hLog "Logger initiated"
+        f hLog
 
 log :: MonadIO m => Handle -> Priority -> T.Text -> m ()
 log Handle {..} p t =
