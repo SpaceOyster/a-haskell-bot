@@ -85,13 +85,13 @@ post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
 post hAPI = hAPI & http & HTTP.post
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
-sendRequest hAPI@Handle {hLog} req = do
-    L.logDebug hLog $ "Vkontakte: sending request: " <> T.tshow req
+sendRequest hAPI req = do
+    L.logDebug hAPI $ "sending request: " <> T.tshow req
     res <-
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    L.logDebug hLog $ "Vkontakte: got response: " <> (T.pack $ L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
+    L.logDebug hAPI $ "got response: " <> (T.pack $ L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
     pure res
 
 data Config =
@@ -200,8 +200,7 @@ updateStateWith _ = Prelude.id
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        L.logDebug (hLog hAPI) $
-            "Vkontakte: last recieved Update TS: " <> T.tshow (lastTS state)
+        L.logDebug hAPI $ "last recieved Update TS: " <> T.tshow (lastTS state)
         runMethod' hAPI state m >>= sendRequest hAPI >>= A.throwDecode >>=
             rememberLastUpdate hAPI
 
