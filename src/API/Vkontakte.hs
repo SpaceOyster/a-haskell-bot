@@ -66,6 +66,9 @@ data Handle =
 
 instance API.APIHandle Handle
 
+instance L.HasLog Handle where
+    getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Vkontakte: " <> t
+
 getState :: Handle -> IO VKState
 getState = readIORef . apiState
 
