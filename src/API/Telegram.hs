@@ -44,6 +44,9 @@ data Handle =
 
 instance API.APIHandle Handle
 
+instance L.HasLog Handle where
+    getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Telegram: " <> t
+
 getState :: Handle -> IO TGState
 getState = readIORef . apiState
 
