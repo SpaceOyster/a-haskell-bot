@@ -2,11 +2,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Logger
     ( Config(..)
     , Handle(..)
     , Priority(..)
+    , HasLog(..)
     , withHandle
     , withHandlePure
     , logDebug
@@ -93,6 +95,15 @@ newtype Handle =
     Handle
         { log :: Priority -> T.Text -> IO ()
         }
+
+class HasLog a where
+    getLog :: a -> (Priority -> T.Text -> IO ())
+
+instance HasLog (Priority -> T.Text -> IO ()) where
+    getLog = id
+
+instance HasLog Handle where
+    getLog = log
 
 withHandle :: Config -> (Handle -> IO ()) -> IO ()
 withHandle Config {..} io =
