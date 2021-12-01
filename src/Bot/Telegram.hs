@@ -34,6 +34,9 @@ data Config =
         }
     deriving (Show)
 
+instance {-# OVERLAPPING #-} L.HasLog (Bot.Handle TG.Handle) where
+    getLog Bot.Handle {hLog} = \p t -> L.getLog hLog p $ "Bot.Telegram: " <> t
+
 instance IsHandle (Bot.Handle TG.Handle) Config where
     new :: Config -> L.Handle -> IO (Bot.Handle TG.Handle)
     new cfg@Config {..} hLog = do
