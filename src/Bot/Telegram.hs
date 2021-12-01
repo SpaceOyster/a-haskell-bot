@@ -50,8 +50,8 @@ instance IsHandle (Bot.Handle TG.Handle) Config where
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
     type Update (Bot.Handle TG.Handle) = TG.Update
     fetchUpdates :: Bot.Handle TG.Handle -> IO [TG.Update]
-    fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
-        L.logInfo hLog "Telegram: fetching Updates"
+    fetchUpdates hBot@Bot.Handle {hAPI} = do
+        L.logInfo hBot "fetching Updates"
         TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
     data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
                                    | ECommand TG.Message
@@ -68,10 +68,9 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                 else EMessage msg
         | otherwise = EOther u
     reactToUpdate :: Bot.Handle TG.Handle -> TG.Update -> IO [TG.Response]
-    reactToUpdate hBot@Bot.Handle {hLog} update = do
-        L.logDebug hLog $
-            "Telegram: Qualifying Update with id " <>
-            T.tshow (TG.update_id update)
+    reactToUpdate hBot update = do
+        L.logDebug hBot $
+            "qualifying Update with id " <> T.tshow (TG.update_id update)
         let qu = Bot.qualifyUpdate update
         case qu of
             ECommand msg -> (: []) <$> reactToCommand hBot msg
@@ -98,19 +97,19 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
 
 -- diff
 reactToCommand :: Bot.Handle TG.Handle -> TG.Message -> IO TG.Response
-reactToCommand hBot@Bot.Handle {hLog} msg@TG.Message {message_id} = do
+reactToCommand hBot msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
-    L.logDebug hLog $
+    L.logDebug hBot $
         "Telegram: Got command" <>
         T.tshow cmd <> " in message id " <> T.tshow message_id
     Bot.execCommand hBot cmd msg
 
 -- diff
 reactToMessage :: Bot.Handle TG.Handle -> TG.Message -> IO [TG.Response]
-reactToMessage hBot@Bot.Handle {..} msg@TG.Message {message_id} = do
+reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
     n <- Bot.getUserMultiplier hBot author
-    L.logDebug hLog $
+    L.logDebug hBot $
         "Telegram: generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
     n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
@@ -130,13 +129,13 @@ qualifyQuery qstring =
 
 -- diff
 reactToCallback :: Bot.Handle TG.Handle -> TG.CallbackQuery -> IO TG.Response
-reactToCallback hBot@Bot.Handle {hLog, hAPI} cq@TG.CallbackQuery {id, from} = do
-    L.logDebug hLog $ "Getting query data from CallbackQuery: " <> T.tshow id
+reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {id, from} = do
+    L.logDebug hBot $ "Getting query data from CallbackQuery: " <> T.tshow id
     cdata <- TG.getQDataThrow cq
     let user = from
     case qualifyQuery cdata of
         QDRepeat n -> do
-            L.logInfo hLog $
+            L.logInfo hBot $
                 "Setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             Bot.setUserMultiplier hBot user n
