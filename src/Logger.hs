@@ -1,13 +1,13 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Logger
     ( Config(..)
     , Handle(..)
     , Priority(..)
     , withHandle
-    , log
     , logDebug
     , logInfo
     , logWarning
@@ -15,8 +15,9 @@ module Logger
     ) where
 
 import Control.Applicative ((<|>))
-import Control.Exception (bracket)
-import Control.Monad (when)
+import Control.Concurrent.MVar (newMVar, withMVar)
+import Control.Exception (finally)
+import Control.Monad ((<=<), when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Aeson as A
     ( FromJSON(..)
@@ -26,19 +27,19 @@ import qualified Data.Aeson as A
     , withText
     )
 import qualified Data.Char as Char (toUpper)
-import Data.Maybe (maybe)
-import qualified Data.Text as T (Text, pack, unpack)
+import Data.IORef (atomicModifyIORef, newIORef, readIORef)
+import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
 import Prelude hiding (log)
 import qualified System.IO as IO
-    ( Handle
+    ( FilePath(..)
+    , Handle
     , IOMode(..)
-    , hClose
     , hFlush
-    , openFile
     , stdout
+    , withFile
     )
 
 data Priority
@@ -74,8 +75,7 @@ instance Semigroup Config where
     c0 <> c1 =
         Config
             { file = file c0 <|> file c1
-            , verbosity =
-                  verbosity (c0 :: Config) `max` verbosity (c1 :: Config)
+            , verbosity = verbosity c0 `max` verbosity c1
             }
 
 instance Monoid Config where
@@ -88,71 +88,50 @@ instance A.FromJSON Config where
             verbosity <- o A..:? "verbosity" A..!= Info
             pure $ Config {..}
 
-data Handle =
+newtype Handle =
     Handle
-        { logger :: Log
-        , verbosity :: Priority
+        { log :: Priority -> T.Text -> IO ()
         }
 
-withHandle :: Config -> (Handle -> IO a) -> IO a
-withHandle Config {..} f =
-    bracket (newLogger . maybe LTStdout LTFile $ file) closeLogger go
-  where
-    go logger = do
-        let hLog = Handle {..}
-        logInfo hLog "Logger initiated"
-        f hLog
+withHandle :: Config -> (Handle -> IO ()) -> IO ()
+withHandle Config {..} io =
+    case file of
+        Just f -> withFileLog verbosity f io
+        Nothing -> withStdoutLog verbosity io
 
-log :: MonadIO m => Handle -> Priority -> T.Text -> m ()
-log Handle {..} p t =
-    liftIO $
-    when (p >= verbosity) (composeMessage p t >>= T.hPutStrLn (getLogIO logger))
+withFileLog :: Verbosity -> IO.FilePath -> (Handle -> IO ()) -> IO ()
+withFileLog v path io = IO.withFile path IO.AppendMode (io <=< newFileLog v)
+
+newFileLog :: Verbosity -> IO.Handle -> IO Handle
+newFileLog v hFile = do
+    mutex <- newMVar ()
+    let doLog p t =
+            withMVar mutex $ \() -> composeMessage p t >>= T.hPutStrLn hFile
+    let log = \p t -> when (p >= v) $ doLog p t
+    pure $ Handle {log}
+
+withStdoutLog :: Verbosity -> (Handle -> IO ()) -> IO ()
+withStdoutLog v io = do
+    let hStdout = IO.stdout
+    let log = \p t -> when (p >= v) $ composeMessage p t >>= T.hPutStrLn hStdout
+    io Handle {log} `finally` IO.hFlush hStdout
 
 composeMessage :: Priority -> T.Text -> IO T.Text
 composeMessage p t = do
     ts <- timeStamp
     pure $ ts <> " " <> prioToText p <> " " <> t
 
-noLog :: (Monad m) => m ()
-noLog = pure ()
-
-data LogType
-    = LTFile FilePath
-    | LTStdout
-
-data Log
-    = LogFile IO.Handle
-    | LogStdout IO.Handle
-
-newLogger :: LogType -> IO Log
-newLogger LTStdout = pure $ LogStdout IO.stdout
-newLogger (LTFile path) = LogFile <$> IO.openFile path IO.AppendMode
-
-closeLogger :: Log -> IO ()
-closeLogger ltype =
-    case ltype of
-        LogStdout hStdout -> IO.hFlush hStdout
-        LogFile hFile -> IO.hClose hFile
-
-getLogIO :: Log -> IO.Handle
-getLogIO l =
-    case l of
-        LogFile h -> h
-        LogStdout h -> h
-
 timeStamp :: IO T.Text
 timeStamp = do
     time <- Time.getZonedTime
     pure . T.pack $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
 
-logDebug :: MonadIO m => Handle -> T.Text -> m ()
-logDebug h = log h Debug
+logDebug, logInfo, logWarning, logError ::
+       (MonadIO m) => Handle -> T.Text -> m ()
+logDebug h = liftIO . log h Debug
 
-logInfo :: MonadIO m => Handle -> T.Text -> m ()
-logInfo h = log h Info
+logInfo h = liftIO . log h Info
 
-logWarning :: MonadIO m => Handle -> T.Text -> m ()
-logWarning h = log h Warning
+logWarning h = liftIO . log h Warning
 
-logError :: MonadIO m => Handle -> T.Text -> m ()
-logError h = log h Error
+logError h = liftIO . log h Error
