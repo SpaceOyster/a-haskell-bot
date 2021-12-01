@@ -54,8 +54,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
         L.logInfo hLog "Vkontakte: fetching Updates"
         VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
-    logger :: Bot.Handle VK.Handle -> L.Handle
-    logger = Bot.hLog
     data Entity (Bot.Handle VK.Handle) = EMessage VK.Message
                                    | ECommand VK.Message
                                    | ECallback VK.CallbackEvent

@@ -53,8 +53,6 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
     fetchUpdates hBot@Bot.Handle {hLog, hAPI} = do
         L.logInfo hLog "Telegram: fetching Updates"
         TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
-    logger :: Bot.Handle TG.Handle -> L.Handle
-    logger = Bot.hLog
     data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
                                    | ECommand TG.Message
                                    | ECallback TG.CallbackQuery

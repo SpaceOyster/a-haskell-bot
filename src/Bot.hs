@@ -155,19 +155,20 @@ isCommand :: String -> Bool
 isCommand "" = False
 isCommand s = (== '/') . head $ s
 
-class BotHandle h where
+class (L.HasLog h) =>
+      BotHandle h
+    where
     type Update h
     fetchUpdates :: h -> IO [Update h]
     doBotThing :: h -> IO [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
-    logger :: h -> L.Handle
     data Entity h
     type Response h
     qualifyUpdate :: Update h -> Entity h
     reactToUpdate :: h -> Update h -> IO [Response h]
     reactToUpdates :: h -> [Update h] -> IO [Response h]
     reactToUpdates hBot updates = do
-        L.logInfo (logger hBot) "Telegram: processing each update"
+        L.logInfo hBot "processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
     execCommand :: h -> Command -> (Message h -> IO (Response h))
