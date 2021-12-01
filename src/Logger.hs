@@ -8,6 +8,7 @@ module Logger
     , Handle(..)
     , Priority(..)
     , withHandle
+    , withHandlePure
     , logDebug
     , logInfo
     , logWarning
@@ -115,6 +116,16 @@ withStdoutLog v io = do
     let hStdout = IO.stdout
     let log = \p t -> when (p >= v) $ composeMessage p t >>= T.hPutStrLn hStdout
     io Handle {log} `finally` IO.hFlush hStdout
+
+withHandlePure :: Config -> (Handle -> IO a) -> IO (a, [(Priority, T.Text)])
+withHandlePure Config {..} io = do
+    logRef <- newIORef []
+    let log p t =
+            when (p >= verbosity) $
+            atomicModifyIORef logRef $ \l -> ((p, t) : l, ())
+    x <- io $ Handle {log}
+    logMsgs <- readIORef logRef
+    pure (x, reverse logMsgs)
 
 composeMessage :: Priority -> T.Text -> IO T.Text
 composeMessage p t = do
