@@ -43,6 +43,8 @@ instance {-# OVERLAPPING #-} L.HasLog (Bot.Handle VK.Handle) where
 instance IsHandle (Bot.Handle VK.Handle) Config where
     new :: Config -> L.Handle -> IO (Bot.Handle VK.Handle)
     new cfg@Config {..} hLog = do
+        L.logInfo hLog "Initiating Vkontakte Bot"
+        L.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
         state <- newIORef $ Bot.BotState {userSettings = mempty}
         hAPI <- VK.new VK.Config {..} hLog
         let strings = Bot.fromStrinsM stringsM
@@ -92,21 +94,20 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
 
 -- diff
 reactToCommand :: Bot.Handle VK.Handle -> VK.Message -> IO VK.Response
-reactToCommand hBot@Bot.Handle {hLog} msg@VK.Message {id, peer_id} = do
+reactToCommand hBot msg@VK.Message {id, peer_id} = do
     let cmd = getCommand msg
-    L.logDebug hLog $
-        "Vkontakte: Got command" <>
+    L.logDebug hBot $
+        "Got command" <>
         T.tshow cmd <>
         " in message id " <> T.tshow id <> " , peer_id: " <> T.tshow peer_id
     Bot.execCommand hBot cmd msg
 
 -- diff
 reactToMessage :: Bot.Handle VK.Handle -> VK.Message -> IO [VK.Response]
-reactToMessage hBot@Bot.Handle {hAPI, hLog} msg@VK.Message {..} = do
+reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
-    L.logDebug hLog $
-        "Vkontakte: generating " <>
-        T.tshow n <> " echoes for Message: " <> T.tshow id
+    L.logDebug hBot $
+        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
 newtype Payload =
@@ -127,8 +128,8 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
     let user = VK.User user_id
     case callback of
         Just (RepeatPayload n) -> do
-            L.logInfo (Bot.hLog hBot) $
-                "Setting echo multiplier = " <>
+            L.logInfo hBot $
+                "setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
