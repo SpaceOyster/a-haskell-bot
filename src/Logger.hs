@@ -52,7 +52,7 @@ data Priority
 type Verbosity = Priority
 
 prioToText :: Priority -> T.Text
-prioToText = T.pack . fmap Char.toUpper . show
+prioToText = T.toUpper . T.tshow
 
 instance A.FromJSON Priority where
     parseJSON =
