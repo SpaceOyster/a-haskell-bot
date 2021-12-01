@@ -149,11 +149,11 @@ timeStamp = do
     pure . T.pack $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
 
 logDebug, logInfo, logWarning, logError ::
-       (MonadIO m) => Handle -> T.Text -> m ()
-logDebug h = liftIO . log h Debug
+       (MonadIO m, HasLog a) => a -> T.Text -> m ()
+logDebug h = liftIO . getLog h Debug
 
-logInfo h = liftIO . log h Info
+logInfo h = liftIO . getLog h Info
 
-logWarning h = liftIO . log h Warning
+logWarning h = liftIO . getLog h Warning
 
-logError h = liftIO . log h Error
+logError h = liftIO . getLog h Error
