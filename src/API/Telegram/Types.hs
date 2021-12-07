@@ -152,7 +152,7 @@ data Response
   | Updates [Update]
   | OtherResponse Value
   deriving (Show)
-      -- ^actually either: 
+      -- ^actually either:
       -- 1. [Update] - for `getUpdates`
       -- 2. Message - for `sendMessage` and `sendInlineKeyboard`
       -- 3. True - for `answerCallbackQuery`
