@@ -8,6 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE LambdaCase #-}
 
 module API.Vkontakte
     ( Handle(..)
@@ -388,13 +389,12 @@ instance A.ToJSON ButtonColor where
 
 instance A.FromJSON ButtonColor where
     parseJSON =
-        A.withText "FromJSON API.Vkontakte.ButtonColor" $ \t ->
-            case t of
-                "primary" -> pure Primary
-                "secondary" -> pure Secondary
-                "negative" -> pure Negative
-                "positive" -> pure Positive
-                _ -> fail "Unknown color"
+        A.withText "FromJSON API.Vkontakte.ButtonColor" $ \case
+            "primary" -> pure Primary
+            "secondary" -> pure Secondary
+            "negative" -> pure Negative
+            "positive" -> pure Positive
+            _ -> fail "Unknown color"
 
 data KeyboardAction =
     KeyboardAction
@@ -439,13 +439,12 @@ instance A.ToJSON KeyboardActionType where
 
 instance A.FromJSON KeyboardActionType where
     parseJSON =
-        A.withText "FromJSON API.Vkontakte.KeyboardActionType" $ \t ->
-            case t of
-                "text" -> pure Text
-                "openlink" -> pure OpenLink
-                "location" -> pure Location
-                "callback" -> pure Callback
-                _ -> fail "Unknown Action Type"
+        A.withText "FromJSON API.Vkontakte.KeyboardActionType" $ \case
+            "text" -> pure Text
+            "openlink" -> pure OpenLink
+            "location" -> pure Location
+            "callback" -> pure Callback
+            _ -> fail "Unknown Action Type"
 
 sendKeyboard :: Handle -> Integer -> String -> Keyboard -> HTTP.Request
 sendKeyboard hAPI peer_id prompt keyboard =
