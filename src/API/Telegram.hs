@@ -69,7 +69,7 @@ sendRequest hAPI req = do
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    L.logDebug hAPI $ "got response: " <> (T.pack $ L8.unpack res)
+    L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res)
     pure res
 
 newtype Config =
