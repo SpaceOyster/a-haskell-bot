@@ -100,8 +100,7 @@ reactToCommand :: Bot.Handle TG.Handle -> TG.Message -> IO TG.Response
 reactToCommand hBot msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
     L.logDebug hBot $
-        "Telegram: Got command" <>
-        T.tshow cmd <> " in message id " <> T.tshow message_id
+        "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
     Bot.execCommand hBot cmd msg
 
 -- diff
@@ -110,7 +109,7 @@ reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
     n <- Bot.getUserMultiplier hBot author
     L.logDebug hBot $
-        "Telegram: generating " <>
+        "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
     n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
 
