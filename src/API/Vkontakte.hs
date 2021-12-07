@@ -91,7 +91,7 @@ sendRequest hAPI req = do
         case req of
             HTTP.GET method -> get hAPI method
             HTTP.POST method body -> post hAPI method body
-    L.logDebug hAPI $ "got response: " <> (T.pack $ L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
+    L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
     pure res
 
 data Config =
@@ -168,7 +168,7 @@ initiatePollServer hAPI = do
     ps@PollServer {ts} <- getLongPollServer hAPI
     pollURI <- makePollURI ps
     let pollCreds = VKState {lastTS = ts, pollURI}
-    setState hAPI $ pollCreds
+    setState hAPI pollCreds
     pure hAPI
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
@@ -201,8 +201,8 @@ runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
         L.logDebug hAPI $ "last recieved Update TS: " <> T.tshow (lastTS state)
-        runMethod' hAPI state m >>= sendRequest hAPI >>= A.throwDecode >>=
-            rememberLastUpdate hAPI
+        let req = mkRequest hAPI state m
+        sendRequest hAPI req >>= A.throwDecode >>= rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
@@ -212,8 +212,8 @@ data Method
     | SendKeyboard Integer String Keyboard
     deriving (Show)
 
-runMethod' :: (Monad m) => Handle -> VKState -> Method -> m HTTP.Request
-runMethod' hAPI s m =
+mkRequest :: Handle -> VKState -> Method -> HTTP.Request
+mkRequest hAPI s m =
     case m of
         GetUpdates -> getUpdates hAPI s
         SendMessageEventAnswer ce prompt ->
@@ -223,9 +223,9 @@ runMethod' hAPI s m =
         SendKeyboard peer_id prompt keyboard ->
             sendKeyboard hAPI peer_id prompt keyboard
 
-getUpdates :: (Monad m) => Handle -> VKState -> m HTTP.Request
+getUpdates :: Handle -> VKState -> HTTP.Request
 getUpdates hAPI VKState {..} =
-    pure . HTTP.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
+    HTTP.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
 
 newtype User =
     User
@@ -325,10 +325,9 @@ instance A.FromJSON GroupEvent where
                 "message_event" -> MessageEvent <$> o A..: "object"
                 _ -> fail "Unknown GroupEvent type"
 
-sendMessageEventAnswer ::
-       (Monad m) => Handle -> CallbackEvent -> String -> m HTTP.Request
+sendMessageEventAnswer :: Handle -> CallbackEvent -> String -> HTTP.Request
 sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
-    pure . HTTP.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
+    HTTP.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
     [ ("event_id", Just event_id)
     , ("user_id", Just $ show user_id)
     , ("peer_id", Just $ show peer_id)
@@ -349,13 +348,11 @@ sendMessageWith hAPI peer_id text qps =
     HTTP.GET . apiMethod hAPI "messages.send" $
     [("peer_id", Just $ show peer_id), ("message", Just text)] <> qps
 
-sendTextMessage :: (Monad m) => Handle -> Integer -> String -> m HTTP.Request
-sendTextMessage hAPI peer_id text =
-    pure $ sendMessageWith hAPI peer_id text mempty
+sendTextMessage :: Handle -> Integer -> String -> HTTP.Request
+sendTextMessage hAPI peer_id text = sendMessageWith hAPI peer_id text mempty
 
-copyMessage :: (Monad m) => Handle -> Message -> m HTTP.Request
+copyMessage :: Handle -> Message -> HTTP.Request
 copyMessage hAPI Message {..} =
-    pure $
     sendMessageWith hAPI peer_id text $ fmap attachmentToQuery attachments
 
 extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
@@ -450,8 +447,10 @@ instance A.FromJSON KeyboardActionType where
                 "callback" -> pure Callback
                 _ -> fail "Unknown Action Type"
 
-sendKeyboard ::
-       (Monad m) => Handle -> Integer -> String -> Keyboard -> m HTTP.Request
+sendKeyboard :: Handle -> Integer -> String -> Keyboard -> HTTP.Request
 sendKeyboard hAPI peer_id prompt keyboard =
-    pure . sendMessageWith hAPI peer_id prompt $
-    [("keyboard", Just $ L8.unpack $ A.encode keyboard)]
+    sendMessageWith
+        hAPI
+        peer_id
+        prompt
+        [("keyboard", Just $ L8.unpack $ A.encode keyboard)]
