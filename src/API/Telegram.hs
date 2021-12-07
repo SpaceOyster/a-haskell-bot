@@ -114,8 +114,8 @@ runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
         L.logDebug hAPI $ "last recieved Update id: " <> T.tshow state
-        runMethod' hAPI state m >>= sendRequest hAPI >>= throwDecode >>=
-            rememberLastUpdate hAPI
+        let req = mkRequest hAPI state m
+        sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
@@ -125,8 +125,8 @@ data Method
     | SendInlineKeyboard Integer String InlineKeyboardMarkup
     deriving (Show)
 
-runMethod' :: (Monad m) => Handle -> TGState -> Method -> m HTTP.Request
-runMethod' hAPI s m =
+mkRequest :: Handle -> TGState -> Method -> HTTP.Request
+mkRequest hAPI s m =
     case m of
         GetUpdates -> getUpdates hAPI s
         AnswerCallbackQuery id -> answerCallbackQuery hAPI id
@@ -136,44 +136,39 @@ runMethod' hAPI s m =
             sendInlineKeyboard hAPI chatId prompt keyboard
 
 -- API method
-getUpdates :: (Monad m) => Handle -> TGState -> m HTTP.Request
-getUpdates hAPI id = do
+getUpdates :: Handle -> TGState -> HTTP.Request
+getUpdates hAPI id =
     let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
-    pure $ HTTP.POST (apiMethod hAPI "getUpdates") json
+     in HTTP.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
-answerCallbackQuery :: (Monad m) => Handle -> String -> m HTTP.Request
-answerCallbackQuery hAPI id = do
+answerCallbackQuery :: Handle -> String -> HTTP.Request
+answerCallbackQuery hAPI id =
     let json = encode . object $ ["callback_query_id" .= id]
-    pure $ HTTP.POST (apiMethod hAPI "answerCallbackQuery") json
+     in HTTP.POST (apiMethod hAPI "answerCallbackQuery") json
 
 -- API method
-copyMessage :: (Monad m) => Handle -> Message -> m HTTP.Request
-copyMessage hAPI msg@Message {message_id, chat} = do
+copyMessage :: Handle -> Message -> HTTP.Request
+copyMessage hAPI msg@Message {message_id, chat} =
     let json =
             encode . object $
             [ "chat_id" .= chat_id (chat :: Chat)
             , "from_chat_id" .= chat_id (chat :: Chat)
             , "message_id" .= message_id
             ]
-    pure $ HTTP.POST (apiMethod hAPI "copyMessage") json
+     in HTTP.POST (apiMethod hAPI "copyMessage") json
 
 -- API method
-sendMessage :: (Monad m) => Handle -> Integer -> String -> m HTTP.Request
-sendMessage hAPI chatId msg = do
+sendMessage :: Handle -> Integer -> String -> HTTP.Request
+sendMessage hAPI chatId msg =
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-    pure $ HTTP.POST (apiMethod hAPI "sendMessage") json
+     in HTTP.POST (apiMethod hAPI "sendMessage") json
 
 -- API method
 sendInlineKeyboard ::
-       (Monad m)
-    => Handle
-    -> Integer
-    -> String
-    -> InlineKeyboardMarkup
-    -> m HTTP.Request
-sendInlineKeyboard hAPI chatId prompt keyboard = do
+       Handle -> Integer -> String -> InlineKeyboardMarkup -> HTTP.Request
+sendInlineKeyboard hAPI chatId prompt keyboard =
     let json =
             encode . object $
             ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
-    pure $ HTTP.POST (apiMethod hAPI "sendMessage") json
+     in HTTP.POST (apiMethod hAPI "sendMessage") json
