@@ -255,11 +255,11 @@ instance A.FromJSON Message where
             peer_id <- o A..: "peer_id"
             from_id <- o A..: "from_id"
             text <- o A..: "text"
-            random_id <- o A..: "random_id"
+            random_id <- o A..:? "random_id"
             attachments <- o A..: "attachments"
-            payload <- o A..: "payload"
-            keyboard <- o A..: "keyboard"
-            is_cropped <- o A..: "is_cropped"
+            payload <- o A..:? "payload"
+            keyboard <- o A..:? "keyboard"
+            is_cropped <- o A..:? "is_cropped"
             pure $ Message {..}
 
 data MediaDoc =
