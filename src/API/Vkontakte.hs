@@ -116,11 +116,6 @@ instance IsHandle Handle Config where
         let hAPI = Handle {..}
         initiatePollServer hAPI
 
-withHandle :: Config -> L.Handle -> (Handle -> IO a) -> IO a
-withHandle config hLog io = do
-    hAPI <- new config hLog
-    io hAPI
-
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
     maybe ex pure . URI.parseURI $
