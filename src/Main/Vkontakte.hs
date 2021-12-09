@@ -24,7 +24,7 @@ run AppConfig {..} = do
         L.logInfo hLog "Initiating Main Bot loop"
         L.logInfo hLog $
             "API Polling period is " <>
-            T.tshow (fromIntegral poll_period / 1000) <> "ms"
+            T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
         withHandle vkontakte hLog $ flip loop poll_period
 
 main :: IO ()
