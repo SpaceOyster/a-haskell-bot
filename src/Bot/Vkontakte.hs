@@ -57,7 +57,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
                                    | ECommand VK.Message
                                    | ECallback VK.CallbackEvent
                                    | EOther VK.GroupEvent
-                                       deriving (Show)
     type Response (Bot.Handle VK.Handle) = VK.Response
     qualifyUpdate :: VK.GroupEvent -> Bot.Entity (Bot.Handle VK.Handle)
     qualifyUpdate (VK.MessageNew m)
@@ -69,7 +68,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         L.logInfo hLog $ "VK got Update: " <> T.tshow update
         let qu = Bot.qualifyUpdate update
-        L.logInfo hLog $ "VK qualified Update: " <> T.tshow qu
         case qu of
             ECommand msg -> (: []) <$> reactToCommand hBot msg
             EMessage msg -> reactToMessage hBot msg
