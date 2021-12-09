@@ -31,7 +31,7 @@ data Config =
         }
     deriving (Show)
 
-instance {-# OVERLAPPING #-} L.HasLog (Bot.Handle TG.Handle) where
+instance L.HasLog (Bot.Handle TG.Handle) where
     getLog Bot.Handle {hLog} = \p t -> L.getLog hLog p $ "Bot.Telegram: " <> t
 
 instance IsHandle (Bot.Handle TG.Handle) Config where
@@ -54,7 +54,6 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                                    | ECommand TG.Message
                                    | ECallback TG.CallbackQuery
                                    | EOther TG.Update
-                                       deriving (Show)
     type Response (Bot.Handle TG.Handle) = TG.Response
     qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.Handle)
     qualifyUpdate u@TG.Update {message, callback_query}

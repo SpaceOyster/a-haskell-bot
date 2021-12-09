@@ -34,7 +34,7 @@ data Config =
         }
     deriving (Show)
 
-instance {-# OVERLAPPING #-} L.HasLog (Bot.Handle VK.Handle) where
+instance L.HasLog (Bot.Handle VK.Handle) where
     getLog Bot.Handle {hLog} = \p t -> L.getLog hLog p $ "Bot.Vkontakte: " <> t
 
 instance IsHandle (Bot.Handle VK.Handle) Config where

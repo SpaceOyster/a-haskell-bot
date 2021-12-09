@@ -27,8 +27,8 @@ data Handle apiHandle =
         , echoMultiplier :: Int
         }
 
-instance L.HasLog (Bot.Handle s) where
-    getLog Bot.Handle {hLog} = \p t -> L.getLog hLog p t
+instance {-# OVERLAPPABLE #-} L.HasLog (Bot.Handle s) where
+    getLog Bot.Handle {hLog} = L.getLog hLog
 
 data StringsM =
     StringsM
