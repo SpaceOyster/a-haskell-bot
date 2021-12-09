@@ -16,7 +16,6 @@ import qualified Network.HTTP.Client as H
     ( Manager
     , Request(..)
     , RequestBody(..)
-    , Response
     , httpLbs
     , newManager
     , requestFromURI
