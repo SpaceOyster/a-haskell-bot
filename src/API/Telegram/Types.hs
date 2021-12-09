@@ -77,7 +77,7 @@ data BotCommand =
 
 data CallbackQuery =
   CallbackQuery
-    { id :: String
+    { cq_id :: String
     , from :: User
     , message :: Maybe Message
     , inline_message_id :: Maybe String
@@ -86,17 +86,17 @@ data CallbackQuery =
   deriving (Show)
 
 getQDataThrow :: (MonadThrow m) => CallbackQuery -> m String
-getQDataThrow CallbackQuery {id, query_data} =
+getQDataThrow CallbackQuery {cq_id, query_data} =
   case query_data of
     Just d -> pure d
     Nothing ->
       throwM $
-      Ex Priority.Info $ "CallbackQuery " ++ show id ++ " has no query data"
+      Ex Priority.Info $ "CallbackQuery " ++ show cq_id ++ " has no query data"
 
 instance FromJSON CallbackQuery where
   parseJSON =
     withObject "CallbackQuery" $ \o -> do
-      id <- o .: "id"
+      cq_id <- o .: "id"
       from <- o .: "from"
       message <- o .:? "message"
       inline_message_id <- o .:? "inline_message_id"

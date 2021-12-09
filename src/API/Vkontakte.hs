@@ -196,7 +196,7 @@ rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
-updateStateWith _ = Prelude.id
+updateStateWith _ = id
 
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
@@ -239,7 +239,7 @@ instance H.Hashable User where
 
 data Message =
     Message
-        { id :: Integer
+        { msg_id :: Integer
         , date :: Integer
         , peer_id :: Integer
         , from_id :: Integer
@@ -250,15 +250,38 @@ data Message =
         , keyboard :: Maybe Keyboard
         , is_cropped :: Maybe Bool
         }
-    deriving (Show, Generic, A.FromJSON)
+    deriving (Show)
+
+instance A.FromJSON Message where
+    parseJSON =
+        A.withObject "Message" $ \o -> do
+            msg_id <- o A..: "id"
+            date <- o A..: "date"
+            peer_id <- o A..: "peer_id"
+            from_id <- o A..: "from_id"
+            text <- o A..: "text"
+            random_id <- o A..: "random_id"
+            attachments <- o A..: "attachments"
+            payload <- o A..: "payload"
+            keyboard <- o A..: "keyboard"
+            is_cropped <- o A..: "is_cropped"
+            pure $ Message {..}
 
 data MediaDoc =
     MediaDoc
-        { id :: Integer
+        { mdoc_id :: Integer
         , owner_id :: Integer
         , access_key :: Maybe String
         }
-    deriving (Show, Generic, A.FromJSON)
+    deriving (Show)
+
+instance A.FromJSON MediaDoc where
+    parseJSON =
+        A.withObject "MediaDoc" $ \o -> do
+            mdoc_id <- o A..: "id"
+            owner_id <- o A..: "owner_id"
+            access_key <- o A..: "access_key"
+            pure $ MediaDoc {..}
 
 data Attachment
     = Photo MediaDoc
@@ -299,7 +322,7 @@ attachmentToQuery a =
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
-        show owner_id <> "_" <> show id <> maybe "" ('_' :) access_key
+        show owner_id <> "_" <> show mdoc_id <> maybe "" ('_' :) access_key
 
 data CallbackEvent =
     CallbackEvent

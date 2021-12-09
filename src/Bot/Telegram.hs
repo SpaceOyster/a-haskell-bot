@@ -124,8 +124,8 @@ qualifyQuery qstring =
 
 -- diff
 reactToCallback :: Bot.Handle TG.Handle -> TG.CallbackQuery -> IO TG.Response
-reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {id, from} = do
-    L.logDebug hBot $ "Getting query data from CallbackQuery: " <> T.tshow id
+reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
+    L.logDebug hBot $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
     cdata <- TG.getQDataThrow cq
     let user = from
     case qualifyQuery cdata of
@@ -134,7 +134,7 @@ reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {id, from} = do
                 "Setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             Bot.setUserMultiplier hBot user n
-            TG.runMethod hAPI $ TG.AnswerCallbackQuery id
+            TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 

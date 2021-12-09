@@ -91,12 +91,12 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
 
 -- diff
 reactToCommand :: Bot.Handle VK.Handle -> VK.Message -> IO VK.Response
-reactToCommand hBot msg@VK.Message {id, peer_id} = do
+reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
     let cmd = getCommand msg
     L.logDebug hBot $
         "Got command" <>
         T.tshow cmd <>
-        " in message id " <> T.tshow id <> " , peer_id: " <> T.tshow peer_id
+        " in message id " <> T.tshow msg_id <> " , peer_id: " <> T.tshow peer_id
     Bot.execCommand hBot cmd msg
 
 -- diff
@@ -104,7 +104,7 @@ reactToMessage :: Bot.Handle VK.Handle -> VK.Message -> IO [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
     L.logDebug hBot $
-        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow id
+        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
 newtype Payload =

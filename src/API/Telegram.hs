@@ -129,7 +129,7 @@ mkRequest :: Handle -> TGState -> Method -> HTTP.Request
 mkRequest hAPI s m =
     case m of
         GetUpdates -> getUpdates hAPI s
-        AnswerCallbackQuery id -> answerCallbackQuery hAPI id
+        AnswerCallbackQuery cqid -> answerCallbackQuery hAPI cqid
         CopyMessage msg -> copyMessage hAPI msg
         SendMessage chatId msg -> sendMessage hAPI chatId msg
         SendInlineKeyboard chatId prompt keyboard ->
@@ -137,14 +137,14 @@ mkRequest hAPI s m =
 
 -- API method
 getUpdates :: Handle -> TGState -> HTTP.Request
-getUpdates hAPI id =
-    let json = encode . object $ ["offset" .= id, "timeout" .= (25 :: Int)]
+getUpdates hAPI uid =
+    let json = encode . object $ ["offset" .= uid, "timeout" .= (25 :: Int)]
      in HTTP.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
 answerCallbackQuery :: Handle -> String -> HTTP.Request
-answerCallbackQuery hAPI id =
-    let json = encode . object $ ["callback_query_id" .= id]
+answerCallbackQuery hAPI cqid =
+    let json = encode . object $ ["callback_query_id" .= cqid]
      in HTTP.POST (apiMethod hAPI "answerCallbackQuery") json
 
 -- API method
