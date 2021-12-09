@@ -5,9 +5,8 @@ module Data.Aeson.Extended
 
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
-import Data.ByteString.Lazy as LBS
-import qualified Exceptions as Priority
-import Exceptions (BotException(..), ParsingException(..))
+import Data.ByteString.Lazy as LBS (ByteString)
+import Exceptions (ParsingException(..))
 
 throwDecode :: (MonadThrow m, FromJSON a) => LBS.ByteString -> m a
 throwDecode lbs =

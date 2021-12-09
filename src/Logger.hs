@@ -29,7 +29,6 @@ import qualified Data.Aeson as A
     , withObject
     , withText
     )
-import qualified Data.Char as Char (toUpper)
 import Data.IORef (atomicModifyIORef, newIORef, readIORef)
 import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
 import qualified Data.Text.IO as T (hPutStrLn)
@@ -37,7 +36,7 @@ import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
 import Prelude hiding (log)
 import qualified System.IO as IO
-    ( FilePath(..)
+    ( FilePath
     , Handle
     , IOMode(..)
     , hFlush

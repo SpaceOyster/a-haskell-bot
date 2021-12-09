@@ -8,16 +8,13 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Bot.Telegram
-    ( module Bot
-    , Config(..)
+    ( Config(..)
     ) where
 
-import qualified API.Class as API
 import qualified API.Telegram as TG
 import qualified Bot
-import Control.Monad (join, replicateM)
+import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
@@ -152,6 +149,7 @@ getCommandThrow msg = do
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
   where
+    button :: Integer -> TG.InlineKeyboardButton
     button x =
         TG.InlineKeyboardButton
             {text = show x, callback_data = "repeat_" ++ show x}

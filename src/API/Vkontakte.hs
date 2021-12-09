@@ -32,7 +32,6 @@ module API.Vkontakte
     ) where
 
 import qualified API.Class as API
-import Control.Applicative ((<|>))
 import Control.Exception (bracket)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson.Extended as A
@@ -103,14 +102,14 @@ data Config =
         }
 
 instance Semigroup VKState where
-    a <> b = b
+    _a <> b = b
 
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
 instance IsHandle Handle Config where
     new :: Config -> L.Handle -> IO Handle
-    new cfg@Config {..} hLog = do
+    new cfg hLog = do
         http <- HTTP.new $ HTTP.Config {}
         baseURI <- makeBaseURI cfg
         apiState <- newIORef mempty
@@ -190,6 +189,7 @@ getLongPollServer hAPI = do
             throwM $
             Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
         PollServ r -> pure r
+        _ -> throwM $ Ex.APIRespondedWithError "Expected PollServer objest"
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
@@ -225,7 +225,7 @@ mkRequest hAPI s m =
             sendKeyboard hAPI peer_id prompt keyboard
 
 getUpdates :: Handle -> VKState -> HTTP.Request
-getUpdates hAPI VKState {..} =
+getUpdates _hAPI VKState {..} =
     HTTP.GET $ URI.addQueryParams pollURI [("ts", Just lastTS)]
 
 newtype User =
@@ -359,6 +359,7 @@ copyMessage hAPI Message {..} =
 extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
 extractUpdates PollResponse {..} = pure updates
 extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
+extractUpdates _ = throwM $ Ex.VKPollError "Expexted PollResponse"
 
 data Keyboard =
     Keyboard

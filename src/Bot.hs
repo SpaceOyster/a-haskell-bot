@@ -7,8 +7,6 @@ module Bot where
 
 import Control.Applicative ((<|>))
 import Control.Monad (join)
-import Data.Aeson (FromJSON)
-import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Function ((&))
 import qualified Data.Hashable as H
@@ -17,7 +15,6 @@ import Data.List.Extended (replaceSubseq)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
-import GHC.Generics (Generic)
 import qualified Logger as L
 import Prelude hiding (repeat)
 

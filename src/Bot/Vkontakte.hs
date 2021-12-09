@@ -7,20 +7,17 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module Bot.Vkontakte
-    ( module Bot
-    , Config(..)
+    ( Config(..)
     ) where
 
 import qualified API.Vkontakte as VK
 import qualified Bot
-import Control.Monad (join, replicateM)
+import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
-import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import Data.IORef (newIORef)
-import Data.Maybe (isJust)
 import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
@@ -53,8 +50,8 @@ instance IsHandle (Bot.Handle VK.Handle) Config where
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent
     fetchUpdates :: Bot.Handle VK.Handle -> IO [VK.GroupEvent]
-    fetchUpdates hBot@Bot.Handle {hAPI, hLog} = do
-        L.logInfo hLog "Vkontakte: fetching Updates"
+    fetchUpdates hBot@Bot.Handle {hAPI} = do
+        L.logInfo hBot "Vkontakte: fetching Updates"
         VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
     data Entity (Bot.Handle VK.Handle) = EMessage VK.Message
                                    | ECommand VK.Message
@@ -123,7 +120,7 @@ instance A.FromJSON Payload where
 
 -- diff
 reactToCallback :: Bot.Handle VK.Handle -> VK.CallbackEvent -> IO [VK.Response]
-reactToCallback hBot cq@VK.CallbackEvent {user_id, event_id, payload} = do
+reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
     let callback = A.parseMaybe A.parseJSON payload
     let user = VK.User user_id
     case callback of

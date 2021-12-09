@@ -11,7 +11,6 @@ module HTTP
     , post
     ) where
 
-import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Network.HTTP.Client as H
     ( Manager
@@ -20,7 +19,6 @@ import qualified Network.HTTP.Client as H
     , Response
     , httpLbs
     , newManager
-    , parseRequest_
     , requestFromURI
     , responseBody
     )

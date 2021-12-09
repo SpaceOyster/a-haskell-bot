@@ -6,7 +6,6 @@ module Network.URI.Extended
   , QueryParam
   ) where
 
-import Control.Monad.Fail (fail)
 import Data.List (intercalate)
 import Network.URI
 

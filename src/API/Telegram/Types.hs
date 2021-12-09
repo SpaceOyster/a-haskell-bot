@@ -14,17 +14,13 @@ import Data.Aeson
   , ToJSON(..)
   , (.:)
   , (.:?)
-  , decode
   , defaultOptions
-  , encode
   , fieldLabelModifier
   , genericParseJSON
   , genericToJSON
   , withObject
   )
 import Data.Aeson.Types (Value)
-import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
@@ -174,4 +170,4 @@ extractUpdates res =
     Error {error_code, description} ->
       throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
     Updates us -> pure us
-    x -> pure []
+    _ -> pure []

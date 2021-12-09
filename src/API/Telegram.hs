@@ -22,7 +22,7 @@ import Control.Exception (bracket)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
-import Data.Aeson.Extended (Value(..), (.=), encode, object, throwDecode)
+import Data.Aeson.Extended ((.=), encode, object, throwDecode)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -85,7 +85,7 @@ makeBaseURI Config {..} =
 
 instance IsHandle Handle Config where
     new :: Config -> L.Handle -> IO Handle
-    new cfg@Config {key} hLog = do
+    new cfg hLog = do
         L.logInfo hLog "Initiating Telegram API handle"
         baseURI <- makeBaseURI cfg
         let httpConfig = HTTP.Config {}
@@ -149,7 +149,7 @@ answerCallbackQuery hAPI id =
 
 -- API method
 copyMessage :: Handle -> Message -> HTTP.Request
-copyMessage hAPI msg@Message {message_id, chat} =
+copyMessage hAPI Message {message_id, chat} =
     let json =
             encode . object $
             [ "chat_id" .= chat_id (chat :: Chat)
