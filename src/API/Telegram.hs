@@ -94,11 +94,6 @@ instance IsHandle Handle Config where
         apiState <- newIORef 0
         pure $ Handle {..}
 
-withHandle :: Config -> L.Handle -> (Handle -> IO a) -> IO a
-withHandle config hLog io = do
-    hAPI <- new config hLog
-    io hAPI
-
 apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
