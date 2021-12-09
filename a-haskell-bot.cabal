@@ -82,6 +82,84 @@ executable a-haskell-bot-exe
     , time
   default-language: Haskell2010
 
+executable telegram-bot
+  main-is: Main/Telegram.hs
+  other-modules:
+      API.Class
+      API.Telegram
+      API.Telegram.Types
+      API.Vkontakte
+      Bot
+      Bot.Telegram
+      Bot.Vkontakte
+      Data.Aeson.Extended
+      Data.AppConfig
+      Data.Hashable
+      Data.List.Extended
+      Data.Text.Extended
+      Exceptions
+      Handle.Class
+      HTTP
+      Logger
+      Main.Vkontakte
+      Network.URI.Extended
+      Paths_a_haskell_bot
+  hs-source-dirs:
+      src
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -main-is Main.Telegram
+  build-depends:
+      a-haskell-bot
+    , aeson
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , exceptions
+    , http-client
+    , http-client-tls
+    , network-uri
+    , text
+    , time
+  default-language: Haskell2010
+
+executable vkontakte-bot
+  main-is: Main/Vkontakte.hs
+  other-modules:
+      API.Class
+      API.Telegram
+      API.Telegram.Types
+      API.Vkontakte
+      Bot
+      Bot.Telegram
+      Bot.Vkontakte
+      Data.Aeson.Extended
+      Data.AppConfig
+      Data.Hashable
+      Data.List.Extended
+      Data.Text.Extended
+      Exceptions
+      Handle.Class
+      HTTP
+      Logger
+      Main.Telegram
+      Network.URI.Extended
+      Paths_a_haskell_bot
+  hs-source-dirs:
+      src
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -main-is Main.Vkontakte
+  build-depends:
+      a-haskell-bot
+    , aeson
+    , base >=4.7 && <5
+    , bytestring
+    , containers
+    , exceptions
+    , http-client
+    , http-client-tls
+    , network-uri
+    , text
+    , time
+  default-language: Haskell2010
+
 test-suite a-haskell-bot-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
