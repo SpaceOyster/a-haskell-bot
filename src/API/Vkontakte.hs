@@ -314,6 +314,8 @@ attachmentToQuery a =
         Audio m -> "audio" <> mediaToQuery m
         Video m -> "video" <> mediaToQuery m
         Doc m -> "doc" <> mediaToQuery m
+        Sticker {sticker_id} -> "sticker_id=" <> show sticker_id
+        OtherA -> mempty
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
