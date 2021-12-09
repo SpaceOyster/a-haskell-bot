@@ -184,7 +184,7 @@ getLongPollServer hAPI = do
             throwM $
             Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
         PollServ r -> pure r
-        _ -> throwM $ Ex.APIRespondedWithError "Expected PollServer objest"
+        _ -> throwM $ Ex.APIRespondedWithError "Expected PollServer object"
 
 rememberLastUpdate :: Handle -> Response -> IO Response
 rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
