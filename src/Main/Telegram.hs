@@ -14,6 +14,7 @@ import qualified Data.Text.Extended as T
 import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified System.Environment as E
+import qualified System.Exit as Exit (die)
 
 loop :: (Bot.BotHandle a) => a -> Int -> IO ()
 loop hBot period = forever $ Bot.doBotThing hBot >> threadDelay period
@@ -32,7 +33,7 @@ main = do
     args <- E.getArgs
     case args of
         cfgPath:_as -> readConfig cfgPath >>= run
-        _ -> putStrLn usagePrompt
+        _ -> Exit.die usagePrompt
 
 readConfig :: FilePath -> IO AppConfig
 readConfig cfgPath = do
