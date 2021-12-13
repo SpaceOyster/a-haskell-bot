@@ -1,10 +1,5 @@
 module Exceptions where
 
--- | Suggested module import
--- @
--- import qualified Exceptions as Priority
--- import Exceptions (BotException(..))
--- @
 import Control.Monad.Catch (Exception(..))
 import Data.Typeable (Typeable)
 
