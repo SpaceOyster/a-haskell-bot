@@ -24,7 +24,6 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson.Extended ((.=), encode, object, throwDecode)
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import qualified HTTP
@@ -56,19 +55,10 @@ modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
 setState :: Handle -> TGState -> IO ()
 setState hAPI newState = modifyState hAPI $ const newState
 
-get :: Handle -> URI.URI -> IO L8.ByteString
-get hAPI = hAPI & http & HTTP.get
-
-post :: Handle -> URI.URI -> L8.ByteString -> IO L8.ByteString
-post hAPI = hAPI & http & HTTP.post
-
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
 sendRequest hAPI req = do
     L.logDebug hAPI $ "sending request: " <> T.tshow req
-    res <-
-        case req of
-            HTTP.GET method -> get hAPI method
-            HTTP.POST method body -> post hAPI method body
+    res <- HTTP.sendRequest (http hAPI) req
     L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res)
     pure res
 
