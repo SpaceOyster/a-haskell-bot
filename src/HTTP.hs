@@ -9,6 +9,7 @@ module HTTP
     , new
     , get
     , post
+    , sendRequest
     ) where
 
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -65,3 +66,9 @@ data Request
     = GET URI.URI
     | POST URI.URI L8.ByteString
     deriving (Show)
+
+sendRequest :: Handle -> Request -> IO L8.ByteString
+sendRequest hAPI req =
+    case req of
+        GET uri -> get hAPI uri
+        POST uri body -> post hAPI uri body
