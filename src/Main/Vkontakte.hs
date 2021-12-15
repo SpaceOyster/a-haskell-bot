@@ -3,11 +3,11 @@
 
 module Main.Vkontakte where
 
+import App.Config
 import qualified Bot
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import qualified Data.Aeson.Extended as A (throwDecode)
-import Data.AppConfig
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T

@@ -1,7 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Data.AppConfig
+module App.Config
     ( AppConfig(..)
     ) where
 
