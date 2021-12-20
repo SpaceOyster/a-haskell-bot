@@ -16,29 +16,31 @@ spec = do
 stringifyQueryPairSpec :: Spec
 stringifyQueryPairSpec = do
   describe "stringifyQueryPair" $ do
-    it "turns (key, Just value) pair into URI query string inside MonadFail" $ do
-      (stringifyQueryPair ("key", Just "value") :: [String]) `shouldBe`
-        ["key=value"]
-      (stringifyQueryPair ("key", Just "value with space") :: Maybe String) `shouldBe`
-        Just "key=value%20with%20space"
-    context "when fails empty string is returned" $ do
+    context "runs inside MonadFail" $ do
+      it "turns (key, Just value) pair into URI query string" $ do
+        stringifyQueryPair ("key", Just "value") `shouldReturn` "key=value"
+      it "properly escapes characters of value" $ do
+        stringifyQueryPair ("key", Just "value with space") `shouldReturn`
+          "key=value%20with%20space"
       it "fails when key string has unescaped characters" $ do
-        (stringifyQueryPair ("unescaped key", Just "whatever") :: [String]) `shouldBe`
-          []
+        stringifyQueryPair ("unescaped key", Just "whatever") `shouldBe` Nothing
       it "fails when key is empty string" $ do
-        (stringifyQueryPair ("", Just "whatever") :: [String]) `shouldBe` []
+        stringifyQueryPair ("", Just "whatever") `shouldBe` Nothing
       it "fails when value is empty string" $ do
-        (stringifyQueryPair ("whatever", Just "") :: [String]) `shouldBe` []
+        stringifyQueryPair ("whatever", Just "") `shouldBe` Nothing
       it "fails when value is not present at all: (key, Nothing)" $ do
-        (stringifyQueryPair ("key", Nothing) :: [String]) `shouldBe` []
+        stringifyQueryPair ("key", Nothing) `shouldBe` Nothing
 
 stringifyQueryListSpec :: Spec
 stringifyQueryListSpec = do
   describe "stringifyQueryList" $ do
     it "transforms [QueryParam] into correct query string" $ do
-      stringifyQueryList
-        [("key1", Just "value 1"), ("key2", Nothing), ("key3", Just "value 3")] `shouldBe`
-        "key1=value%201&key3=value%203"
+      let qparams =
+            [ ("key1", Just "value 1")
+            , ("key2", Nothing)
+            , ("key3", Just "value 3")
+            ]
+      stringifyQueryList qparams `shouldBe` "key1=value%201&key3=value%203"
     it "transforms empty [QueryParam] into empty string" $ do
       stringifyQueryList [] `shouldBe` ""
     it "doesn't eliminate duplicate keys" $ do
