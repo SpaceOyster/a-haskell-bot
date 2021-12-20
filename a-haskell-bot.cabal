@@ -175,6 +175,7 @@ test-suite a-haskell-bot-test
     , bytestring
     , containers
     , exceptions
+    , hspec
     , http-client
     , http-client-tls
     , network-uri
