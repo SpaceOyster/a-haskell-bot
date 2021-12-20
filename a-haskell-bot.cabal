@@ -164,6 +164,7 @@ test-suite a-haskell-bot-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Data.List.ExtendedSpec
       Paths_a_haskell_bot
   hs-source-dirs:
       test

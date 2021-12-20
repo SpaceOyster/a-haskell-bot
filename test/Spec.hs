@@ -1,2 +1,7 @@
+import Data.List.ExtendedSpec as LE
+import Test.Hspec
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main =
+  hspec $ do
+    LE.spec
