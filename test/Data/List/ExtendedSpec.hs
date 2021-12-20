@@ -5,10 +5,10 @@ module Data.List.ExtendedSpec
 import Data.List.Extended (replaceSubseq)
 import Test.Hspec
 
-spec :: SpecWith ()
+spec :: Spec
 spec = replaceSubseqSpec
 
-replaceSubseqSpec :: SpecWith ()
+replaceSubseqSpec :: Spec
 replaceSubseqSpec = do
   describe "Data.List.Extended.replaceSubseq" $ do
     it "replaces subsequence of list with new subsequence" $ do

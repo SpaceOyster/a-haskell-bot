@@ -5,7 +5,7 @@ module Network.URI.ExtendedSpec
 import Network.URI.Extended
 import Test.Hspec
 
-spec :: SpecWith ()
+spec :: Spec
 spec = do
   describe "Network.URI.Extended" $ do
     stringifyQueryPairSpec
@@ -13,7 +13,7 @@ spec = do
     addQueryParamsSpec
     addPathSpec
 
-stringifyQueryPairSpec :: SpecWith ()
+stringifyQueryPairSpec :: Spec
 stringifyQueryPairSpec = do
   describe "stringifyQueryPair" $ do
     it "turns (key, Just value) pair into URI query string inside MonadFail" $ do
@@ -32,7 +32,7 @@ stringifyQueryPairSpec = do
       it "fails when value is not present at all: (key, Nothing)" $ do
         (stringifyQueryPair ("key", Nothing) :: [String]) `shouldBe` []
 
-stringifyQueryListSpec :: SpecWith ()
+stringifyQueryListSpec :: Spec
 stringifyQueryListSpec = do
   describe "stringifyQueryList" $ do
     it "transforms [QueryParam] into correct query string" $ do
@@ -45,7 +45,7 @@ stringifyQueryListSpec = do
       stringifyQueryList [("key", Just "1"), ("key", Just "2")] `shouldBe`
         "key=1&key=2"
 
-addQueryParamsSpec :: SpecWith ()
+addQueryParamsSpec :: Spec
 addQueryParamsSpec = do
   describe "addQueryParams" $ do
     it "appends list of list of query parameters to URI" $ do
@@ -60,7 +60,7 @@ addQueryParamsSpec = do
         uriM `shouldBe`
         parseURI (uriString <> "?key=value")
 
-addPathSpec :: SpecWith ()
+addPathSpec :: Spec
 addPathSpec = do
   describe "addPath" $ do
     let uriString = "https://some.uri/path/here"
