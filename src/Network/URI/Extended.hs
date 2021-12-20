@@ -2,6 +2,8 @@ module Network.URI.Extended
   ( module Network.URI
   , addPath
   , addQueryParams
+  , stringifyQueryList
+  , stringifyQueryPair
   , QueryParams
   , QueryParam
   ) where
