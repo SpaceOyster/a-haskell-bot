@@ -31,7 +31,10 @@ import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified Network.URI.Extended as URI
 
-type TGState = Integer
+newtype TGState =
+    TGState
+        { lastUpdate :: Integer
+        }
 
 data Handle =
     Handle
@@ -81,7 +84,7 @@ instance IsHandle Handle Config where
         let httpConfig = HTTP.Config {}
         http <- HTTP.new httpConfig
         L.logInfo hLog "HTTP handle initiated for Telegram API"
-        apiState <- newIORef 0
+        apiState <- newIORef $ TGState 0
         pure $ Handle {..}
 
 apiMethod :: Handle -> String -> URI.URI
@@ -92,13 +95,15 @@ rememberLastUpdate hAPI res =
     mapM_ (setState hAPI) (newStateFromM res) >> pure res
 
 newStateFromM :: Response -> Maybe TGState
-newStateFromM (Updates us@(_x:_xs)) = Just . (1 +) . update_id . last $ us
+newStateFromM (Updates us@(_x:_xs)) =
+    Just . TGState . (1 +) . update_id . last $ us
 newStateFromM _ = Nothing
 
 runMethod :: Handle -> Method -> IO Response
 runMethod hAPI m =
     bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        L.logDebug hAPI $ "last recieved Update id: " <> T.tshow state
+        L.logDebug hAPI $
+            "last recieved Update id: " <> T.tshow (lastUpdate state)
         let req = mkRequest hAPI state m
         sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
 
@@ -122,8 +127,10 @@ mkRequest hAPI s m =
 
 -- API method
 getUpdates :: Handle -> TGState -> HTTP.Request
-getUpdates hAPI uid =
-    let json = encode . object $ ["offset" .= uid, "timeout" .= (25 :: Int)]
+getUpdates hAPI st =
+    let json =
+            encode . object $
+            ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
      in HTTP.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
