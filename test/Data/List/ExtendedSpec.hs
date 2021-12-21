@@ -14,6 +14,7 @@ replaceSubseqSpec = do
     it "replaces subsequence of list with new subsequence" $ do
       replaceSubseq [1 .. 10] [3, 4, 5] [20, 20] `shouldBe`
         [1, 2, 20, 20, 6, 7, 8, 9, 10]
+      replaceSubseq "some %n string" "%n" "nice" `shouldBe` "some nice string"
     it "doesn't change list is required to replace an empty subsequence" $ do
       let testLine = "Any String Here For test"
       replaceSubseq testLine "" "whatever" `shouldBe` testLine
