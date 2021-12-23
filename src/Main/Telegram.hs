@@ -19,18 +19,17 @@ import qualified Logger as L
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 
-loop :: (MonadIO m, Bot.BotHandle a) => a -> Int -> m ()
-loop hBot period = liftIO . forever $ Bot.doBotThing hBot >> threadDelay period
+loop :: (MonadIO m, Bot.BotHandle a, MonadReader env m) => a -> Int -> m ()
+loop hBot period = forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
 
-run :: AppConfig -> IO ()
-run AppConfig {..} = do
-    L.withHandle logger $ \hLog -> do
-        L.logInfo hLog "Initiating Main Bot loop"
-        L.logInfo hLog $
-            "API Polling period is " <>
-            T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
-        withHandle telegram hLog $ flip loop poll_period
-
+-- run :: AppConfig -> IO ()
+-- run AppConfig {..} = do
+--     L.withHandle logger $ \hLog -> do
+--         L.logInfo hLog "Initiating Main Bot loop"
+--         L.logInfo hLog $
+--             "API Polling period is " <>
+--             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
+--         withHandle telegram hLog $ flip loop poll_period
 main :: IO ()
 main = do
     args <- E.getArgs
