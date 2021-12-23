@@ -164,6 +164,7 @@ test-suite a-haskell-bot-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      API.TelegramSpec
       Data.List.ExtendedSpec
       Network.URI.ExtendedSpec
       Paths_a_haskell_bot
