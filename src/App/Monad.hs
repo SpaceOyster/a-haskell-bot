@@ -1,3 +1,4 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
@@ -11,6 +12,9 @@ newtype Env (m :: Type -> Type) =
     Env
         { envLogger :: Logger.Handle
         }
+
+class Has field env where
+    obtain :: env -> field
 
 type AppEnv = Env App
 
