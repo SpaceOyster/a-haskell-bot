@@ -1,5 +1,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE KindSignatures #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module App.Monad where
@@ -18,6 +20,11 @@ class Has field env where
 
 instance Has Logger.Handle (Env m) where
     obtain = envLogger
+
+grab ::
+       forall field env m. (MonadReader env m, Has field env)
+    => m field
+grab = asks $ obtain @field
 
 type AppEnv = Env App
 
