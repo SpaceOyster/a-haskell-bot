@@ -57,6 +57,7 @@ library
     , exceptions
     , http-client
     , http-client-tls
+    , mtl
     , network-uri
     , text
     , time
@@ -78,6 +79,7 @@ executable a-haskell-bot-exe
     , exceptions
     , http-client
     , http-client-tls
+    , mtl
     , network-uri
     , text
     , time
@@ -118,6 +120,7 @@ executable telegram-bot
     , exceptions
     , http-client
     , http-client-tls
+    , mtl
     , network-uri
     , text
     , time
@@ -158,6 +161,7 @@ executable vkontakte-bot
     , exceptions
     , http-client
     , http-client-tls
+    , mtl
     , network-uri
     , text
     , time
@@ -184,6 +188,7 @@ test-suite a-haskell-bot-test
     , hspec
     , http-client
     , http-client-tls
+    , mtl
     , network-uri
     , text
     , time

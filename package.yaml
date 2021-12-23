@@ -30,6 +30,7 @@ dependencies:
 - time
 - text
 - network-uri
+- mtl
 
 library:
   source-dirs: src
