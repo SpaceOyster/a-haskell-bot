@@ -7,6 +7,7 @@ import App.Config
 import qualified Bot
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Aeson.Extended as A (throwDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
@@ -16,8 +17,8 @@ import qualified Logger as L
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 
-loop :: (Bot.BotHandle a) => a -> Int -> IO ()
-loop hBot period = forever $ Bot.doBotThing hBot >> threadDelay period
+loop :: (MonadIO m, Bot.BotHandle a) => a -> Int -> m ()
+loop hBot period = liftIO . forever $ Bot.doBotThing hBot >> threadDelay period
 
 run :: AppConfig -> IO ()
 run AppConfig {..} = do
