@@ -8,6 +8,7 @@ module Bot where
 import Control.Applicative ((<|>))
 import Control.Monad (join)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader
 import Data.Char (toLower)
 import Data.Function ((&))
 import qualified Data.Hashable as H
@@ -160,7 +161,7 @@ class (L.HasLog h) =>
     where
     type Update h
     fetchUpdates :: MonadIO m => h -> m [Update h]
-    doBotThing :: MonadIO m => h -> m [Response h]
+    doBotThing :: (MonadIO m, MonadReader env m) => h -> m [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
     data Entity h
     type Response h
