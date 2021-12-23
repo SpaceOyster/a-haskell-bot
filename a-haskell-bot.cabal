@@ -30,6 +30,7 @@ library
       API.Telegram.Types
       API.Vkontakte
       App.Config
+      App.Monad
       Bot
       Bot.Telegram
       Bot.Vkontakte
@@ -90,6 +91,7 @@ executable telegram-bot
       API.Telegram.Types
       API.Vkontakte
       App.Config
+      App.Monad
       Bot
       Bot.Telegram
       Bot.Vkontakte
@@ -129,6 +131,7 @@ executable vkontakte-bot
       API.Telegram.Types
       API.Vkontakte
       App.Config
+      App.Monad
       Bot
       Bot.Telegram
       Bot.Vkontakte
