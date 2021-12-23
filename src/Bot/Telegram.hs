@@ -15,6 +15,7 @@ import qualified API.Telegram as TG
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
@@ -46,10 +47,10 @@ instance IsHandle (Bot.Handle TG.Handle) Config where
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
     type Update (Bot.Handle TG.Handle) = TG.Update
-    fetchUpdates :: Bot.Handle TG.Handle -> IO [TG.Update]
+    fetchUpdates :: MonadIO m => Bot.Handle TG.Handle -> m [TG.Update]
     fetchUpdates hBot@Bot.Handle {hAPI} = do
         L.logInfo hBot "fetching Updates"
-        TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
+        liftIO $ TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
     data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
                                    | ECommand TG.Message
                                    | ECallback TG.CallbackQuery
@@ -63,26 +64,31 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                 then ECommand msg
                 else EMessage msg
         | otherwise = EOther u
-    reactToUpdate :: Bot.Handle TG.Handle -> TG.Update -> IO [TG.Response]
+    reactToUpdate ::
+           MonadIO m => Bot.Handle TG.Handle -> TG.Update -> m [TG.Response]
     reactToUpdate hBot update = do
         L.logDebug hBot $
             "qualifying Update with id " <> T.tshow (TG.update_id update)
         let qu = Bot.qualifyUpdate update
-        case qu of
-            ECommand msg -> (: []) <$> reactToCommand hBot msg
-            EMessage msg -> reactToMessage hBot msg
-            ECallback cq -> (: []) <$> reactToCallback hBot cq
-            EOther TG.Update {update_id} ->
-                throwM $
-                Ex Priority.Info $
-                "Unknown Update Type. Update: " ++ show update_id
+        liftIO $
+            case qu of
+                ECommand msg -> (: []) <$> reactToCommand hBot msg
+                EMessage msg -> reactToMessage hBot msg
+                ECallback cq -> (: []) <$> reactToCallback hBot cq
+                EOther TG.Update {update_id} ->
+                    throwM $
+                    Ex Priority.Info $
+                    "Unknown Update Type. Update: " ++ show update_id
     type Message (Bot.Handle TG.Handle) = TG.Message
     execCommand ::
-           Bot.Handle TG.Handle -> Bot.Command -> (TG.Message -> IO TG.Response)
+           MonadIO m
+        => Bot.Handle TG.Handle
+        -> Bot.Command
+        -> (TG.Message -> m TG.Response)
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
         prompt <- Bot.repeatPrompt hBot from
-        TG.runMethod hAPI $
+        liftIO . TG.runMethod hAPI $
             case cmd of
                 Bot.Start -> TG.SendMessage address (Bot.greeting strings)
                 Bot.Help -> TG.SendMessage address (Bot.help strings)
