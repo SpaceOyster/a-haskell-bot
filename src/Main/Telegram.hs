@@ -4,10 +4,12 @@
 module Main.Telegram where
 
 import App.Config
+import qualified App.Monad as App
 import qualified Bot
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader
 import qualified Data.Aeson.Extended as A (throwDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
@@ -33,7 +35,7 @@ main :: IO ()
 main = do
     args <- E.getArgs
     case args of
-        cfgPath:_as -> readConfig cfgPath >>= run
+        cfgPath:_as -> readConfig cfgPath >>= runWithApp
         _ -> Exit.die usagePrompt
 
 readConfig :: FilePath -> IO AppConfig
@@ -52,3 +54,14 @@ usagePrompt =
         , "FILE - is a config file formatted as json, see example config here:"
         , "INSTRUCTIONS TO FIND EXAMPLE CONFIG"
         ]
+
+runWithApp :: AppConfig -> IO ()
+runWithApp AppConfig {..} = do
+    L.withHandle logger $ \hLog -> do
+        L.logInfo hLog "Initiating Main Bot loop"
+        L.logInfo hLog $
+            "API Polling period is " <>
+            T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
+        let env = App.Env {envLogger = hLog}
+        hBot <- new telegram hLog
+        App.unApp (loop hBot poll_period) `runReaderT` env
