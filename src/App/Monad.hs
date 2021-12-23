@@ -19,3 +19,6 @@ newtype App a =
         { unApp :: ReaderT AppEnv IO a
         }
     deriving (Functor, Applicative, Monad, MonadIO, MonadReader AppEnv)
+
+runApp :: AppEnv -> App a -> IO a
+runApp env = (`runReaderT` env) . unApp
