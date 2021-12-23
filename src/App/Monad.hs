@@ -16,6 +16,9 @@ newtype Env (m :: Type -> Type) =
 class Has field env where
     obtain :: env -> field
 
+instance Has Logger.Handle (Env m) where
+    obtain = envLogger
+
 type AppEnv = Env App
 
 newtype App a =
