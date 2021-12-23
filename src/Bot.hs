@@ -7,6 +7,7 @@ module Bot where
 
 import Control.Applicative ((<|>))
 import Control.Monad (join)
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Char (toLower)
 import Data.Function ((&))
 import qualified Data.Hashable as H
@@ -80,23 +81,23 @@ instance Monoid StringsM where
             , settingsSavedM = mempty
             }
 
-hGetState :: Handle s -> IO BotState
+hGetState :: MonadIO m => Handle s -> m BotState
 hGetState hBot = do
     L.logDebug hBot "Getting BotState"
-    readIORef $ state hBot
+    liftIO . readIORef $ state hBot
 
-hSetState :: Handle s -> (BotState -> BotState) -> IO ()
+hSetState :: MonadIO m => Handle s -> (BotState -> BotState) -> m ()
 hSetState hBot f = do
     L.logDebug hBot "Setting BotState"
     L.logDebug hBot "Appying state BotState mutating function"
-    state hBot `modifyIORef` f
+    liftIO $ state hBot `modifyIORef` f
 
 newtype BotState =
     BotState
         { userSettings :: Map.Map H.Hash Int
         }
 
-getUserMultiplier :: (H.Hashable u) => Handle s -> u -> IO Int
+getUserMultiplier :: (H.Hashable u, MonadIO m) => Handle s -> u -> m Int
 getUserMultiplier hBot user = do
     st <- Bot.hGetState hBot
     let drepeats = Bot.echoMultiplier hBot
@@ -104,19 +105,20 @@ getUserMultiplier hBot user = do
         repeats = Map.findWithDefault drepeats uhash $ userSettings st
     pure repeats
 
-getUserMultiplierM :: (H.Hashable u) => Handle s -> Maybe u -> IO Int
+getUserMultiplierM :: (H.Hashable u, MonadIO m) => Handle s -> Maybe u -> m Int
 getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
 getUserMultiplierM hBot Nothing = do
     L.logInfo hBot "No User info, returning default echo multiplier"
     pure $ hBot & Bot.echoMultiplier
 
-repeatPrompt :: (H.Hashable u) => Handle s -> Maybe u -> IO String
+repeatPrompt :: (H.Hashable u, MonadIO m) => Handle s -> Maybe u -> m String
 repeatPrompt hBot userM = do
     mult <- hBot & getUserMultiplierM $ userM
     let prompt' = hBot & Bot.strings & Bot.repeat
     pure $ replaceSubseq prompt' "%n" (show mult)
 
-setUserMultiplier :: (Show u, H.Hashable u) => Handle s -> u -> Int -> IO ()
+setUserMultiplier ::
+       (Show u, H.Hashable u, MonadIO m) => Handle s -> u -> Int -> m ()
 setUserMultiplier hBot user repeats = do
     L.logDebug hBot $
         "Setting echo multiplier to: " <>
@@ -157,16 +159,16 @@ class (L.HasLog h) =>
       BotHandle h
     where
     type Update h
-    fetchUpdates :: h -> IO [Update h]
-    doBotThing :: h -> IO [Response h]
+    fetchUpdates :: MonadIO m => h -> m [Update h]
+    doBotThing :: MonadIO m => h -> m [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
     data Entity h
     type Response h
     qualifyUpdate :: Update h -> Entity h
-    reactToUpdate :: h -> Update h -> IO [Response h]
-    reactToUpdates :: h -> [Update h] -> IO [Response h]
+    reactToUpdate :: MonadIO m => h -> Update h -> m [Response h]
+    reactToUpdates :: MonadIO m => h -> [Update h] -> m [Response h]
     reactToUpdates hBot updates = do
         L.logInfo hBot "processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
-    execCommand :: h -> Command -> (Message h -> IO (Response h))
+    execCommand :: MonadIO m => h -> Command -> (Message h -> m (Response h))
