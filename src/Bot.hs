@@ -2,9 +2,11 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Bot where
 
+import App.Monad
 import Control.Applicative ((<|>))
 import Control.Monad (join)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -160,16 +162,28 @@ class (L.HasLog h) =>
       BotHandle h
     where
     type Update h
-    fetchUpdates :: MonadIO m => h -> m [Update h]
-    doBotThing :: (MonadIO m, MonadReader env m) => h -> m [Response h]
+    fetchUpdates ::
+           (MonadIO m, MonadReader env m, Has L.Handle env) => h -> m [Update h]
+    doBotThing ::
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => h
+        -> m [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
     data Entity h
     type Response h
     qualifyUpdate :: Update h -> Entity h
-    reactToUpdate :: MonadIO m => h -> Update h -> m [Response h]
-    reactToUpdates :: MonadIO m => h -> [Update h] -> m [Response h]
+    reactToUpdate ::
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => h
+        -> Update h
+        -> m [Response h]
+    reactToUpdates ::
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => h
+        -> [Update h]
+        -> m [Response h]
     reactToUpdates hBot updates = do
-        L.logInfo hBot "processing each update"
+        envLogInfo "processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
     execCommand :: MonadIO m => h -> Command -> (Message h -> m (Response h))
