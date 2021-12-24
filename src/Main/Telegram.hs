@@ -1,5 +1,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module Main.Telegram where
 
@@ -19,7 +20,11 @@ import qualified Logger as L
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 
-loop :: (MonadIO m, Bot.BotHandle a, MonadReader env m) => a -> Int -> m ()
+loop ::
+       (MonadIO m, Bot.BotHandle a, MonadReader env m, App.Has L.Handle env)
+    => a
+    -> Int
+    -> m ()
 loop hBot period = forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
 
 -- run :: AppConfig -> IO ()
