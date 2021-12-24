@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -12,10 +13,12 @@ module Bot.Telegram
     ) where
 
 import qualified API.Telegram as TG
+import App.Monad
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
@@ -47,9 +50,12 @@ instance IsHandle (Bot.Handle TG.Handle) Config where
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
     type Update (Bot.Handle TG.Handle) = TG.Update
-    fetchUpdates :: MonadIO m => Bot.Handle TG.Handle -> m [TG.Update]
-    fetchUpdates hBot@Bot.Handle {hAPI} = do
-        L.logInfo hBot "fetching Updates"
+    fetchUpdates ::
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => Bot.Handle TG.Handle
+        -> m [TG.Update]
+    fetchUpdates Bot.Handle {hAPI} = do
+        envLogInfo "fetching Updates"
         liftIO $ TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
     data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
                                    | ECommand TG.Message
@@ -65,9 +71,12 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                 else EMessage msg
         | otherwise = EOther u
     reactToUpdate ::
-           MonadIO m => Bot.Handle TG.Handle -> TG.Update -> m [TG.Response]
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => Bot.Handle TG.Handle
+        -> TG.Update
+        -> m [TG.Response]
     reactToUpdate hBot update = do
-        L.logDebug hBot $
+        envLogDebug $
             "qualifying Update with id " <> T.tshow (TG.update_id update)
         let qu = Bot.qualifyUpdate update
         liftIO $
