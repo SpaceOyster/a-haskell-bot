@@ -3,11 +3,13 @@
 {-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE FlexibleContexts #-}
 
 module App.Monad where
 
 import Control.Monad.Reader
 import Data.Kind (Type)
+import qualified Data.Text as T
 import qualified Logger
 
 newtype Env (m :: Type -> Type) =
@@ -36,3 +38,13 @@ newtype App a =
 
 runApp :: AppEnv -> App a -> IO a
 runApp env = (`runReaderT` env) . unApp
+
+envLogDebug, envLogInfo, envLogWarning, envLogError ::
+       (MonadIO m, MonadReader env m, Has Logger.Handle env) => T.Text -> m ()
+envLogDebug t = grab @Logger.Handle >>= (`Logger.logDebug` t)
+
+envLogInfo t = grab @Logger.Handle >>= (`Logger.logInfo` t)
+
+envLogWarning t = grab @Logger.Handle >>= (`Logger.logWarning` t)
+
+envLogError t = grab @Logger.Handle >>= (`Logger.logError` t)
