@@ -2,6 +2,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -11,10 +12,12 @@ module Bot.Vkontakte
     ) where
 
 import qualified API.Vkontakte as VK
+import App.Monad
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
@@ -50,7 +53,10 @@ instance IsHandle (Bot.Handle VK.Handle) Config where
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent
-    fetchUpdates :: MonadIO m => Bot.Handle VK.Handle -> m [VK.GroupEvent]
+    fetchUpdates ::
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => Bot.Handle VK.Handle
+        -> m [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI} = do
         L.logInfo hBot "Vkontakte: fetching Updates"
         liftIO $ VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
@@ -66,7 +72,10 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     qualifyUpdate (VK.MessageEvent c) = ECallback c
     qualifyUpdate _ = EOther VK.Other -- TODO
     reactToUpdate ::
-           MonadIO m => Bot.Handle VK.Handle -> VK.GroupEvent -> m [VK.Response]
+           (MonadIO m, MonadReader env m, Has L.Handle env)
+        => Bot.Handle VK.Handle
+        -> VK.GroupEvent
+        -> m [VK.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         L.logInfo hLog $ "VK got Update: " <> T.tshow update
         let qu = Bot.qualifyUpdate update
