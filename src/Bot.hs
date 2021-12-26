@@ -9,6 +9,7 @@ module Bot where
 import App.Monad
 import Control.Applicative ((<|>))
 import Control.Monad (join)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader
 import Data.Char (toLower)
@@ -163,9 +164,11 @@ class (L.HasLog h) =>
     where
     type Update h
     fetchUpdates ::
-           (MonadIO m, MonadReader env m, Has L.Handle env) => h -> m [Update h]
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+        => h
+        -> m [Update h]
     doBotThing ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => h
         -> m [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
@@ -173,12 +176,12 @@ class (L.HasLog h) =>
     type Response h
     qualifyUpdate :: Update h -> Entity h
     reactToUpdate ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => h
         -> Update h
         -> m [Response h]
     reactToUpdates ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => h
         -> [Update h]
         -> m [Response h]
