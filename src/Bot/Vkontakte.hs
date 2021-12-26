@@ -54,7 +54,7 @@ instance IsHandle (Bot.Handle VK.Handle) Config where
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent
     fetchUpdates ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle VK.Handle
         -> m [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI} = do
@@ -72,19 +72,18 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     qualifyUpdate (VK.MessageEvent c) = ECallback c
     qualifyUpdate _ = EOther VK.Other -- TODO
     reactToUpdate ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle VK.Handle
         -> VK.GroupEvent
         -> m [VK.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
         L.logInfo hLog $ "VK got Update: " <> T.tshow update
         let qu = Bot.qualifyUpdate update
-        liftIO $
-            case qu of
-                ECommand msg -> (: []) <$> reactToCommand hBot msg
-                EMessage msg -> reactToMessage hBot msg
-                ECallback cq -> reactToCallback hBot cq
-                EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
+        case qu of
+            ECommand msg -> (: []) <$> reactToCommand hBot msg
+            EMessage msg -> reactToMessage hBot msg
+            ECallback cq -> reactToCallback hBot cq
+            EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
     type Message (Bot.Handle VK.Handle) = VK.Message
     execCommand ::
            MonadIO m
@@ -103,7 +102,11 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
                     VK.SendTextMessage address (Bot.unknown strings)
 
 -- diff
-reactToCommand :: Bot.Handle VK.Handle -> VK.Message -> IO VK.Response
+reactToCommand ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Bot.Handle VK.Handle
+    -> VK.Message
+    -> m VK.Response
 reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
     let cmd = getCommand msg
     L.logDebug hBot $
@@ -113,12 +116,16 @@ reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
     Bot.execCommand hBot cmd msg
 
 -- diff
-reactToMessage :: Bot.Handle VK.Handle -> VK.Message -> IO [VK.Response]
+reactToMessage ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Bot.Handle VK.Handle
+    -> VK.Message
+    -> m [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
     L.logDebug hBot $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
-    n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
+    liftIO $ n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
 newtype Payload =
     RepeatPayload Int
@@ -132,7 +139,11 @@ instance A.FromJSON Payload where
             RepeatPayload <$> o A..: "repeat"
 
 -- diff
-reactToCallback :: Bot.Handle VK.Handle -> VK.CallbackEvent -> IO [VK.Response]
+reactToCallback ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Bot.Handle VK.Handle
+    -> VK.CallbackEvent
+    -> m [VK.Response]
 reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
     let callback = A.parseMaybe A.parseJSON payload
     let user = VK.User user_id
@@ -143,7 +154,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
-            fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
+            liftIO $fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->
             throwM $
