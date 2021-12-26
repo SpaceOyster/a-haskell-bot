@@ -51,7 +51,7 @@ instance IsHandle (Bot.Handle TG.Handle) Config where
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
     type Update (Bot.Handle TG.Handle) = TG.Update
     fetchUpdates ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle TG.Handle
         -> m [TG.Update]
     fetchUpdates Bot.Handle {hAPI} = do
@@ -79,15 +79,14 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         envLogDebug $
             "qualifying Update with id " <> T.tshow (TG.update_id update)
         let qu = Bot.qualifyUpdate update
-        liftIO $
-            case qu of
-                ECommand msg -> (: []) <$> reactToCommand hBot msg
-                EMessage msg -> reactToMessage hBot msg
-                ECallback cq -> (: []) <$> reactToCallback hBot cq
-                EOther TG.Update {update_id} ->
-                    throwM $
-                    Ex Priority.Info $
-                    "Unknown Update Type. Update: " ++ show update_id
+        case qu of
+            ECommand msg -> (: []) <$> reactToCommand hBot msg
+            EMessage msg -> reactToMessage hBot msg
+            ECallback cq -> (: []) <$> reactToCallback hBot cq
+            EOther TG.Update {update_id} ->
+                throwM $
+                Ex Priority.Info $
+                "Unknown Update Type. Update: " ++ show update_id
     type Message (Bot.Handle TG.Handle) = TG.Message
     execCommand ::
            MonadIO m
@@ -107,7 +106,11 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                     TG.SendMessage address (Bot.unknown strings)
 
 -- diff
-reactToCommand :: Bot.Handle TG.Handle -> TG.Message -> IO TG.Response
+reactToCommand ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Bot.Handle TG.Handle
+    -> TG.Message
+    -> m TG.Response
 reactToCommand hBot msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
     L.logDebug hBot $
@@ -115,14 +118,18 @@ reactToCommand hBot msg@TG.Message {message_id} = do
     Bot.execCommand hBot cmd msg
 
 -- diff
-reactToMessage :: Bot.Handle TG.Handle -> TG.Message -> IO [TG.Response]
+reactToMessage ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Bot.Handle TG.Handle
+    -> TG.Message
+    -> m [TG.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
     n <- Bot.getUserMultiplier hBot author
     L.logDebug hBot $
         "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
-    n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
+    liftIO $ n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
 
 data QueryData
     = QDRepeat Int
@@ -138,20 +145,26 @@ qualifyQuery qstring =
     (qtype, qdata) = break (== '_') qstring
 
 -- diff
-reactToCallback :: Bot.Handle TG.Handle -> TG.CallbackQuery -> IO TG.Response
+reactToCallback ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Bot.Handle TG.Handle
+    -> TG.CallbackQuery
+    -> m TG.Response
 reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
     L.logDebug hBot $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
     cdata <- TG.getQDataThrow cq
     let user = from
-    case qualifyQuery cdata of
-        QDRepeat n -> do
-            L.logInfo hBot $
-                "Setting echo multiplier = " <>
-                T.tshow n <> " for " <> T.tshow user
-            Bot.setUserMultiplier hBot user n
-            TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
-        QDOther s ->
-            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+    liftIO $
+        case qualifyQuery cdata of
+            QDRepeat n -> do
+                L.logInfo hBot $
+                    "Setting echo multiplier = " <>
+                    T.tshow n <> " for " <> T.tshow user
+                Bot.setUserMultiplier hBot user n
+                TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
+            QDOther s ->
+                throwM $
+                Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
