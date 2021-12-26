@@ -7,6 +7,7 @@
 
 module App.Monad where
 
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Reader
 import Data.Kind (Type)
 import qualified Data.Text as T
@@ -34,7 +35,13 @@ newtype App a =
     App
         { unApp :: ReaderT AppEnv IO a
         }
-    deriving (Functor, Applicative, Monad, MonadIO, MonadReader AppEnv)
+    deriving ( Functor
+             , Applicative
+             , Monad
+             , MonadIO
+             , MonadThrow
+             , MonadReader AppEnv
+             )
 
 runApp :: AppEnv -> App a -> IO a
 runApp env = (`runReaderT` env) . unApp
