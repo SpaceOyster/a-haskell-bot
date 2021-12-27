@@ -77,7 +77,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
         => Bot.Handle VK.Handle
         -> VK.GroupEvent
         -> m [VK.Response]
-    reactToUpdate hBot@Bot.Handle {hLog} update = do
+    reactToUpdate hBot update = do
         envLogInfo $ "VK got Update: " <> T.tshow update
         let qu = Bot.qualifyUpdate update
         case qu of
