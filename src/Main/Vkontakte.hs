@@ -9,6 +9,7 @@ import qualified App.Monad as App
 import qualified Bot
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
+import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader
 import qualified Data.Aeson.Extended as A (throwDecode)
@@ -21,7 +22,12 @@ import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 
 loop ::
-       (MonadIO m, Bot.BotHandle a, MonadReader env m, App.Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , Bot.BotHandle a
+       , MonadReader env m
+       , App.Has L.Handle env
+       )
     => a
     -> Int
     -> m ()
