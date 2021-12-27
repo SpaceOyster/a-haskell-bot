@@ -85,9 +85,9 @@ sendRequest ::
     -> HTTP.Request
     -> m L8.ByteString
 sendRequest hAPI req = do
-    L.logDebug hAPI $ "sending request: " <> T.tshow req
-    L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
+    envLogDebug $ "sending request: " <> T.tshow req
     res <- liftIO $ HTTP.sendRequest (http hAPI) req
+    envLogDebug $ "got response: " <> T.pack (L8.unpack res)
     pure res
 
 data Config =
@@ -208,7 +208,7 @@ runMethod ::
     -> m Response
 runMethod hAPI m = do
     state <- getState hAPI
-    L.logDebug hAPI $ "last recieved Update TS: " <> T.tshow (lastTS state)
+    envLogDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
     let req = mkRequest hAPI state m
     sendRequest hAPI req >>= A.throwDecode >>= rememberLastUpdate hAPI
 
