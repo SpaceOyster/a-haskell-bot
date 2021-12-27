@@ -65,10 +65,10 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
     qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.Handle)
     qualifyUpdate u@TG.Update {message, callback_query}
         | Just cq <- callback_query = ECallback cq
-        | Just msg <- message =
-            if isCommandE msg
-                then ECommand msg
-                else EMessage msg
+        | Just msg <- message
+        , isCommandE msg = ECommand msg
+        | Just msg <- message
+        , not (isCommandE msg) = EMessage msg
         | otherwise = EOther u
     reactToUpdate ::
            (MonadIO m, MonadReader env m, Has L.Handle env)
