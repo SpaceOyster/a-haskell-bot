@@ -79,11 +79,15 @@ modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 setState :: (MonadIO m) => Handle -> VKState -> m ()
 setState hAPI newState = modifyState hAPI $ const newState
 
-sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
+sendRequest ::
+       (MonadIO m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> HTTP.Request
+    -> m L8.ByteString
 sendRequest hAPI req = do
     L.logDebug hAPI $ "sending request: " <> T.tshow req
-    res <- HTTP.sendRequest (http hAPI) req
     L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res) -- ^TODO (T.pack $ L8.unpack res) hmm...
+    res <- liftIO $ HTTP.sendRequest (http hAPI) req
     pure res
 
 data Config =
@@ -152,7 +156,10 @@ instance A.FromJSON Response where
                 , OtherResponse <$> o A..: "response"
                 ]
 
-initiatePollServer :: Handle -> IO Handle
+initiatePollServer ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> m Handle
 initiatePollServer hAPI = do
     ps@PollServer {ts} <- getLongPollServer hAPI
     pollURI <- makePollURI ps
@@ -167,7 +174,10 @@ makePollURI PollServer {..} = do
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
-getLongPollServer :: Handle -> IO PollServer
+getLongPollServer ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> m PollServer
 getLongPollServer hAPI = do
     json <-
         sendRequest hAPI $
@@ -180,14 +190,22 @@ getLongPollServer hAPI = do
         PollServ r -> pure r
         _ -> throwM $ Ex.APIRespondedWithError "Expected PollServer object"
 
-rememberLastUpdate :: Handle -> Response -> IO Response
+rememberLastUpdate ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> Response
+    -> m Response
 rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
 updateStateWith _ = id
 
-runMethod :: Handle -> Method -> IO Response
+runMethod ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> Method
+    -> m Response
 runMethod hAPI m = do
     state <- getState hAPI
     L.logDebug hAPI $ "last recieved Update TS: " <> T.tshow (lastTS state)

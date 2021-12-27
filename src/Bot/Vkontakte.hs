@@ -61,7 +61,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
         -> m [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI} = do
         L.logInfo hBot "Vkontakte: fetching Updates"
-        liftIO $ VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
+        VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
     data Entity (Bot.Handle VK.Handle) = EMessage VK.Message
                                    | ECommand VK.Message
                                    | ECallback VK.CallbackEvent
@@ -88,14 +88,14 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
             EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
     type Message (Bot.Handle VK.Handle) = VK.Message
     execCommand ::
-           MonadIO m
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle VK.Handle
         -> Bot.Command
         -> (VK.Message -> m VK.Response)
     execCommand hBot@Bot.Handle {..} cmd VK.Message {..} = do
         let address = peer_id
         prompt <- Bot.repeatPrompt hBot $ Just $ VK.User from_id
-        liftIO . VK.runMethod hAPI $
+        VK.runMethod hAPI $
             case cmd of
                 Bot.Start -> VK.SendTextMessage address (Bot.greeting strings)
                 Bot.Help -> VK.SendTextMessage address (Bot.help strings)
@@ -127,7 +127,7 @@ reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
     L.logDebug hBot $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
-    liftIO $ n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
+    n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
 newtype Payload =
     RepeatPayload Int
@@ -156,7 +156,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
             Bot.setUserMultiplier hBot user n
-            liftIO $fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
+            fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->
             throwM $
