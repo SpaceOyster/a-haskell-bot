@@ -58,7 +58,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
            (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle VK.Handle
         -> m [VK.GroupEvent]
-    fetchUpdates hBot@Bot.Handle {hAPI} = do
+    fetchUpdates Bot.Handle {hAPI} = do
         envLogInfo "Vkontakte: fetching Updates"
         VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
     data Entity (Bot.Handle VK.Handle) = EMessage VK.Message
