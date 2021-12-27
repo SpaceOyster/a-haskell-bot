@@ -21,6 +21,7 @@ import API.Telegram.Types
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson.Extended ((.=), encode, object, throwDecode)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.Text.Extended as T
@@ -48,19 +49,19 @@ instance API.APIHandle Handle
 instance L.HasLog Handle where
     getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Telegram: " <> t
 
-getState :: Handle -> IO TGState
-getState = readIORef . apiState
+getState :: (MonadIO m) => Handle -> m TGState
+getState = liftIO . readIORef . apiState
 
-modifyState :: Handle -> (TGState -> TGState) -> IO ()
-modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
+modifyState :: (MonadIO m) => Handle -> (TGState -> TGState) -> m ()
+modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 
-setState :: Handle -> TGState -> IO ()
-setState hAPI newState = modifyState hAPI $ const newState
+setState :: (MonadIO m) => Handle -> TGState -> m ()
+setState hAPI newState = liftIO . modifyState hAPI $ const newState
 
-sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
+sendRequest :: (MonadIO m) => Handle -> HTTP.Request -> m L8.ByteString
 sendRequest hAPI req = do
     L.logDebug hAPI $ "sending request: " <> T.tshow req
-    res <- HTTP.sendRequest (http hAPI) req
+    res <- liftIO $ HTTP.sendRequest (http hAPI) req
     L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res)
     pure res
 
