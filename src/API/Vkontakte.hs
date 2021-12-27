@@ -80,11 +80,15 @@ modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 setState :: (MonadIO m) => Handle -> VKState -> m ()
 setState hAPI newState = modifyState hAPI $ const newState
 
-sendRequest :: (MonadIO m) => Handle -> HTTP.Request -> m L8.ByteString
+sendRequest ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> HTTP.Request
+    -> m L8.ByteString
 sendRequest hAPI req = do
-    L.logDebug hAPI $ "sending request: " <> T.tshow req
+    envLogDebug $ "sending request: " <> T.tshow req
     res <- liftIO $ HTTP.sendRequest (http hAPI) req
-    L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res)
+    envLogDebug $ "got response: " <> T.pack (L8.unpack res)
     pure res
 
 data Config =
