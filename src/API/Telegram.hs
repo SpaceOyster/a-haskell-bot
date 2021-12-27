@@ -18,7 +18,6 @@ module API.Telegram
 
 import qualified API.Class as API
 import API.Telegram.Types
-import Control.Exception (bracket)
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -99,13 +98,12 @@ newStateFromM (Updates us@(_x:_xs)) =
     Just . TGState . (1 +) . update_id . last $ us
 newStateFromM _ = Nothing
 
-runMethod :: Handle -> Method -> IO Response
-runMethod hAPI m =
-    bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        L.logDebug hAPI $
-            "last recieved Update id: " <> T.tshow (lastUpdate state)
-        let req = mkRequest hAPI state m
-        sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
+runMethod :: (MonadIO m) => Handle -> Method -> m Response
+runMethod hAPI m = do
+    state <- getState hAPI
+    L.logDebug hAPI $ "last recieved Update id: " <> T.tshow (lastUpdate state)
+    let req = mkRequest hAPI state m
+    liftIO $ sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
