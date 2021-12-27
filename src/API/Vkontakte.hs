@@ -70,13 +70,13 @@ instance API.APIHandle Handle
 instance L.HasLog Handle where
     getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Vkontakte: " <> t
 
-getState :: Handle -> IO VKState
-getState = readIORef . apiState
+getState :: (MonadIO m) => Handle -> m VKState
+getState = liftIO . readIORef . apiState
 
-modifyState :: Handle -> (VKState -> VKState) -> IO ()
-modifyState hAPI morph = apiState hAPI `modifyIORef'` morph
+modifyState :: (MonadIO m) => Handle -> (VKState -> VKState) -> m ()
+modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 
-setState :: Handle -> VKState -> IO ()
+setState :: (MonadIO m) => Handle -> VKState -> m ()
 setState hAPI newState = modifyState hAPI $ const newState
 
 sendRequest :: Handle -> HTTP.Request -> IO L8.ByteString
