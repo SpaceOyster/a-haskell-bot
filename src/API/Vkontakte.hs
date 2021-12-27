@@ -32,7 +32,6 @@ module API.Vkontakte
     ) where
 
 import qualified API.Class as API
-import Control.Exception (bracket)
 import Control.Monad.Catch (MonadThrow(..))
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -184,11 +183,11 @@ updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
 updateStateWith _ = id
 
 runMethod :: Handle -> Method -> IO Response
-runMethod hAPI m =
-    bracket (getState hAPI) (const $ pure ()) $ \state -> do
-        L.logDebug hAPI $ "last recieved Update TS: " <> T.tshow (lastTS state)
-        let req = mkRequest hAPI state m
-        sendRequest hAPI req >>= A.throwDecode >>= rememberLastUpdate hAPI
+runMethod hAPI m = do
+    state <- getState hAPI
+    L.logDebug hAPI $ "last recieved Update TS: " <> T.tshow (lastTS state)
+    let req = mkRequest hAPI state m
+    sendRequest hAPI req >>= A.throwDecode >>= rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
