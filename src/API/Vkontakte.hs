@@ -168,9 +168,8 @@ makePollURI PollServer {..} = do
 
 getLongPollServer :: (MonadIO m, MonadThrow m) => Handle -> m PollServer
 getLongPollServer hAPI = do
-    json <-
-        sendRequest hAPI $
-        HTTP.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
+    let req = HTTP.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
+    json <- liftIO $ HTTP.sendRequest (http hAPI) req
     res <- A.throwDecode json
     case res of
         Error {..} ->
