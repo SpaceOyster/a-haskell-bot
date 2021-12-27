@@ -9,6 +9,7 @@
 
 module Bot.Vkontakte
     ( Config(..)
+    , new
     ) where
 
 import qualified API.Vkontakte as VK
@@ -25,7 +26,6 @@ import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 
 data Config =
@@ -41,15 +41,17 @@ data Config =
 instance L.HasLog (Bot.Handle VK.Handle) where
     getLog Bot.Handle {hLog} = \p t -> L.getLog hLog p $ "Bot.Vkontakte: " <> t
 
-instance IsHandle (Bot.Handle VK.Handle) Config where
-    new :: Config -> L.Handle -> IO (Bot.Handle VK.Handle)
-    new cfg@Config {..} hLog = do
-        L.logInfo hLog "Initiating Vkontakte Bot"
-        L.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
-        state <- newIORef $ Bot.BotState {userSettings = mempty}
-        hAPI <- VK.new VK.Config {..} hLog
-        let strings = Bot.fromStrinsM stringsM
-        pure $ Bot.Handle {..}
+new :: (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Config
+    -> L.Handle
+    -> m (Bot.Handle VK.Handle)
+new cfg@Config {..} hLog = do
+    L.logInfo hLog "Initiating Vkontakte Bot"
+    L.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
+    state <- liftIO $ newIORef Bot.BotState {userSettings = mempty}
+    hAPI <- VK.new VK.Config {..} hLog
+    let strings = Bot.fromStrinsM stringsM
+    pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent

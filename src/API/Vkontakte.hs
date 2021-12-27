@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -32,7 +33,10 @@ module API.Vkontakte
     ) where
 
 import qualified API.Class as API
+import App.Monad
 import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Reader
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -43,7 +47,6 @@ import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified Network.URI.Extended as URI
 
@@ -96,14 +99,16 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-instance IsHandle Handle Config where
-    new :: Config -> L.Handle -> IO Handle
-    new cfg hLog = do
-        http <- HTTP.new $ HTTP.Config {}
-        baseURI <- makeBaseURI cfg
-        apiState <- newIORef mempty
-        let hAPI = Handle {..}
-        initiatePollServer hAPI
+new :: (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Config
+    -> L.Handle
+    -> m Handle
+new cfg hLog = do
+    http <- liftIO $ HTTP.new HTTP.Config {}
+    baseURI <- makeBaseURI cfg
+    apiState <- liftIO $ newIORef mempty
+    let hAPI = Handle {..}
+    initiatePollServer hAPI
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =

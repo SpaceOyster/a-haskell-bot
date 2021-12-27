@@ -7,6 +7,7 @@ module Main.Vkontakte where
 import App.Config
 import qualified App.Monad as App
 import qualified Bot
+import qualified Bot.Vkontakte as VK
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import Control.Monad.Catch (MonadThrow)
@@ -73,5 +74,7 @@ runWithApp AppConfig {..} = do
             "API Polling period is " <>
             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
         let env = App.Env {envLogger = hLog}
-        hBot <- new vkontakte hLog
-        App.unApp (loop hBot poll_period) `runReaderT` env
+        flip runReaderT env $
+            App.unApp $ do
+                hBot <- VK.new vkontakte hLog
+                loop hBot poll_period
