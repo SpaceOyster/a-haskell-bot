@@ -71,7 +71,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         , not (isCommandE msg) = EMessage msg
         | otherwise = EOther u
     reactToUpdate ::
-           (MonadIO m, MonadReader env m, Has L.Handle env)
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle TG.Handle
         -> TG.Update
         -> m [TG.Response]
