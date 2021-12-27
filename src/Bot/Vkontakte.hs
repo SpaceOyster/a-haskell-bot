@@ -60,7 +60,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
         => Bot.Handle VK.Handle
         -> m [VK.GroupEvent]
     fetchUpdates hBot@Bot.Handle {hAPI} = do
-        L.logInfo hBot "Vkontakte: fetching Updates"
+        envLogInfo "Vkontakte: fetching Updates"
         VK.runMethod hAPI VK.GetUpdates >>= VK.extractUpdates
     data Entity (Bot.Handle VK.Handle) = EMessage VK.Message
                                    | ECommand VK.Message
@@ -79,7 +79,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
         -> VK.GroupEvent
         -> m [VK.Response]
     reactToUpdate hBot@Bot.Handle {hLog} update = do
-        L.logInfo hLog $ "VK got Update: " <> T.tshow update
+        envLogInfo $ "VK got Update: " <> T.tshow update
         let qu = Bot.qualifyUpdate update
         case qu of
             ECommand msg -> (: []) <$> reactToCommand hBot msg
@@ -111,7 +111,7 @@ reactToCommand ::
     -> m VK.Response
 reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
     let cmd = getCommand msg
-    L.logDebug hBot $
+    envLogDebug $
         "Got command" <>
         T.tshow cmd <>
         " in message id " <> T.tshow msg_id <> " , peer_id: " <> T.tshow peer_id
@@ -125,7 +125,7 @@ reactToMessage ::
     -> m [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
     n <- Bot.getUserMultiplier hBot $ VK.User from_id
-    L.logDebug hBot $
+    envLogDebug $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
 
@@ -151,7 +151,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
     let user = VK.User user_id
     case callback of
         Just (RepeatPayload n) -> do
-            L.logInfo hBot $
+            envLogInfo $
                 "setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
