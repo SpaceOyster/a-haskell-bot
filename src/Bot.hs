@@ -189,4 +189,8 @@ class (L.HasLog h) =>
         envLogInfo "processing each update"
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
-    execCommand :: MonadIO m => h -> Command -> (Message h -> m (Response h))
+    execCommand ::
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+        => h
+        -> Command
+        -> (Message h -> m (Response h))

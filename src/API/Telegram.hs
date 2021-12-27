@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -18,6 +19,8 @@ module API.Telegram
 
 import qualified API.Class as API
 import API.Telegram.Types
+import App.Monad
+import Control.Monad.Reader
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -58,7 +61,11 @@ modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 setState :: (MonadIO m) => Handle -> TGState -> m ()
 setState hAPI newState = liftIO . modifyState hAPI $ const newState
 
-sendRequest :: (MonadIO m) => Handle -> HTTP.Request -> m L8.ByteString
+sendRequest ::
+       (MonadIO m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> HTTP.Request
+    -> m L8.ByteString
 sendRequest hAPI req = do
     L.logDebug hAPI $ "sending request: " <> T.tshow req
     res <- liftIO $ HTTP.sendRequest (http hAPI) req
@@ -90,7 +97,11 @@ instance IsHandle Handle Config where
 apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
-rememberLastUpdate :: Handle -> Response -> IO Response
+rememberLastUpdate ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> Response
+    -> m Response
 rememberLastUpdate hAPI res =
     mapM_ (setState hAPI) (newStateFromM res) >> pure res
 
@@ -99,12 +110,16 @@ newStateFromM (Updates us@(_x:_xs)) =
     Just . TGState . (1 +) . update_id . last $ us
 newStateFromM _ = Nothing
 
-runMethod :: (MonadIO m) => Handle -> Method -> m Response
+runMethod ::
+       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+    => Handle
+    -> Method
+    -> m Response
 runMethod hAPI m = do
     state <- getState hAPI
     L.logDebug hAPI $ "last recieved Update id: " <> T.tshow (lastUpdate state)
     let req = mkRequest hAPI state m
-    liftIO $ sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
+    sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
 
 data Method
     = GetUpdates

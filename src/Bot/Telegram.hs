@@ -56,7 +56,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         -> m [TG.Update]
     fetchUpdates Bot.Handle {hAPI} = do
         envLogInfo "fetching Updates"
-        liftIO $ TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
+        TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
     data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
                                    | ECommand TG.Message
                                    | ECallback TG.CallbackQuery
@@ -89,14 +89,14 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                 "Unknown Update Type. Update: " ++ show update_id
     type Message (Bot.Handle TG.Handle) = TG.Message
     execCommand ::
-           MonadIO m
+           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
         => Bot.Handle TG.Handle
         -> Bot.Command
         -> (TG.Message -> m TG.Response)
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
         let address = (chat :: TG.Chat) & TG.chat_id
         prompt <- Bot.repeatPrompt hBot from
-        liftIO . TG.runMethod hAPI $
+        TG.runMethod hAPI $
             case cmd of
                 Bot.Start -> TG.SendMessage address (Bot.greeting strings)
                 Bot.Help -> TG.SendMessage address (Bot.help strings)
@@ -129,7 +129,7 @@ reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     L.logDebug hBot $
         "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
-    liftIO $ n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
+    n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
 
 data QueryData
     = QDRepeat Int
@@ -154,17 +154,15 @@ reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
     L.logDebug hBot $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
     cdata <- TG.getQDataThrow cq
     let user = from
-    liftIO $
-        case qualifyQuery cdata of
-            QDRepeat n -> do
-                L.logInfo hBot $
-                    "Setting echo multiplier = " <>
-                    T.tshow n <> " for " <> T.tshow user
-                Bot.setUserMultiplier hBot user n
-                TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
-            QDOther s ->
-                throwM $
-                Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+    case qualifyQuery cdata of
+        QDRepeat n -> do
+            envLogInfo $
+                "Setting echo multiplier = " <>
+                T.tshow n <> " for " <> T.tshow user
+            Bot.setUserMultiplier hBot user n
+            TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
+        QDOther s ->
+            throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
