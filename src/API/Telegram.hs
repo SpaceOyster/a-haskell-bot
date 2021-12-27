@@ -67,9 +67,9 @@ sendRequest ::
     -> HTTP.Request
     -> m L8.ByteString
 sendRequest hAPI req = do
-    L.logDebug hAPI $ "sending request: " <> T.tshow req
+    envLogDebug $ "sending request: " <> T.tshow req
     res <- liftIO $ HTTP.sendRequest (http hAPI) req
-    L.logDebug hAPI $ "got response: " <> T.pack (L8.unpack res)
+    envLogDebug $ "got response: " <> T.pack (L8.unpack res)
     pure res
 
 newtype Config =
@@ -117,7 +117,7 @@ runMethod ::
     -> m Response
 runMethod hAPI m = do
     state <- getState hAPI
-    L.logDebug hAPI $ "last recieved Update id: " <> T.tshow (lastUpdate state)
+    envLogDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
     let req = mkRequest hAPI state m
     sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
 
