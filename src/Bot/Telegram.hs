@@ -113,7 +113,7 @@ reactToCommand ::
     -> m TG.Response
 reactToCommand hBot msg@TG.Message {message_id} = do
     cmd <- getCommandThrow msg
-    L.logDebug hBot $
+    envLogDebug $
         "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
     Bot.execCommand hBot cmd msg
 
@@ -126,7 +126,7 @@ reactToMessage ::
 reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
     n <- Bot.getUserMultiplier hBot author
-    L.logDebug hBot $
+    envLogDebug $
         "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
     n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
@@ -151,7 +151,7 @@ reactToCallback ::
     -> TG.CallbackQuery
     -> m TG.Response
 reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
-    L.logDebug hBot $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
+    envLogDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
     cdata <- TG.getQDataThrow cq
     let user = from
     case qualifyQuery cdata of
