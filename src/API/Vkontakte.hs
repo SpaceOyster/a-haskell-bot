@@ -100,7 +100,9 @@ instance Monoid VKState where
 instance IsHandle Handle Config where
     new :: Config -> L.Handle -> IO Handle
     new cfg hLog = do
+        L.logInfo hLog "Initiating Vkontakte API handle"
         http <- HTTP.new HTTP.Config {}
+        L.logInfo hLog "HTTP handle initiated for Vkontakte API"
         baseURI <- makeBaseURI cfg
         apiState <- newIORef mempty
         let hAPI = Handle {..}
