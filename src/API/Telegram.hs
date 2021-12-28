@@ -41,13 +41,9 @@ newtype TGState =
 data Handle =
     Handle
         { http :: HTTP.Handle
-        , hLog :: L.Handle
         , baseURI :: URI.URI
         , apiState :: IORef TGState
         }
-
-instance L.HasLog Handle where
-    getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Telegram: " <> t
 
 getState :: (MonadIO m) => Handle -> m TGState
 getState = liftIO . readIORef . apiState
