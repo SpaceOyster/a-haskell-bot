@@ -11,11 +11,13 @@ import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Reader
 import Data.Kind (Type)
 import qualified Data.Text as T
+import qualified HTTP
 import qualified Logger
 
-newtype Env (m :: Type -> Type) =
+data Env (m :: Type -> Type) =
     Env
         { envLogger :: Logger.Handle
+        , envHTTP :: HTTP.Handle
         }
 
 class Has field env where
@@ -23,6 +25,9 @@ class Has field env where
 
 instance Has Logger.Handle (Env m) where
     obtain = envLogger
+
+instance Has HTTP.Handle (Env m) where
+    obtain = envHTTP
 
 grab ::
        forall field env m. (MonadReader env m, Has field env)
