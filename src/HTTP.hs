@@ -7,8 +7,6 @@ module HTTP
     , Handle(..)
     , Request(..)
     , new
-    , get
-    , post
     , sendRequest
     ) where
 
