@@ -32,7 +32,6 @@ module API.Vkontakte
     , runMethod
     ) where
 
-import qualified API.Class as API
 import App.Monad
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -65,8 +64,6 @@ data Handle =
         , baseURI :: URI.URI
         , apiState :: IORef VKState
         }
-
-instance API.APIHandle Handle
 
 instance L.HasLog Handle where
     getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Vkontakte: " <> t

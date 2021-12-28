@@ -17,7 +17,6 @@ module API.Telegram
     , module API.Telegram.Types
     ) where
 
-import qualified API.Class as API
 import API.Telegram.Types
 import App.Monad
 import Control.Monad.Reader
@@ -46,8 +45,6 @@ data Handle =
         , baseURI :: URI.URI
         , apiState :: IORef TGState
         }
-
-instance API.APIHandle Handle
 
 instance L.HasLog Handle where
     getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Telegram: " <> t

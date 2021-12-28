@@ -25,7 +25,6 @@ source-repository head
 
 library
   exposed-modules:
-      API.Class
       API.Telegram
       API.Telegram.Types
       API.Vkontakte
@@ -88,7 +87,6 @@ executable a-haskell-bot-exe
 executable telegram-bot
   main-is: Main/Telegram.hs
   other-modules:
-      API.Class
       API.Telegram
       API.Telegram.Types
       API.Vkontakte
@@ -129,7 +127,6 @@ executable telegram-bot
 executable vkontakte-bot
   main-is: Main/Vkontakte.hs
   other-modules:
-      API.Class
       API.Telegram
       API.Telegram.Types
       API.Vkontakte
