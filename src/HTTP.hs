@@ -68,7 +68,7 @@ data Request
     deriving (Show)
 
 sendRequest :: Handle -> Request -> IO L8.ByteString
-sendRequest hAPI req =
+sendRequest http req =
     case req of
-        GET uri -> get hAPI uri
-        POST uri body -> post hAPI uri body
+        GET uri -> get http uri
+        POST uri body -> post http uri body
