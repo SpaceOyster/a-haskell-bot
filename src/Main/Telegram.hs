@@ -11,7 +11,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader
+import Control.Monad.Reader (MonadReader, runReaderT)
 import qualified Data.Aeson.Extended as A (throwDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)

@@ -18,7 +18,7 @@ import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader
+import Control.Monad.Reader (MonadReader)
 import Data.Function ((&))
 import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
