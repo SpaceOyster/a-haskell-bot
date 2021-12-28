@@ -60,13 +60,9 @@ data VKState =
 data Handle =
     Handle
         { http :: HTTP.Handle
-        , hLog :: L.Handle
         , baseURI :: URI.URI
         , apiState :: IORef VKState
         }
-
-instance L.HasLog Handle where
-    getLog Handle {hLog} = \p t -> L.getLog hLog p $ "API.Vkontakte: " <> t
 
 getState :: (MonadIO m) => Handle -> m VKState
 getState = liftIO . readIORef . apiState
