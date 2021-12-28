@@ -17,6 +17,7 @@ import qualified Data.Aeson.Extended as A (throwDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
+import qualified HTTP
 import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified System.Environment as E
@@ -65,6 +66,7 @@ runWithApp AppConfig {..} = do
         L.logInfo hLog $
             "API Polling period is " <>
             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
-        let env = App.Env {envLogger = hLog}
+        hHTTP <- HTTP.new HTTP.Config {}
+        let env = App.Env {envLogger = hLog, envHTTP = hHTTP}
         hBot <- new vkontakte hLog
         App.unApp (loop hBot poll_period) `runReaderT` env
