@@ -28,6 +28,7 @@ loop ::
        , Bot.BotHandle a
        , MonadReader env m
        , App.Has L.Handle env
+       , App.Has HTTP.Handle env
        )
     => a
     -> Int
