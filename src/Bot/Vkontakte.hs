@@ -27,7 +27,6 @@ import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 
 data Config =
@@ -40,15 +39,14 @@ data Config =
         }
     deriving (Show)
 
-instance IsHandle (Bot.Handle VK.Handle) Config where
-    new :: Config -> L.Handle -> IO (Bot.Handle VK.Handle)
-    new cfg@Config {..} hLog = do
-        L.logInfo hLog "Initiating Vkontakte Bot"
-        L.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
-        state <- newIORef Bot.BotState {userSettings = mempty}
-        hAPI <- VK.new VK.Config {..} hLog
-        let strings = Bot.fromStrinsM stringsM
-        pure $ Bot.Handle {..}
+new :: Config -> L.Handle -> IO (Bot.Handle VK.Handle)
+new cfg@Config {..} hLog = do
+    L.logInfo hLog "Initiating Vkontakte Bot"
+    L.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
+    state <- newIORef Bot.BotState {userSettings = mempty}
+    hAPI <- VK.new VK.Config {..} hLog
+    let strings = Bot.fromStrinsM stringsM
+    pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent

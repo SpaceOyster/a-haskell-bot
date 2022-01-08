@@ -69,5 +69,5 @@ runWithApp AppConfig {..} = do
             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
         hHTTP <- HTTP.new HTTP.Config {}
         let env = App.Env {envLogger = hLog, envHTTP = hHTTP}
-        hBot <- new vkontakte hLog
+        hBot <- VK.new vkontakte hLog
         App.unApp (loop hBot poll_period) `runReaderT` env

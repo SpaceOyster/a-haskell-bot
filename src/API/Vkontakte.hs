@@ -7,7 +7,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TypeApplications #-}
@@ -47,7 +46,6 @@ import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified Network.URI.Extended as URI
 
@@ -87,16 +85,15 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-instance IsHandle Handle Config where
-    new :: Config -> L.Handle -> IO Handle
-    new cfg hLog = do
-        L.logInfo hLog "Initiating Vkontakte API handle"
-        http <- HTTP.new HTTP.Config {}
-        L.logInfo hLog "HTTP handle initiated for Vkontakte API"
-        baseURI <- makeBaseURI cfg
-        apiState <- newIORef mempty
-        let hAPI = Handle {..}
-        initiatePollServer hAPI
+new :: Config -> L.Handle -> IO Handle
+new cfg hLog = do
+    L.logInfo hLog "Initiating Vkontakte API handle"
+    http <- HTTP.new HTTP.Config {}
+    L.logInfo hLog "HTTP handle initiated for Vkontakte API"
+    baseURI <- makeBaseURI cfg
+    apiState <- newIORef mempty
+    let hAPI = Handle {..}
+    initiatePollServer hAPI
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
