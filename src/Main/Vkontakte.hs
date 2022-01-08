@@ -18,7 +18,6 @@ import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
