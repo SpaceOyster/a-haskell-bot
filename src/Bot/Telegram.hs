@@ -26,7 +26,7 @@ import qualified Data.Text.Extended as T
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified HTTP
-import qualified Logger as L
+import qualified Logger
 
 data Config =
     Config
@@ -36,10 +36,10 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> L.Handle -> IO (Bot.Handle TG.Handle)
+new :: Config -> Logger.Handle -> IO (Bot.Handle TG.Handle)
 new cfg@Config {..} hLog = do
-    L.logInfo hLog "Initiating Telegram Bot"
-    L.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
+    Logger.logInfo hLog "Initiating Telegram Bot"
+    Logger.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
     state <- newIORef $ Bot.BotState {userSettings = mempty}
     hAPI <- TG.new TG.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM
@@ -51,7 +51,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => Bot.Handle TG.Handle
@@ -76,7 +76,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => Bot.Handle TG.Handle
@@ -99,7 +99,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => Bot.Handle TG.Handle
@@ -122,7 +122,7 @@ reactToCommand ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Bot.Handle TG.Handle
@@ -139,7 +139,7 @@ reactToMessage ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Bot.Handle TG.Handle
@@ -171,7 +171,7 @@ reactToCallback ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Bot.Handle TG.Handle

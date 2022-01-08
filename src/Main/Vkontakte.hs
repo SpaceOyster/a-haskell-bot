@@ -18,7 +18,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
 import qualified HTTP
-import qualified Logger as L
+import qualified Logger
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 
@@ -48,9 +48,9 @@ usagePrompt =
 
 runWithApp :: AppConfig -> IO ()
 runWithApp AppConfig {..} = do
-    L.withHandle logger $ \hLog -> do
-        L.logInfo hLog "Initiating Main Bot loop"
-        L.logInfo hLog $
+    Logger.withHandle logger $ \hLog -> do
+        Logger.logInfo hLog "Initiating Main Bot loop"
+        Logger.logInfo hLog $
             "API Polling period is " <>
             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
         hHTTP <- HTTP.new HTTP.Config {}

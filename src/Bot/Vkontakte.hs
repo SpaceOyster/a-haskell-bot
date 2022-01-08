@@ -27,7 +27,7 @@ import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
 import qualified HTTP
-import qualified Logger as L
+import qualified Logger
 
 data Config =
     Config
@@ -39,10 +39,10 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> L.Handle -> IO (Bot.Handle VK.Handle)
+new :: Config -> Logger.Handle -> IO (Bot.Handle VK.Handle)
 new cfg@Config {..} hLog = do
-    L.logInfo hLog "Initiating Vkontakte Bot"
-    L.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
+    Logger.logInfo hLog "Initiating Vkontakte Bot"
+    Logger.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
     state <- newIORef Bot.BotState {userSettings = mempty}
     hAPI <- VK.new VK.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM
@@ -54,7 +54,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => Bot.Handle VK.Handle
@@ -77,7 +77,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => Bot.Handle VK.Handle
@@ -96,7 +96,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => Bot.Handle VK.Handle
@@ -118,7 +118,7 @@ reactToCommand ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Bot.Handle VK.Handle
@@ -137,7 +137,7 @@ reactToMessage ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Bot.Handle VK.Handle
@@ -165,7 +165,7 @@ reactToCallback ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Bot.Handle VK.Handle

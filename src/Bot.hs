@@ -22,7 +22,7 @@ import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
 import qualified HTTP
-import qualified Logger as L
+import qualified Logger
 import Prelude hiding (repeat)
 
 data Handle apiHandle =
@@ -84,7 +84,7 @@ instance Monoid StringsM where
             }
 
 hGetState ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       (MonadIO m, MonadThrow m, MonadReader env m, Has Logger.Handle env)
     => Handle s
     -> m BotState
 hGetState hBot = do
@@ -92,7 +92,7 @@ hGetState hBot = do
     liftIO . readIORef $ state hBot
 
 hSetState ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       (MonadIO m, MonadThrow m, MonadReader env m, Has Logger.Handle env)
     => Handle s
     -> (BotState -> BotState)
     -> m ()
@@ -111,7 +111,7 @@ getUserMultiplier ::
        , MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        )
     => Handle s
     -> u
@@ -128,7 +128,7 @@ getUserMultiplierM ::
        , MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        )
     => Handle s
     -> Maybe u
@@ -143,7 +143,7 @@ repeatPrompt ::
        , MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        )
     => Handle s
     -> Maybe u
@@ -159,7 +159,7 @@ setUserMultiplier ::
        , MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        )
     => Handle s
     -> u
@@ -206,7 +206,7 @@ loop ::
        , MonadThrow m
        , Bot.BotHandle a
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => a
@@ -220,7 +220,7 @@ class BotHandle h where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => h
@@ -229,7 +229,7 @@ class BotHandle h where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => h
@@ -242,7 +242,7 @@ class BotHandle h where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => h
@@ -252,7 +252,7 @@ class BotHandle h where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => h
@@ -266,7 +266,7 @@ class BotHandle h where
            ( MonadIO m
            , MonadThrow m
            , MonadReader env m
-           , Has L.Handle env
+           , Has Logger.Handle env
            , Has HTTP.Handle env
            )
         => h

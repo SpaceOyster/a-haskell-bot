@@ -46,7 +46,7 @@ import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import GHC.Generics
 import qualified HTTP
-import qualified Logger as L
+import qualified Logger
 import qualified Network.URI.Extended as URI
 
 data VKState =
@@ -85,11 +85,11 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-new :: Config -> L.Handle -> IO Handle
+new :: Config -> Logger.Handle -> IO Handle
 new cfg hLog = do
-    L.logInfo hLog "Initiating Vkontakte API handle"
+    Logger.logInfo hLog "Initiating Vkontakte API handle"
     http <- HTTP.new HTTP.Config {}
-    L.logInfo hLog "HTTP handle initiated for Vkontakte API"
+    Logger.logInfo hLog "HTTP handle initiated for Vkontakte API"
     baseURI <- makeBaseURI cfg
     apiState <- newIORef mempty
     let hAPI = Handle {..}
@@ -165,7 +165,7 @@ getLongPollServer hAPI = do
         _ -> throwM $ Ex.APIRespondedWithError "Expected PollServer object"
 
 rememberLastUpdate ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       (MonadIO m, MonadThrow m, MonadReader env m, Has Logger.Handle env)
     => Handle
     -> Response
     -> m Response
@@ -179,7 +179,7 @@ runMethod ::
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has L.Handle env
+       , Has Logger.Handle env
        , Has HTTP.Handle env
        )
     => Handle
