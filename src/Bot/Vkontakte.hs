@@ -26,6 +26,7 @@ import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
+import qualified HTTP
 import Handle.Class (IsHandle(..))
 import qualified Logger as L
 
@@ -52,7 +53,12 @@ instance IsHandle (Bot.Handle VK.Handle) Config where
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
     type Update (Bot.Handle VK.Handle) = VK.GroupEvent
     fetchUpdates ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => Bot.Handle VK.Handle
         -> m [VK.GroupEvent]
     fetchUpdates Bot.Handle {hAPI} = do
@@ -70,7 +76,12 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     qualifyUpdate (VK.MessageEvent c) = ECallback c
     qualifyUpdate _ = EOther VK.Other -- TODO
     reactToUpdate ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => Bot.Handle VK.Handle
         -> VK.GroupEvent
         -> m [VK.Response]
@@ -84,7 +95,12 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
             EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
     type Message (Bot.Handle VK.Handle) = VK.Message
     execCommand ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => Bot.Handle VK.Handle
         -> Bot.Command
         -> (VK.Message -> m VK.Response)
@@ -101,7 +117,12 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
 
 -- diff
 reactToCommand ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Bot.Handle VK.Handle
     -> VK.Message
     -> m VK.Response
@@ -115,7 +136,12 @@ reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
 
 -- diff
 reactToMessage ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Bot.Handle VK.Handle
     -> VK.Message
     -> m [VK.Response]
@@ -138,7 +164,12 @@ instance A.FromJSON Payload where
 
 -- diff
 reactToCallback ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Bot.Handle VK.Handle
     -> VK.CallbackEvent
     -> m [VK.Response]
