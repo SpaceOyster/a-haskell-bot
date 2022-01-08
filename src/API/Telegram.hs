@@ -30,7 +30,6 @@ import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified Network.URI.Extended as URI
 
@@ -65,13 +64,12 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-instance IsHandle Handle Config where
-    new :: Config -> L.Handle -> IO Handle
-    new cfg hLog = do
-        L.logInfo hLog "Initiating Telegram API handle"
-        baseURI <- makeBaseURI cfg
-        apiState <- newIORef $ TGState 0
-        pure $ Handle {..}
+new :: Config -> L.Handle -> IO Handle
+new cfg hLog = do
+    L.logInfo hLog "Initiating Telegram API handle"
+    baseURI <- makeBaseURI cfg
+    apiState <- newIORef $ TGState 0
+    pure $ Handle {..}
 
 apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method

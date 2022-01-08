@@ -7,6 +7,7 @@ module Main.Telegram where
 import App.Config
 import qualified App.Monad as App
 import qualified Bot
+import qualified Bot.Telegram as TG
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever)
 import Control.Monad.Catch (MonadThrow)
@@ -17,7 +18,6 @@ import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
@@ -68,5 +68,5 @@ runWithApp AppConfig {..} = do
             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
         hHTTP <- HTTP.new HTTP.Config {}
         let env = App.Env {envLogger = hLog, envHTTP = hHTTP}
-        hBot <- new telegram hLog
+        hBot <- TG.new telegram hLog
         App.unApp (loop hBot poll_period) `runReaderT` env

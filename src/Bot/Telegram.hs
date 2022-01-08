@@ -10,6 +10,7 @@
 
 module Bot.Telegram
     ( Config(..)
+    , new
     ) where
 
 import qualified API.Telegram as TG
@@ -25,7 +26,6 @@ import qualified Data.Text.Extended as T
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified HTTP
-import Handle.Class (IsHandle(..))
 import qualified Logger as L
 
 data Config =
@@ -36,15 +36,14 @@ data Config =
         }
     deriving (Show)
 
-instance IsHandle (Bot.Handle TG.Handle) Config where
-    new :: Config -> L.Handle -> IO (Bot.Handle TG.Handle)
-    new cfg@Config {..} hLog = do
-        L.logInfo hLog "Initiating Telegram Bot"
-        L.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
-        state <- newIORef $ Bot.BotState {userSettings = mempty}
-        hAPI <- TG.new TG.Config {..} hLog
-        let strings = Bot.fromStrinsM stringsM
-        pure $ Bot.Handle {..}
+new :: Config -> L.Handle -> IO (Bot.Handle TG.Handle)
+new cfg@Config {..} hLog = do
+    L.logInfo hLog "Initiating Telegram Bot"
+    L.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
+    state <- newIORef $ Bot.BotState {userSettings = mempty}
+    hAPI <- TG.new TG.Config {..} hLog
+    let strings = Bot.fromStrinsM stringsM
+    pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
     type Update (Bot.Handle TG.Handle) = TG.Update
