@@ -20,6 +20,7 @@ import Data.List.Extended (replaceSubseq)
 import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
+import qualified HTTP
 import qualified Logger as L
 import Prelude hiding (repeat)
 
@@ -202,11 +203,21 @@ isCommand s = (== '/') . head $ s
 class BotHandle h where
     type Update h
     fetchUpdates ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => h
         -> m [Update h]
     doBotThing ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => h
         -> m [Response h]
     doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
@@ -214,12 +225,22 @@ class BotHandle h where
     type Response h
     qualifyUpdate :: Update h -> Entity h
     reactToUpdate ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => h
         -> Update h
         -> m [Response h]
     reactToUpdates ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => h
         -> [Update h]
         -> m [Response h]
@@ -228,7 +249,12 @@ class BotHandle h where
         join <$> mapM (reactToUpdate hBot) updates
     type Message h
     execCommand ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => h
         -> Command
         -> (Message h -> m (Response h))
