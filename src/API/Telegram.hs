@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeApplications #-}
 
 module API.Telegram
     ( Config(..)
@@ -40,8 +41,7 @@ newtype TGState =
 
 data Handle =
     Handle
-        { http :: HTTP.Handle
-        , baseURI :: URI.URI
+        { baseURI :: URI.URI
         , apiState :: IORef TGState
         }
 
@@ -53,17 +53,6 @@ modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 
 setState :: (MonadIO m) => Handle -> TGState -> m ()
 setState hAPI newState = liftIO . modifyState hAPI $ const newState
-
-sendRequest ::
-       (MonadIO m, MonadReader env m, Has L.Handle env)
-    => Handle
-    -> HTTP.Request
-    -> m L8.ByteString
-sendRequest hAPI req = do
-    envLogDebug $ "sending request: " <> T.tshow req
-    res <- liftIO $ HTTP.sendRequest (http hAPI) req
-    envLogDebug $ "got response: " <> T.pack (L8.unpack res)
-    pure res
 
 newtype Config =
     Config
@@ -81,9 +70,6 @@ instance IsHandle Handle Config where
     new cfg hLog = do
         L.logInfo hLog "Initiating Telegram API handle"
         baseURI <- makeBaseURI cfg
-        let httpConfig = HTTP.Config {}
-        http <- HTTP.new httpConfig
-        L.logInfo hLog "HTTP handle initiated for Telegram API"
         apiState <- newIORef $ TGState 0
         pure $ Handle {..}
 
@@ -104,7 +90,12 @@ newStateFromM (Updates us@(_x:_xs)) =
 newStateFromM _ = Nothing
 
 runMethod ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Handle
     -> Method
     -> m Response
@@ -112,7 +103,9 @@ runMethod hAPI m = do
     state <- getState hAPI
     envLogDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
     let req = mkRequest hAPI state m
-    sendRequest hAPI req >>= throwDecode >>= rememberLastUpdate hAPI
+    hHTTP <- grab @HTTP.Handle
+    liftIO (HTTP.sendRequest hHTTP req) >>= throwDecode >>=
+        rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
