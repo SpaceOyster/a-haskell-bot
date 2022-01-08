@@ -24,6 +24,7 @@ import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
+import qualified HTTP
 import Handle.Class (IsHandle(..))
 import qualified Logger as L
 
@@ -48,7 +49,12 @@ instance IsHandle (Bot.Handle TG.Handle) Config where
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
     type Update (Bot.Handle TG.Handle) = TG.Update
     fetchUpdates ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => Bot.Handle TG.Handle
         -> m [TG.Update]
     fetchUpdates Bot.Handle {hAPI} = do
@@ -68,7 +74,12 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         , not (isCommandE msg) = EMessage msg
         | otherwise = EOther u
     reactToUpdate ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => Bot.Handle TG.Handle
         -> TG.Update
         -> m [TG.Response]
@@ -86,7 +97,12 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
                 "Unknown Update Type. Update: " ++ show update_id
     type Message (Bot.Handle TG.Handle) = TG.Message
     execCommand ::
-           (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+           ( MonadIO m
+           , MonadThrow m
+           , MonadReader env m
+           , Has L.Handle env
+           , Has HTTP.Handle env
+           )
         => Bot.Handle TG.Handle
         -> Bot.Command
         -> (TG.Message -> m TG.Response)
@@ -104,7 +120,12 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
 
 -- diff
 reactToCommand ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Bot.Handle TG.Handle
     -> TG.Message
     -> m TG.Response
@@ -116,7 +137,12 @@ reactToCommand hBot msg@TG.Message {message_id} = do
 
 -- diff
 reactToMessage ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Bot.Handle TG.Handle
     -> TG.Message
     -> m [TG.Response]
@@ -143,7 +169,12 @@ qualifyQuery qstring =
 
 -- diff
 reactToCallback ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Bot.Handle TG.Handle
     -> TG.CallbackQuery
     -> m TG.Response
