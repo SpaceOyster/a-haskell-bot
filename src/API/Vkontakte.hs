@@ -10,6 +10,7 @@
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE TypeApplications #-}
 
 module API.Vkontakte
     ( Handle(..)
@@ -72,17 +73,6 @@ modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
 
 setState :: (MonadIO m) => Handle -> VKState -> m ()
 setState hAPI newState = modifyState hAPI $ const newState
-
-sendRequest ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
-    => Handle
-    -> HTTP.Request
-    -> m L8.ByteString
-sendRequest hAPI req = do
-    envLogDebug $ "sending request: " <> T.tshow req
-    res <- liftIO $ HTTP.sendRequest (http hAPI) req
-    envLogDebug $ "got response: " <> T.pack (L8.unpack res)
-    pure res
 
 data Config =
     Config
@@ -189,7 +179,12 @@ updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
 updateStateWith _ = id
 
 runMethod ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has L.Handle env)
+       ( MonadIO m
+       , MonadThrow m
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
     => Handle
     -> Method
     -> m Response
@@ -197,7 +192,9 @@ runMethod hAPI m = do
     state <- getState hAPI
     envLogDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
     let req = mkRequest hAPI state m
-    sendRequest hAPI req >>= A.throwDecode >>= rememberLastUpdate hAPI
+    hHTTP <- grab @HTTP.Handle
+    (liftIO $ HTTP.sendRequest hHTTP req) >>= A.throwDecode >>=
+        rememberLastUpdate hAPI
 
 data Method
     = GetUpdates
