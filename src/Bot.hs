@@ -8,6 +8,7 @@ module Bot where
 
 import App.Monad
 import Control.Applicative ((<|>))
+import Control.Concurrent (threadDelay)
 import Control.Monad (join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -199,6 +200,19 @@ parseCommand s =
 isCommand :: String -> Bool
 isCommand "" = False
 isCommand s = (== '/') . head $ s
+
+loop ::
+       ( MonadIO m
+       , MonadThrow m
+       , Bot.BotHandle a
+       , MonadReader env m
+       , Has L.Handle env
+       , Has HTTP.Handle env
+       )
+    => a
+    -> Int
+    -> m ()
+loop hBot period = forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
 
 class BotHandle h where
     type Update h

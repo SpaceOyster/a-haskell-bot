@@ -22,19 +22,6 @@ import qualified Logger as L
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 
-loop ::
-       ( MonadIO m
-       , MonadThrow m
-       , Bot.BotHandle a
-       , MonadReader env m
-       , App.Has L.Handle env
-       , App.Has HTTP.Handle env
-       )
-    => a
-    -> Int
-    -> m ()
-loop hBot period = forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
-
 main :: IO ()
 main = do
     args <- E.getArgs
@@ -69,4 +56,4 @@ runWithApp AppConfig {..} = do
         hHTTP <- HTTP.new HTTP.Config {}
         let env = App.Env {envLogger = hLog, envHTTP = hHTTP}
         hBot <- VK.new vkontakte hLog
-        App.unApp (loop hBot poll_period) `runReaderT` env
+        App.unApp (Bot.loop hBot poll_period) `runReaderT` env
