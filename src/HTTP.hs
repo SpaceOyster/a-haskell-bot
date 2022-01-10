@@ -7,7 +7,6 @@ module HTTP
     , Handle(..)
     , Request(..)
     , new
-    , sendRequest
     ) where
 
 import qualified Data.ByteString.Lazy.Char8 as L8
