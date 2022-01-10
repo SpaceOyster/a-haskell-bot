@@ -64,11 +64,11 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-new :: Config -> Logger.Handle -> IO Handle
+new :: (MonadIO m, MonadThrow m) => Config -> Logger.Handle -> m Handle
 new cfg hLog = do
     Logger.logInfo hLog "Initiating Telegram API handle"
     baseURI <- makeBaseURI cfg
-    apiState <- newIORef $ TGState 0
+    apiState <- liftIO $ newIORef $ TGState 0
     pure $ Handle {..}
 
 apiMethod :: Handle -> String -> URI.URI
