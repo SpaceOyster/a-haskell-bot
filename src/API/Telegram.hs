@@ -20,6 +20,7 @@ module API.Telegram
 import API.Telegram.Types
 import App.Monad
 import Control.Monad.Reader (MonadReader)
+import Data.Has (Has(..))
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))

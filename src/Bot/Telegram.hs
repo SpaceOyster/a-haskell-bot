@@ -21,6 +21,7 @@ import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader)
 import Data.Function ((&))
+import Data.Has (Has(..))
 import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Priority (Priority(..))

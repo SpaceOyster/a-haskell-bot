@@ -40,6 +40,7 @@ import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Foldable (asum)
+import Data.Has (Has(..))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Data.Text.Extended as T

@@ -9,6 +9,7 @@ module App.Monad where
 
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.Reader
+import Data.Has (Has(..))
 import Data.Kind (Type)
 import qualified Data.Text as T
 import qualified HTTP
@@ -19,9 +20,6 @@ data Env (m :: Type -> Type) =
         { envLogger :: Logger.Handle
         , envHTTP :: HTTP.Handle
         }
-
-class Has field env where
-    obtain :: env -> field
 
 instance Has Logger.Handle (Env m) where
     obtain = envLogger

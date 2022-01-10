@@ -15,6 +15,7 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader
 import Data.Char (toLower)
 import Data.Function ((&))
+import Data.Has (Has(..))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.List.Extended (replaceSubseq)

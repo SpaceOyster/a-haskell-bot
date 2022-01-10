@@ -22,6 +22,7 @@ import Control.Monad.Reader
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
+import Data.Has (Has(..))
 import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
