@@ -39,12 +39,12 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> Logger.Handle -> IO (Bot.Handle VK.Handle)
-new cfg@Config {..} hLog = do
+new :: Config -> Logger.Handle -> HTTP.Handle -> IO (Bot.Handle VK.Handle)
+new cfg@Config {..} hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte Bot"
     Logger.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
     state <- newIORef Bot.BotState {userSettings = mempty}
-    hAPI <- VK.new VK.Config {..} hLog
+    hAPI <- VK.new VK.Config {..} hLog hHTTP
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
 

@@ -58,8 +58,7 @@ data VKState =
 
 data Handle =
     Handle
-        { http :: HTTP.Handle
-        , baseURI :: URI.URI
+        { baseURI :: URI.URI
         , apiState :: IORef VKState
         }
 
@@ -85,15 +84,13 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-new :: Config -> Logger.Handle -> IO Handle
-new cfg hLog = do
+new :: Config -> Logger.Handle -> HTTP.Handle -> IO Handle
+new cfg hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte API handle"
-    http <- HTTP.new HTTP.Config {}
-    Logger.logInfo hLog "HTTP handle initiated for Vkontakte API"
     baseURI <- makeBaseURI cfg
     apiState <- newIORef mempty
-    let hAPI = Handle {..}
-    initiatePollServer hAPI
+    let hAPI = Handle {baseURI, apiState}
+    initiatePollServer hAPI hHTTP
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
@@ -137,28 +134,30 @@ instance A.FromJSON Response where
                 , OtherResponse <$> o A..: "response"
                 ]
 
-initiatePollServer :: (MonadIO m, MonadThrow m) => Handle -> m Handle
-initiatePollServer hAPI = do
-    ps@PollServer {ts} <- getLongPollServer hAPI
+initiatePollServer ::
+       (MonadIO m, MonadThrow m) => Handle -> HTTP.Handle -> m Handle
+initiatePollServer hAPI hHTTP = do
+    ps@PollServer {ts} <- getLongPollServer hAPI hHTTP
     pollURI <- makePollURI ps
     let pollCreds = VKState {lastTS = ts, pollURI}
     setState hAPI pollCreds
     pure hAPI
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
-makePollURI PollServer {..} = do
+makePollURI PollServer {key, server} = do
     maybe ex pure . URI.parseURI $
         server <> "?act=a_check&key=" <> key <> "&wait=25"
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
-getLongPollServer :: (MonadIO m, MonadThrow m) => Handle -> m PollServer
-getLongPollServer hAPI = do
+getLongPollServer ::
+       (MonadIO m, MonadThrow m) => Handle -> HTTP.Handle -> m PollServer
+getLongPollServer hAPI hHTTP = do
     let req = HTTP.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
-    json <- liftIO $ HTTP.sendRequest (http hAPI) req
+    json <- liftIO $ HTTP.sendRequest hHTTP req
     res <- A.throwDecode json
     case res of
-        Error {..} ->
+        Error {error_code, error_msg} ->
             throwM $
             Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
         PollServ r -> pure r
