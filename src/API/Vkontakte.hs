@@ -84,11 +84,15 @@ instance Semigroup VKState where
 instance Monoid VKState where
     mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
-new :: Config -> Logger.Handle -> HTTP.Handle -> IO Handle
+new :: (MonadIO m, MonadThrow m)
+    => Config
+    -> Logger.Handle
+    -> HTTP.Handle
+    -> m Handle
 new cfg hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte API handle"
     baseURI <- makeBaseURI cfg
-    apiState <- newIORef mempty
+    apiState <- liftIO $ newIORef mempty
     let hAPI = Handle {baseURI, apiState}
     initiatePollServer hAPI hHTTP
 
