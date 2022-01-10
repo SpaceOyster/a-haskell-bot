@@ -36,11 +36,14 @@ data Config =
         }
     deriving (Show)
 
-new :: Config -> Logger.Handle -> IO (Bot.Handle TG.Handle)
+new :: (MonadIO m, MonadThrow m)
+    => Config
+    -> Logger.Handle
+    -> m (Bot.Handle TG.Handle)
 new cfg@Config {..} hLog = do
     Logger.logInfo hLog "Initiating Telegram Bot"
     Logger.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
-    state <- newIORef $ Bot.BotState {userSettings = mempty}
+    state <- liftIO $ newIORef $ Bot.BotState {userSettings = mempty}
     hAPI <- TG.new TG.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
