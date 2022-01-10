@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module HTTP
     ( Config(..)
@@ -10,6 +11,7 @@ module HTTP
     ) where
 
 import qualified Data.ByteString.Lazy.Char8 as L8
+import Data.Has (Has(..))
 import qualified Network.HTTP.Client as H
     ( Manager
     , Request(..)
@@ -31,6 +33,9 @@ newtype Handle =
     Handle
         { sendRequest :: Request -> IO L8.ByteString
         }
+
+instance Has Handle Handle where
+    obtain = id
 
 new :: Config -> IO Handle
 new _cfg = do
