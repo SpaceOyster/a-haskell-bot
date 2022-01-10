@@ -46,7 +46,7 @@ usagePrompt =
         ]
 
 runWithApp :: AppConfig -> IO ()
-runWithApp AppConfig {..} = do
+runWithApp AppConfig {..} =
     Logger.withHandle logger $ \hLog -> do
         Logger.logInfo hLog "Initiating Main Bot loop"
         Logger.logInfo hLog $
