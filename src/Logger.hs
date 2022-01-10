@@ -3,6 +3,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 
 module Logger
     ( Config(..)
@@ -29,6 +30,7 @@ import qualified Data.Aeson as A
     , withObject
     , withText
     )
+import Data.Has (Has(..))
 import Data.IORef (atomicModifyIORef, newIORef, readIORef)
 import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
 import qualified Data.Text.IO as T (hPutStrLn)
@@ -94,6 +96,9 @@ newtype Handle =
     Handle
         { log :: Priority -> T.Text -> IO ()
         }
+
+instance Has Handle Handle where
+    obtain = id
 
 class HasLog a where
     getLog :: a -> (Priority -> T.Text -> IO ())
