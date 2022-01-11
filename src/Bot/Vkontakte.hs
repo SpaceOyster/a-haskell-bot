@@ -15,6 +15,13 @@ module Bot.Vkontakte
 import qualified API.Vkontakte as VK
 import App.Monad
 import qualified Bot
+import qualified Bot.State
+    ( BotState(..)
+    , Config(..)
+    , getUserMultiplier
+    , new
+    , setUserMultiplier
+    )
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -48,7 +55,8 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte Bot"
     Logger.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
-    state <- liftIO $ newIORef Bot.BotState {userSettings = mempty}
+    let stateCfg = Bot.State.Config {echoMultiplier}
+    state <- Bot.State.new stateCfg
     hAPI <- VK.new VK.Config {..} hLog hHTTP
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
@@ -149,7 +157,7 @@ reactToMessage ::
     -> VK.Message
     -> m [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
-    n <- Bot.getUserMultiplier hBot $ VK.User from_id
+    n <- Bot.State.getUserMultiplier (Bot.state hBot) $ VK.User from_id
     envLogDebug $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
@@ -185,7 +193,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
                 "setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
-            Bot.setUserMultiplier hBot user n
+            Bot.State.setUserMultiplier (Bot.state hBot) user n
             fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->

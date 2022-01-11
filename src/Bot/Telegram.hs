@@ -16,6 +16,13 @@ module Bot.Telegram
 import qualified API.Telegram as TG
 import App.Monad
 import qualified Bot
+import qualified Bot.State
+    ( BotState(..)
+    , Config(..)
+    , getUserMultiplier
+    , new
+    , setUserMultiplier
+    )
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -44,7 +51,8 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog = do
     Logger.logInfo hLog "Initiating Telegram Bot"
     Logger.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
-    state <- liftIO $ newIORef $ Bot.BotState {userSettings = mempty}
+    let stateCfg = Bot.State.Config {echoMultiplier}
+    state <- Bot.State.new stateCfg
     hAPI <- TG.new TG.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
@@ -151,7 +159,7 @@ reactToMessage ::
     -> m [TG.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
-    n <- Bot.getUserMultiplier hBot author
+    n <- Bot.State.getUserMultiplier (Bot.state hBot) author
     envLogDebug $
         "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
@@ -190,7 +198,7 @@ reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
             envLogInfo $
                 "Setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
-            Bot.setUserMultiplier hBot user n
+            Bot.State.setUserMultiplier (Bot.state hBot) user n
             TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s

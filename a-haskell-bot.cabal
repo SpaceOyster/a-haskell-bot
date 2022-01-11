@@ -31,6 +31,7 @@ library
       App.Config
       App.Monad
       Bot
+      Bot.State
       Bot.Telegram
       Bot.Vkontakte
       Data.Aeson.Extended
@@ -93,6 +94,7 @@ executable telegram-bot
       App.Config
       App.Monad
       Bot
+      Bot.State
       Bot.Telegram
       Bot.Vkontakte
       Data.Aeson.Extended
@@ -133,6 +135,7 @@ executable vkontakte-bot
       App.Config
       App.Monad
       Bot
+      Bot.State
       Bot.Telegram
       Bot.Vkontakte
       Data.Aeson.Extended

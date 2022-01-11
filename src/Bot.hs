@@ -5,22 +5,20 @@
 
 module Bot where
 
-import App.Monad
+import App.Monad (envLogInfo)
+import qualified Bot.State (Handle(..), getUserMultiplierM)
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Monad (join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader
+import Control.Monad.Reader (MonadReader, forever)
 import Data.Char (toLower)
 import Data.Function ((&))
 import Data.Has (Has(..))
 import qualified Data.Hashable as H
-import Data.IORef (IORef, modifyIORef, readIORef)
 import Data.List.Extended (replaceSubseq)
-import qualified Data.Map as Map (Map, alter, findWithDefault)
 import Data.Maybe (fromMaybe)
-import qualified Data.Text.Extended as T
 import qualified HTTP
 import qualified Logger
 import Prelude hiding (repeat)
@@ -28,9 +26,8 @@ import Prelude hiding (repeat)
 data Handle apiHandle =
     Handle
         { hAPI :: apiHandle
-        , state :: IORef BotState
+        , state :: Bot.State.Handle
         , strings :: Strings
-        , echoMultiplier :: Int
         }
 
 data StringsM =
@@ -83,61 +80,6 @@ instance Monoid StringsM where
             , settingsSavedM = mempty
             }
 
-hGetState ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has Logger.Handle env)
-    => Handle s
-    -> m BotState
-hGetState hBot = do
-    envLogDebug "Getting BotState"
-    liftIO . readIORef $ state hBot
-
-hSetState ::
-       (MonadIO m, MonadThrow m, MonadReader env m, Has Logger.Handle env)
-    => Handle s
-    -> (BotState -> BotState)
-    -> m ()
-hSetState hBot f = do
-    envLogDebug "Setting BotState"
-    envLogDebug "Appying state BotState mutating function"
-    liftIO $ state hBot `modifyIORef` f
-
-newtype BotState =
-    BotState
-        { userSettings :: Map.Map H.Hash Int
-        }
-
-getUserMultiplier ::
-       ( H.Hashable u
-       , MonadIO m
-       , MonadThrow m
-       , MonadReader env m
-       , Has Logger.Handle env
-       )
-    => Handle s
-    -> u
-    -> m Int
-getUserMultiplier hBot user = do
-    st <- Bot.hGetState hBot
-    let drepeats = Bot.echoMultiplier hBot
-        uhash = H.hash user
-        repeats = Map.findWithDefault drepeats uhash $ userSettings st
-    pure repeats
-
-getUserMultiplierM ::
-       ( H.Hashable u
-       , MonadIO m
-       , MonadThrow m
-       , MonadReader env m
-       , Has Logger.Handle env
-       )
-    => Handle s
-    -> Maybe u
-    -> m Int
-getUserMultiplierM hBot (Just u) = hBot & getUserMultiplier $ u
-getUserMultiplierM hBot Nothing = do
-    envLogInfo "No User info, returning default echo multiplier"
-    pure $ hBot & Bot.echoMultiplier
-
 repeatPrompt ::
        ( H.Hashable u
        , MonadIO m
@@ -149,30 +91,9 @@ repeatPrompt ::
     -> Maybe u
     -> m String
 repeatPrompt hBot userM = do
-    mult <- hBot & getUserMultiplierM $ userM
+    mult <- Bot.State.getUserMultiplierM (state hBot) $ userM
     let prompt' = hBot & Bot.strings & Bot.repeat
     pure $ replaceSubseq prompt' "%n" (show mult)
-
-setUserMultiplier ::
-       ( Show u
-       , H.Hashable u
-       , MonadIO m
-       , MonadThrow m
-       , MonadReader env m
-       , Has Logger.Handle env
-       )
-    => Handle s
-    -> u
-    -> Int
-    -> m ()
-setUserMultiplier hBot user repeats = do
-    envLogDebug $
-        "Setting echo multiplier to: " <>
-        T.tshow repeats <> "For User: " <> T.tshow user
-    hBot `Bot.hSetState` \st ->
-        let uhash = H.hash user
-            usettings = Map.alter (const $ Just repeats) uhash $ userSettings st
-         in st {userSettings = usettings}
 
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
