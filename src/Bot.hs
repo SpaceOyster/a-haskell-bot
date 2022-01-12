@@ -91,7 +91,7 @@ repeatPrompt ::
     -> Maybe u
     -> m String
 repeatPrompt hBot userM = do
-    mult <- Bot.State.getUserMultiplierM (state hBot) $ userM
+    mult <- Bot.State.getUserMultiplierM (state hBot) userM
     let prompt' = hBot & Bot.strings & Bot.repeat
     pure $ replaceSubseq prompt' "%n" (show mult)
 
