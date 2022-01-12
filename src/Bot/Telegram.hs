@@ -16,12 +16,6 @@ module Bot.Telegram
 import qualified API.Telegram as TG
 import App.Monad (envLogDebug, envLogInfo)
 import qualified Bot
-import qualified Bot.State
-    ( Config(..)
-    , getUserMultiplier
-    , new
-    , setUserMultiplier
-    )
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO)
@@ -33,6 +27,7 @@ import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified HTTP
 import qualified Logger
+import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
 
 data Config =
     Config
@@ -49,8 +44,8 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog = do
     Logger.logInfo hLog "Initiating Telegram Bot"
     Logger.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
-    let stateCfg = Bot.State.Config {echoMultiplier}
-    state <- Bot.State.new stateCfg
+    let stateCfg = UsersDB.Config {echoMultiplier}
+    state <- UsersDB.new stateCfg
     hAPI <- TG.new TG.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
@@ -157,7 +152,7 @@ reactToMessage ::
     -> m [TG.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
     author <- TG.getAuthorThrow msg
-    n <- Bot.State.getUserMultiplier (Bot.state hBot) author
+    n <- UsersDB.getUserMultiplier (Bot.state hBot) author
     envLogDebug $
         "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
@@ -196,7 +191,7 @@ reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
             envLogInfo $
                 "Setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
-            Bot.State.setUserMultiplier (Bot.state hBot) user n
+            UsersDB.setUserMultiplier (Bot.state hBot) user n
             TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s

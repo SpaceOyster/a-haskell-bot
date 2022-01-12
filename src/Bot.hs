@@ -6,7 +6,6 @@
 module Bot where
 
 import App.Monad (envLogInfo)
-import qualified Bot.State (Handle(..), getUserMultiplierM)
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Monad (join)
@@ -22,11 +21,12 @@ import Data.Maybe (fromMaybe)
 import qualified HTTP
 import qualified Logger
 import Prelude hiding (repeat)
+import qualified UsersDB (Handle(..), getUserMultiplierM)
 
 data Handle apiHandle =
     Handle
         { hAPI :: apiHandle
-        , state :: Bot.State.Handle
+        , state :: UsersDB.Handle
         , strings :: Strings
         }
 
@@ -91,7 +91,7 @@ repeatPrompt ::
     -> Maybe u
     -> m String
 repeatPrompt hBot userM = do
-    mult <- Bot.State.getUserMultiplierM (state hBot) userM
+    mult <- UsersDB.getUserMultiplierM (state hBot) userM
     let prompt' = hBot & Bot.strings & Bot.repeat
     pure $ replaceSubseq prompt' "%n" (show mult)
 

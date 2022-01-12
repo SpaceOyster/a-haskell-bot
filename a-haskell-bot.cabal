@@ -31,7 +31,6 @@ library
       App.Config
       App.Monad
       Bot
-      Bot.State
       Bot.Telegram
       Bot.Vkontakte
       Data.Aeson.Extended
@@ -45,6 +44,7 @@ library
       Main.Telegram
       Main.Vkontakte
       Network.URI.Extended
+      UsersDB
   other-modules:
       Paths_a_haskell_bot
   hs-source-dirs:
@@ -94,7 +94,6 @@ executable telegram-bot
       App.Config
       App.Monad
       Bot
-      Bot.State
       Bot.Telegram
       Bot.Vkontakte
       Data.Aeson.Extended
@@ -107,6 +106,7 @@ executable telegram-bot
       Logger
       Main.Vkontakte
       Network.URI.Extended
+      UsersDB
       Paths_a_haskell_bot
   hs-source-dirs:
       src
@@ -135,7 +135,6 @@ executable vkontakte-bot
       App.Config
       App.Monad
       Bot
-      Bot.State
       Bot.Telegram
       Bot.Vkontakte
       Data.Aeson.Extended
@@ -148,6 +147,7 @@ executable vkontakte-bot
       Logger
       Main.Telegram
       Network.URI.Extended
+      UsersDB
       Paths_a_haskell_bot
   hs-source-dirs:
       src

@@ -15,12 +15,6 @@ module Bot.Vkontakte
 import qualified API.Vkontakte as VK
 import App.Monad
 import qualified Bot
-import qualified Bot.State
-    ( Config(..)
-    , getUserMultiplier
-    , new
-    , setUserMultiplier
-    )
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -35,6 +29,7 @@ import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
 import qualified HTTP
 import qualified Logger
+import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
 
 data Config =
     Config
@@ -54,8 +49,8 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte Bot"
     Logger.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
-    let stateCfg = Bot.State.Config {echoMultiplier}
-    state <- Bot.State.new stateCfg
+    let stateCfg = UsersDB.Config {echoMultiplier}
+    state <- UsersDB.new stateCfg
     hAPI <- VK.new VK.Config {..} hLog hHTTP
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
@@ -156,7 +151,7 @@ reactToMessage ::
     -> VK.Message
     -> m [VK.Response]
 reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
-    n <- Bot.State.getUserMultiplier (Bot.state hBot) $ VK.User from_id
+    n <- UsersDB.getUserMultiplier (Bot.state hBot) $ VK.User from_id
     envLogDebug $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
@@ -192,7 +187,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
                 "setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
-            Bot.State.setUserMultiplier (Bot.state hBot) user n
+            UsersDB.setUserMultiplier (Bot.state hBot) user n
             fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->

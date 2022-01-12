@@ -2,7 +2,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module Bot.State
+module UsersDB
     ( BotState(..)
     , Config(..)
     , Handle(..)
