@@ -46,7 +46,7 @@ instance A.FromJSON AppConfig where
 parseTGConfig :: A.Value -> A.Parser TG.Config
 parseTGConfig =
     A.withObject "FromJSON Bot.Telegram" $ \o -> do
-        echoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
+        defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
         key <- o A..:? "api-key" A..!= ""
         stringsM <- mempty <|> o A..: "strings" >>= parseStringsM
         pure $ TG.Config {..}
@@ -54,7 +54,7 @@ parseTGConfig =
 parseVKConfig :: A.Value -> A.Parser VK.Config
 parseVKConfig =
     A.withObject "FromJSON Bot.Telegram" $ \o -> do
-        echoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
+        defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
         key <- o A..:? "api-key" A..!= ""
         stringsM <- mempty <|> o A..: "strings" >>= parseStringsM
         group_id <- o A..:? "group-id" A..!= 0

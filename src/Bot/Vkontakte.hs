@@ -34,7 +34,7 @@ import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
 data Config =
     Config
         { key :: String
-        , echoMultiplier :: Int
+        , defaultEchoMultiplier :: Int
         , stringsM :: Bot.StringsM
         , group_id :: Integer
         , v :: String
@@ -49,7 +49,7 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte Bot"
     Logger.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
-    let stateCfg = UsersDB.Config {echoMultiplier}
+    let stateCfg = UsersDB.Config {defaultEchoMultiplier}
     state <- UsersDB.new stateCfg
     hAPI <- VK.new VK.Config {..} hLog hHTTP
     let strings = Bot.fromStrinsM stringsM

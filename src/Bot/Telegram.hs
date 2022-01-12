@@ -32,7 +32,7 @@ import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
 data Config =
     Config
         { key :: String
-        , echoMultiplier :: Int
+        , defaultEchoMultiplier :: Int
         , stringsM :: Bot.StringsM
         }
     deriving (Show)
@@ -44,7 +44,7 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog = do
     Logger.logInfo hLog "Initiating Telegram Bot"
     Logger.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
-    let stateCfg = UsersDB.Config {echoMultiplier}
+    let stateCfg = UsersDB.Config {defaultEchoMultiplier}
     state <- UsersDB.new stateCfg
     hAPI <- TG.new TG.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM

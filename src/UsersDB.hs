@@ -24,19 +24,19 @@ newtype UsersMap =
 
 newtype Config =
     Config
-        { echoMultiplier :: Int
+        { defaultEchoMultiplier :: Int
         }
 
 data Handle =
     Handle
         { state :: IORef UsersMap
-        , echoMultiplier :: Int
+        , defaultEchoMultiplier :: Int
         }
 
 new :: (MonadIO m) => Config -> m Handle
-new Config {echoMultiplier} = do
+new Config {defaultEchoMultiplier} = do
     state <- liftIO $ newIORef UsersMap {getUsersMap = mempty}
-    pure Handle {state, echoMultiplier}
+    pure Handle {state, defaultEchoMultiplier}
 
 hGetState :: (MonadIO m) => Handle -> m UsersMap
 hGetState hState = liftIO . readIORef $ state hState
@@ -47,14 +47,15 @@ hModifyState hState f = liftIO $ state hState `modifyIORef` f
 getUserMultiplier :: (H.Hashable u, MonadIO m) => Handle -> u -> m Int
 getUserMultiplier hState user = do
     st <- hGetState hState
-    let defaultMultiplier = echoMultiplier (hState :: Handle)
+    let defaultMultiplier = defaultEchoMultiplier (hState :: Handle)
         uhash = H.hash user
         repeats = Map.findWithDefault defaultMultiplier uhash $ getUsersMap st
     pure repeats
 
 getUserMultiplierM :: (H.Hashable u, MonadIO m) => Handle -> Maybe u -> m Int
 getUserMultiplierM hState (Just u) = getUserMultiplier hState u
-getUserMultiplierM hState Nothing = pure $ echoMultiplier (hState :: Handle)
+getUserMultiplierM hState Nothing =
+    pure $ defaultEchoMultiplier (hState :: Handle)
 
 setUserMultiplier ::
        (Show u, H.Hashable u, MonadIO m) => Handle -> u -> Int -> m ()
