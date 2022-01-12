@@ -16,8 +16,7 @@ import qualified API.Vkontakte as VK
 import App.Monad
 import qualified Bot
 import qualified Bot.State
-    ( BotState(..)
-    , Config(..)
+    ( Config(..)
     , getUserMultiplier
     , new
     , setUserMultiplier
