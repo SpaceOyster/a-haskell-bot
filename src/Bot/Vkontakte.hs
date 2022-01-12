@@ -13,17 +13,16 @@ module Bot.Vkontakte
     ) where
 
 import qualified API.Vkontakte as VK
-import App.Monad
+import App.Monad (envLogDebug, envLogInfo)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Reader (MonadReader)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
 import Data.Has (Has(..))
-import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import Exceptions (BotException(..))
 import qualified Exceptions as Priority (Priority(..))
