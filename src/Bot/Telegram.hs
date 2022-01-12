@@ -14,22 +14,20 @@ module Bot.Telegram
     ) where
 
 import qualified API.Telegram as TG
-import App.Monad
+import App.Monad (envLogDebug, envLogInfo)
 import qualified Bot
 import qualified Bot.State
-    ( BotState(..)
-    , Config(..)
+    ( Config(..)
     , getUserMultiplier
     , new
     , setUserMultiplier
     )
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (MonadReader)
 import Data.Function ((&))
 import Data.Has (Has(..))
-import Data.IORef (newIORef)
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
@@ -118,7 +116,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         -> Bot.Command
         -> (TG.Message -> m TG.Response)
     execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
-        let address = (chat :: TG.Chat) & TG.chat_id
+        let address = chat & TG.chat_id
         prompt <- Bot.repeatPrompt hBot from
         TG.runMethod hAPI $
             case cmd of
