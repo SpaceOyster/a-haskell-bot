@@ -32,11 +32,12 @@ module API.Vkontakte
     , runMethod
     ) where
 
-import App.Monad
+import App.Monad (envLogDebug, grab)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader
+import Control.Monad.Reader (MonadReader)
 import qualified Data.Aeson.Extended as A
+import qualified Data.Aeson.Types as A (Value(Object))
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Foldable (asum)
@@ -45,7 +46,7 @@ import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
-import GHC.Generics
+import GHC.Generics (Generic)
 import qualified HTTP
 import qualified Logger
 import qualified Network.URI.Extended as URI
@@ -113,16 +114,24 @@ data PollServer =
         }
     deriving (Show, Generic, A.FromJSON)
 
+data Error =
+    Error
+        { error_code :: Integer
+        , error_msg :: String
+        }
+    deriving (Show, Generic, A.FromJSON)
+
+data Poll =
+    Poll
+        { ts :: String
+        , updates :: [GroupEvent]
+        }
+    deriving (Show, Generic, A.FromJSON)
+
 data Response
-    = Error
-          { error_code :: Integer
-          , error_msg :: String
-          }
+    = ErrorResponse Error
     | PollServ PollServer
-    | PollResponse
-          { ts :: String
-          , updates :: [GroupEvent]
-          }
+    | PollResponse Poll
     | PollError Integer
     | OtherResponse A.Value
     deriving (Show)
@@ -132,10 +141,10 @@ instance A.FromJSON Response where
         A.withObject "FromJSON API.Vkontakte.Response" $ \o -> do
             errO <- o A..:? "error" A..!= mempty
             asum
-                [ Error <$> errO A..: "error_code" <*> errO A..: "error_msg"
+                [ ErrorResponse <$> A.parseJSON (A.Object errO)
                 , PollServ <$> o A..: "response"
                 , PollError <$> o A..: "failed"
-                , PollResponse <$> o A..: "ts" <*> o A..: "updates"
+                , PollResponse <$> A.parseJSON (A.Object o)
                 , OtherResponse <$> o A..: "response"
                 ]
 
@@ -162,7 +171,7 @@ getLongPollServer hAPI hHTTP = do
     json <- liftIO $ HTTP.sendRequest hHTTP req
     res <- A.throwDecode json
     case res of
-        Error {error_code, error_msg} ->
+        ErrorResponse Error {error_code, error_msg} ->
             throwM $
             Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
         PollServ r -> pure r
@@ -176,7 +185,7 @@ rememberLastUpdate ::
 rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
-updateStateWith PollResponse {ts} = \s -> s {lastTS = ts}
+updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 runMethod ::
@@ -374,7 +383,7 @@ copyMessage hAPI Message {..} =
     sendMessageWith hAPI peer_id text $ fmap attachmentToQuery attachments
 
 extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
-extractUpdates PollResponse {..} = pure updates
+extractUpdates (PollResponse poll) = pure $ updates poll
 extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
 extractUpdates _ = throwM $ Ex.VKPollError "Expexted PollResponse"
 
