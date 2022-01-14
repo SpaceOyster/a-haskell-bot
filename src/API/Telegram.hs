@@ -83,7 +83,7 @@ rememberLastUpdate hAPI res =
     mapM_ (setState hAPI) (newStateFromM res) >> pure res
 
 newStateFromM :: Response -> Maybe TGState
-newStateFromM (Updates us@(_x:_xs)) =
+newStateFromM (UpdatesResponse us@(_x:_xs)) =
     Just . TGState . (1 +) . update_id . last $ us
 newStateFromM _ = Nothing
 

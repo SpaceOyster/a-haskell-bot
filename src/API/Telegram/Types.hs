@@ -8,6 +8,7 @@
 module API.Telegram.Types where
 
 import Control.Applicative ((<|>))
+import Control.Monad (msum)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
   ( FromJSON(..)
@@ -151,21 +152,25 @@ data Error =
 
 data Response
   = ErrorResponse Error
-  | Updates [Update]
-  | OtherResponse Value
+  | UpdatesResponse [Update]
+  | AnswerCallbackResponse Bool
+  | SendMessageResponse Message
+  | CopyMessageResponse Integer
+  | UnknownResponse Value
   deriving (Show)
-      -- actually either:
-      -- 1. [Update] - for `getUpdates`
-      -- 2. Message - for `sendMessage` and `sendInlineKeyboard`
-      -- 3. True - for `answerCallbackQuery`
-      -- 4. `{"message_id": 12345}` - for `copyMessage`
 
 instance FromJSON Response where
   parseJSON =
     withObject "Response" $ \o -> do
       ok <- o .: "ok"
       if ok
-        then Updates <$> o .: "result" <|> OtherResponse <$> o .: "result"
+        then msum
+               [ UpdatesResponse <$> o .: "result"
+               , AnswerCallbackResponse <$> o .: "result"
+               , SendMessageResponse <$> o .: "result"
+               , CopyMessageResponse <$> (o .: "result" >>= (.: "message_id"))
+               , UnknownResponse <$> o .: "result"
+               ]
         else ErrorResponse <$> parseJSON (Object o)
 
 -- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
@@ -175,5 +180,5 @@ extractUpdates res =
   case res of
     ErrorResponse Error {error_code, description} ->
       throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
-    Updates us -> pure us
+    UpdatesResponse us -> pure us
     _ -> pure []
