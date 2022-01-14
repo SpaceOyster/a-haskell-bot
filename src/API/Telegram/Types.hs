@@ -14,13 +14,15 @@ import Data.Aeson
   , ToJSON(..)
   , (.:)
   , (.:?)
-  , defaultOptions
-  , fieldLabelModifier
   , genericParseJSON
   , genericToJSON
   , withObject
   )
-import Data.Aeson.Types (Value)
+import Data.Aeson.Types
+  ( Options(fieldLabelModifier)
+  , Value(Object)
+  , defaultOptions
+  )
 import qualified Data.Hashable as H
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
@@ -140,15 +142,19 @@ data InlineKeyboardButton =
     }
   deriving (Show, Generic, ToJSON)
 
+data Error =
+  Error
+    { error_code :: Int
+    , description :: String
+    }
+  deriving (Show, Generic, FromJSON)
+
 data Response
-  = Error
-      { error_code :: Int
-      , description :: String
-      }
+  = ErrorResponse Error
   | Updates [Update]
   | OtherResponse Value
   deriving (Show)
-      -- ^actually either:
+      -- actually either:
       -- 1. [Update] - for `getUpdates`
       -- 2. Message - for `sendMessage` and `sendInlineKeyboard`
       -- 3. True - for `answerCallbackQuery`
@@ -160,14 +166,14 @@ instance FromJSON Response where
       ok <- o .: "ok"
       if ok
         then Updates <$> o .: "result" <|> OtherResponse <$> o .: "result"
-        else Error <$> o .: "error_code" <*> o .: "description"
+        else ErrorResponse <$> parseJSON (Object o)
 
 -- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
 -- otherwise
 extractUpdates :: (MonadThrow m) => Response -> m [Update]
 extractUpdates res =
   case res of
-    Error {error_code, description} ->
+    ErrorResponse Error {error_code, description} ->
       throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
     Updates us -> pure us
     _ -> pure []
