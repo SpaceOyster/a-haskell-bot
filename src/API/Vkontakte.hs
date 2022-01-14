@@ -130,7 +130,6 @@ data Poll =
 
 data Response
     = ErrorResponse Error
-    | PollServ PollServer
     | PollResponse Poll
     | PollError Integer
     | OtherResponse A.Value
@@ -142,10 +141,23 @@ instance A.FromJSON Response where
             errO <- o A..:? "error" A..!= mempty
             asum
                 [ ErrorResponse <$> A.parseJSON (A.Object errO)
-                , PollServ <$> o A..: "response"
                 , PollError <$> o A..: "failed"
                 , PollResponse <$> A.parseJSON (A.Object o)
                 , OtherResponse <$> o A..: "response"
+                ]
+
+data PollInitResponse
+    = PollInitServer PollServer
+    | PollInitError Error
+    deriving (Show)
+
+instance A.FromJSON PollInitResponse where
+    parseJSON =
+        A.withObject "FromJSON API.Vkontakte.PollInitResponse" $ \o -> do
+            errO <- o A..:? "error" A..!= mempty
+            asum
+                [ PollInitError <$> A.parseJSON (A.Object errO)
+                , PollInitServer <$> o A..: "response"
                 ]
 
 initiatePollServer ::
@@ -171,11 +183,10 @@ getLongPollServer hAPI hHTTP = do
     json <- liftIO $ HTTP.sendRequest hHTTP req
     res <- A.throwDecode json
     case res of
-        ErrorResponse Error {error_code, error_msg} ->
+        PollInitError Error {error_code, error_msg} ->
             throwM $
             Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
-        PollServ r -> pure r
-        _ -> throwM $ Ex.APIRespondedWithError "Expected PollServer object"
+        PollInitServer r -> pure r
 
 rememberLastUpdate ::
        (MonadIO m, MonadThrow m, MonadReader env m, Has Logger.Handle env)
