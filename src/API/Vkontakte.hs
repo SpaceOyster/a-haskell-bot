@@ -295,15 +295,19 @@ instance A.FromJSON MediaDoc where
             access_key <- o A..: "access_key"
             pure $ MediaDoc {..}
 
+data Sticker =
+    Sticker
+        { product_id :: Integer
+        , sticker_id :: Integer
+        }
+    deriving (Show, Generic, A.FromJSON)
+
 data Attachment
     = Photo MediaDoc
     | Audio MediaDoc
     | Video MediaDoc
     | Doc MediaDoc
-    | Sticker
-          { product_id :: Integer
-          , sticker_id :: Integer
-          }
+    | StickerA Sticker
     | OtherA
     deriving (Show)
 
@@ -311,10 +315,8 @@ instance A.FromJSON Attachment where
     parseJSON =
         A.withObject "FromJSON API.Vkontakte Attachment" $ \o -> do
             A.String media_type <- o A..: "type"
-            o' <- o A..: media_type
             case media_type of
-                "sticker" ->
-                    Sticker <$> o' A..: "product_id" <*> o' A..: "sticker_id"
+                "sticker" -> StickerA <$> o A..: media_type
                 "photo" -> Photo <$> o A..: media_type
                 "audio" -> Audio <$> o A..: media_type
                 "video" -> Video <$> o A..: media_type
@@ -323,7 +325,7 @@ instance A.FromJSON Attachment where
 
 attachmentToQuery :: Attachment -> URI.QueryParam
 attachmentToQuery OtherA = ("", Nothing)
-attachmentToQuery Sticker {..} = ("sticker_id", Just $ show sticker_id)
+attachmentToQuery (StickerA s) = ("sticker_id", Just $ show $ sticker_id s)
 attachmentToQuery a =
     (,) "attachment" . Just $
     case a of
@@ -331,7 +333,7 @@ attachmentToQuery a =
         Audio m -> "audio" <> mediaToQuery m
         Video m -> "video" <> mediaToQuery m
         Doc m -> "doc" <> mediaToQuery m
-        Sticker {sticker_id} -> "sticker_id=" <> show sticker_id
+        StickerA s -> "sticker_id=" <> show (sticker_id s)
         OtherA -> mempty
   where
     mediaToQuery :: MediaDoc -> String
