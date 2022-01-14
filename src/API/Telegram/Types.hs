@@ -7,7 +7,6 @@
 
 module API.Telegram.Types where
 
-import Control.Applicative ((<|>))
 import Control.Monad (msum)
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
@@ -163,15 +162,15 @@ instance FromJSON Response where
   parseJSON =
     withObject "Response" $ \o -> do
       ok <- o .: "ok"
-      if ok
-        then msum
+      if not ok
+        then ErrorResponse <$> parseJSON (Object o)
+        else msum
                [ UpdatesResponse <$> o .: "result"
                , AnswerCallbackResponse <$> o .: "result"
                , SendMessageResponse <$> o .: "result"
                , CopyMessageResponse <$> (o .: "result" >>= (.: "message_id"))
                , UnknownResponse <$> o .: "result"
                ]
-        else ErrorResponse <$> parseJSON (Object o)
 
 -- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
 -- otherwise
