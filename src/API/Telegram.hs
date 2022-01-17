@@ -14,10 +14,22 @@ module API.Telegram
     , Handle(..)
     , new
     , runMethod
-    , module API.Telegram.Types
+    , Types.CallbackQuery(..)
+    , Types.Error(..)
+    , Types.Response(..)
+    , Types.InlineKeyboardButton(..)
+    , Types.InlineKeyboardMarkup(..)
+    , Types.Chat(..)
+    , Types.User(..)
+    , Types.Message(..)
+    , Types.Update(..)
+    , Types.extractUpdates
+    , Types.getAuthorThrow
+    , Types.getQDataThrow
+    , Types.getTextThrow
     ) where
 
-import API.Telegram.Types
+import API.Telegram.Types as Types
 import App.Monad
 import Control.Monad.Reader (MonadReader)
 import Data.Has (Has(..))

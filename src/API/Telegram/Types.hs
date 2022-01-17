@@ -5,7 +5,21 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module API.Telegram.Types where
+module API.Telegram.Types
+  ( CallbackQuery(..)
+  , Error(..)
+  , Response(..)
+  , InlineKeyboardButton(..)
+  , InlineKeyboardMarkup(..)
+  , Chat(..)
+  , User(..)
+  , Message(..)
+  , Update(..)
+  , extractUpdates
+  , getAuthorThrow
+  , getQDataThrow
+  , getTextThrow
+  ) where
 
 import Control.Monad (msum)
 import Control.Monad.Catch (MonadThrow(..))
