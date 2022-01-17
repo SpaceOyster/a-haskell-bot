@@ -308,7 +308,6 @@ data Attachment
     | Video MediaDoc
     | Doc MediaDoc
     | StickerA Sticker
-    | OtherA
     deriving (Show)
 
 instance A.FromJSON Attachment where
@@ -321,10 +320,9 @@ instance A.FromJSON Attachment where
                 "audio" -> Audio <$> o A..: media_type
                 "video" -> Video <$> o A..: media_type
                 "doc" -> Doc <$> o A..: media_type
-                _ -> pure OtherA
+                _ -> fail "Expected Attachment"
 
 attachmentToQuery :: Attachment -> URI.QueryParam
-attachmentToQuery OtherA = ("", Nothing)
 attachmentToQuery (StickerA s) = ("sticker_id", Just $ show $ sticker_id s)
 attachmentToQuery a =
     (,) "attachment" . Just $
@@ -334,7 +332,6 @@ attachmentToQuery a =
         Video m -> "video" <> mediaToQuery m
         Doc m -> "doc" <> mediaToQuery m
         StickerA s -> "sticker_id=" <> show (sticker_id s)
-        OtherA -> mempty
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
