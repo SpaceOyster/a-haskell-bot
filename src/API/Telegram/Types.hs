@@ -38,8 +38,7 @@ import Data.Aeson.Types
   , defaultOptions
   )
 import qualified Data.Hashable as H
-import qualified Exceptions as Priority (Priority(..))
-import Exceptions (BotException(..))
+import qualified Exceptions as Ex (BotException(..), Priority(..))
 import GHC.Generics (Generic)
 
 data Update =
@@ -55,8 +54,7 @@ getMessageThrow Update {update_id, message} =
   case message of
     Just t -> pure t
     Nothing ->
-      throwM $
-      Ex Priority.Info $ "Update " ++ show update_id ++ " has no message"
+      throwM $ Ex.Ex Ex.Info $ "Update " ++ show update_id ++ " has no message"
 
 data Message =
   Message
@@ -73,16 +71,14 @@ getAuthorThrow Message {message_id, from} =
   case from of
     Just t -> pure t
     Nothing ->
-      throwM $
-      Ex Priority.Info $ "Message " ++ show message_id ++ " has no author"
+      throwM $ Ex.Ex Ex.Info $ "Message " ++ show message_id ++ " has no author"
 
 getTextThrow :: (MonadThrow m) => Message -> m String
 getTextThrow Message {message_id, text} =
   case text of
     Just t -> pure t
     Nothing ->
-      throwM $
-      Ex Priority.Info $ "Message " ++ show message_id ++ " has no text"
+      throwM $ Ex.Ex Ex.Info $ "Message " ++ show message_id ++ " has no text"
 
 data BotCommand =
   BotCommand
@@ -107,7 +103,7 @@ getQDataThrow CallbackQuery {cq_id, query_data} =
     Just d -> pure d
     Nothing ->
       throwM $
-      Ex Priority.Info $ "CallbackQuery " ++ show cq_id ++ " has no query data"
+      Ex.Ex Ex.Info $ "CallbackQuery " ++ show cq_id ++ " has no query data"
 
 instance FromJSON CallbackQuery where
   parseJSON =
@@ -192,6 +188,6 @@ extractUpdates :: (MonadThrow m) => Response -> m [Update]
 extractUpdates res =
   case res of
     ErrorResponse Error {error_code, description} ->
-      throwM $ Ex Priority.Warning (show error_code ++ ": " ++ description)
+      throwM $ Ex.Ex Ex.Warning (show error_code ++ ": " ++ description)
     UpdatesResponse us -> pure us
     _ -> pure []
