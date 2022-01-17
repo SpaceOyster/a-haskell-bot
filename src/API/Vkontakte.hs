@@ -237,7 +237,7 @@ mkRequest hAPI s m =
 
 getUpdates :: Handle -> VKState -> HTTP.Request
 getUpdates _hAPI VKState {..} =
-    HTTP.GET $ URI.addQueryParams pollURI [URI.QParam "ts" lastTS]
+    HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: lastTS]
 
 newtype User =
     User
@@ -322,9 +322,9 @@ instance A.FromJSON Attachment where
                 _ -> fail "Expected Attachment"
 
 attachmentToQuery :: Attachment -> URI.QueryParam
-attachmentToQuery (StickerA s) = URI.QParam "sticker_id" . show $ sticker_id s
+attachmentToQuery (StickerA s) = "sticker_id" URI.:=: show $ sticker_id s
 attachmentToQuery a =
-    URI.QParam "attachment" $
+    "attachment" URI.:=:
     case a of
         Photo m -> "photo" <> mediaToQuery m
         Audio m -> "audio" <> mediaToQuery m
@@ -364,11 +364,10 @@ instance A.FromJSON GroupEvent where
 sendMessageEventAnswer :: Handle -> CallbackEvent -> String -> HTTP.Request
 sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
     HTTP.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
-    [ URI.QParam "event_id" event_id
-    , URI.QParam "user_id" $ show user_id
-    , URI.QParam "peer_id" $ show peer_id
-    , URI.QParam "event_data" $
-      L8.unpack $
+    [ "event_id" URI.:=: event_id
+    , "user_id" URI.:=: show user_id
+    , "peer_id" URI.:=: show peer_id
+    , "event_data" URI.:=: L8.unpack $
       A.encode $
       A.object ["type" A..= ("show_snackbar" :: String), "text" A..= prompt]
     ]
@@ -381,7 +380,7 @@ sendMessageWith ::
        Handle -> Integer -> String -> [URI.QueryParam] -> HTTP.Request
 sendMessageWith hAPI peer_id text qps =
     HTTP.GET . apiMethod hAPI "messages.send" $
-    [URI.QParam "peer_id" (show peer_id), URI.QParam "message" text] <> qps
+    ["peer_id" URI.:=: show peer_id, "message" URI.:=: text] <> qps
 
 sendTextMessage :: Handle -> Integer -> String -> HTTP.Request
 sendTextMessage hAPI peer_id text = sendMessageWith hAPI peer_id text mempty
@@ -487,4 +486,4 @@ sendKeyboard hAPI peer_id prompt keyboard =
         hAPI
         peer_id
         prompt
-        [URI.QParam "keyboard" (L8.unpack $ A.encode keyboard)]
+        ["keyboard" URI.:=: L8.unpack $ A.encode keyboard]
