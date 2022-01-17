@@ -4,7 +4,6 @@ module Network.URI.Extended
   , addQueryParams
   , stringifyQueryList
   , stringifyQueryPair
-  , QueryParams
   , QueryParam(..)
   ) where
 
@@ -14,19 +13,17 @@ import Network.URI
 data QueryParam =
   QParam String String
 
-type QueryParams = [QueryParam]
-
 addPath :: URI -> String -> URI
 addPath uri p = uri {uriPath = uriPath uri <> p}
 
-addQueryParams :: URI -> QueryParams -> URI
+addQueryParams :: URI -> [QueryParam] -> URI
 addQueryParams uri [] = uri
 addQueryParams uri qs =
   case uriQuery uri of
     [] -> uri {uriQuery = '?' : stringifyQueryList qs}
     q -> uri {uriQuery = q <> ('&' : stringifyQueryList qs)}
 
-stringifyQueryList :: QueryParams -> String
+stringifyQueryList :: [QueryParam] -> String
 stringifyQueryList = intercalate "&" . (stringifyQueryPair =<<)
 
 stringifyQueryPair :: MonadFail m => QueryParam -> m String

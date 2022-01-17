@@ -373,12 +373,12 @@ sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
       A.object ["type" A..= ("show_snackbar" :: String), "text" A..= prompt]
     ]
 
-apiMethod :: Handle -> String -> URI.QueryParams -> URI.URI
+apiMethod :: Handle -> String -> [URI.QueryParam] -> URI.URI
 apiMethod hAPI method qps =
     flip URI.addQueryParams qps . URI.addPath (baseURI hAPI) $ method
 
 sendMessageWith ::
-       Handle -> Integer -> String -> URI.QueryParams -> HTTP.Request
+       Handle -> Integer -> String -> [URI.QueryParam] -> HTTP.Request
 sendMessageWith hAPI peer_id text qps =
     HTTP.GET . apiMethod hAPI "messages.send" $
     [URI.QParam "peer_id" (show peer_id), URI.QParam "message" text] <> qps
