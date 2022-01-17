@@ -8,11 +8,7 @@ import App.Config
 import qualified App.Monad as App
 import qualified Bot
 import qualified Bot.Vkontakte as VK
-import Control.Concurrent (threadDelay)
-import Control.Monad (forever)
-import Control.Monad.Catch (MonadThrow)
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader
+import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson.Extended as A (throwDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.List (intercalate)
