@@ -20,7 +20,7 @@ module Logger
 
 import Control.Applicative ((<|>))
 import Control.Concurrent.MVar (newMVar, withMVar)
-import Control.Exception (finally)
+import Control.Exception (bracket)
 import Control.Monad ((<=<), when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Aeson as A
@@ -42,6 +42,7 @@ import qualified System.IO as IO
     , Handle
     , IOMode(..)
     , hFlush
+    , openFile
     , stdout
     , withFile
     )
@@ -126,11 +127,17 @@ newFileLog v hFile = do
     let log = \p t -> when (p >= v) $ doLog p t
     pure $ Handle {log}
 
-withStdoutLog :: Verbosity -> (Handle -> IO ()) -> IO ()
-withStdoutLog v io = do
+newStdoutLog :: Verbosity -> IO Handle
+newStdoutLog v = do
     let hStdout = IO.stdout
     let log = \p t -> when (p >= v) $ composeMessage p t >>= T.hPutStrLn hStdout
-    io Handle {log} `finally` IO.hFlush hStdout
+    pure $ Handle {log}
+
+closeStdoutLog :: Handle -> IO ()
+closeStdoutLog _hLog = IO.hFlush IO.stdout
+
+withStdoutLog :: Verbosity -> (Handle -> IO ()) -> IO ()
+withStdoutLog v = bracket (newStdoutLog v) closeStdoutLog
 
 withHandlePure :: Config -> (Handle -> IO a) -> IO (a, [(Priority, T.Text)])
 withHandlePure Config {..} io = do
