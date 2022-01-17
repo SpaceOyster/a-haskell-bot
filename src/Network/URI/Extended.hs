@@ -5,13 +5,14 @@ module Network.URI.Extended
   , stringifyQueryList
   , stringifyQueryPair
   , QueryParams
-  , QueryParam
+  , QueryParam(..)
   ) where
 
 import Data.List (intercalate)
 import Network.URI
 
-type QueryParam = (String, String)
+data QueryParam =
+  QParam String String
 
 type QueryParams = [QueryParam]
 
@@ -29,9 +30,9 @@ stringifyQueryList :: QueryParams -> String
 stringifyQueryList = intercalate "&" . (stringifyQueryPair =<<)
 
 stringifyQueryPair :: MonadFail m => QueryParam -> m String
-stringifyQueryPair ([], _vM) = fail "Key is empty"
-stringifyQueryPair (k, []) = fail $ "Value is empty for " <> show k
-stringifyQueryPair (k, v)
+stringifyQueryPair (QParam "" _vM) = fail "Key is empty"
+stringifyQueryPair (QParam k "") = fail $ "Value is empty for " <> show k
+stringifyQueryPair (QParam k v)
   | all isUnescapedInURIComponent k =
     pure . (k <>) . ('=' :) . escapeURIString isUnescapedInURIComponent $ v
   | otherwise = fail $ "key has unescaped chars " <> show k
