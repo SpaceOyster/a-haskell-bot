@@ -71,14 +71,12 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     data Entity (Bot.Handle VK.Handle) = EMessage VK.Message
                                    | ECommand VK.Message
                                    | ECallback VK.CallbackEvent
-                                   | EOther VK.GroupEvent
     type Response (Bot.Handle VK.Handle) = VK.Response
     qualifyUpdate :: VK.GroupEvent -> Bot.Entity (Bot.Handle VK.Handle)
     qualifyUpdate (VK.MessageNew m)
         | isCommandE m = ECommand m
         | otherwise = EMessage m
     qualifyUpdate (VK.MessageEvent c) = ECallback c
-    qualifyUpdate _ = EOther VK.Other -- TODO
     reactToUpdate ::
            ( MonadIO m
            , MonadThrow m
@@ -96,7 +94,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
             ECommand msg -> (: []) <$> reactToCommand hBot msg
             EMessage msg -> reactToMessage hBot msg
             ECallback cq -> reactToCallback hBot cq
-            EOther _ -> throwM $ Ex Priority.Info "Unknown Update Type."
     type Message (Bot.Handle VK.Handle) = VK.Message
     execCommand ::
            ( MonadIO m
