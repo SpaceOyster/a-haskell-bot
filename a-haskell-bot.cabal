@@ -41,6 +41,7 @@ library
       Exceptions
       HTTP
       Logger
+      Main
       Main.Telegram
       Main.Vkontakte
       Network.URI.Extended
@@ -104,6 +105,7 @@ executable telegram-bot
       Exceptions
       HTTP
       Logger
+      Main
       Main.Vkontakte
       Network.URI.Extended
       UsersDB
@@ -145,6 +147,7 @@ executable vkontakte-bot
       Exceptions
       HTTP
       Logger
+      Main
       Main.Telegram
       Network.URI.Extended
       UsersDB
