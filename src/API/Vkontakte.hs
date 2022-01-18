@@ -349,7 +349,6 @@ data CallbackEvent =
 data GroupEvent
     = MessageNew Message
     | MessageEvent CallbackEvent
-    | Other
     deriving (Show)
 
 instance A.FromJSON GroupEvent where
