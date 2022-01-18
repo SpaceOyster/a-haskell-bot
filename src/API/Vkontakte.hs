@@ -131,7 +131,7 @@ data Response
     = ErrorResponse Error
     | PollResponse Poll
     | PollError Integer
-    | OtherResponse A.Value
+    -- | OtherResponse A.Value
     deriving (Show)
 
 instance A.FromJSON Response where
@@ -142,7 +142,7 @@ instance A.FromJSON Response where
                 [ ErrorResponse <$> A.parseJSON (A.Object errO)
                 , PollError <$> o A..: "failed"
                 , PollResponse <$> A.parseJSON (A.Object o)
-                , OtherResponse <$> o A..: "response"
+                -- , OtherResponse <$> o A..: "response"
                 ]
 
 data PollInitResponse
