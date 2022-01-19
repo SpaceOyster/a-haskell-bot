@@ -9,6 +9,7 @@ import qualified App.Monad as App
 import qualified Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
+import Control.Applicative ((<|>))
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson.Extended as A (throwDecode)
 import qualified Data.ByteString.Lazy as BL
@@ -25,14 +26,12 @@ data BotToRun
     | Vkontakte
 
 main :: IO ()
-main = do
-    args <- E.getArgs
-    case args of
-        bot:cfgPath:_as -> do
-            cfg <- readConfig cfgPath
-            botToRun <- maybe (Exit.die usagePrompt) pure $ readBotName bot
-            runWithApp cfg botToRun
-        _ -> Exit.die usagePrompt
+main =
+    flip (<|>) (Exit.die usagePrompt) $ do
+        bot:cfgPath:_as <- E.getArgs
+        cfg <- readConfig cfgPath
+        botToRun <- readBotName bot
+        runWithApp cfg botToRun
 
 readBotName :: (MonadFail m) => String -> m BotToRun
 readBotName str =
@@ -63,7 +62,7 @@ usagePrompt =
         ]
 
 runWithApp :: AppConfig -> BotToRun -> IO ()
-runWithApp AppConfig {..} bot = do
+runWithApp AppConfig {..} bot =
     Logger.withHandle logger $ \hLog -> do
         Logger.logInfo hLog "Initiating Main Bot loop"
         Logger.logInfo hLog $
