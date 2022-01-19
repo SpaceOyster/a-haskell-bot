@@ -37,34 +37,12 @@ library:
 
 executables:
   a-haskell-bot-exe:
-    source-dirs:         app
+    source-dirs:         src
     main:                Main.hs
     ghc-options:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
-    dependencies:
-    - a-haskell-bot
-
-  telegram-bot:
-    source-dirs:         src
-    main:                Main/Telegram.hs
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    - -main-is Main.Telegram
-    dependencies:
-    - a-haskell-bot
-
-  vkontakte-bot:
-    source-dirs:         src
-    main:                Main/Vkontakte.hs
-    ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    - -main-is Main.Vkontakte
     dependencies:
     - a-haskell-bot
 
