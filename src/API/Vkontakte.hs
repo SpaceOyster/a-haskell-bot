@@ -99,9 +99,11 @@ new cfg hLog hHTTP = do
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
-    maybe ex pure . URI.parseURI $
-    "https://api.vk.com/method/?v=" <>
-    v <> "&access_token=" <> key <> "&group_id=" <> show group_id
+    maybe ex pure . URI.parseURI $ "https://api.vk.com/method/?v=" <> v <>
+    "&access_token=" <>
+    key <>
+    "&group_id=" <>
+    show group_id
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte API URL"
 
@@ -170,8 +172,8 @@ initiatePollServer hAPI hHTTP = do
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {key, server} = do
-    maybe ex pure . URI.parseURI $
-        server <> "?act=a_check&key=" <> key <> "&wait=25"
+    maybe ex pure . URI.parseURI $ server <> "?act=a_check&key=" <> key <>
+        "&wait=25"
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
@@ -183,8 +185,8 @@ getLongPollServer hAPI hHTTP = do
     res <- A.throwDecode json
     case res of
         PollInitError Error {error_code, error_msg} ->
-            throwM $
-            Ex.APIRespondedWithError $ show error_code <> ": " <> error_msg
+            throwM $ Ex.APIRespondedWithError $ show error_code <> ": " <>
+            error_msg
         PollInitServer r -> pure r
 
 rememberLastUpdate ::
@@ -366,10 +368,11 @@ sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
     [ "event_id" URI.:=: event_id
     , "user_id" URI.:=: show user_id
     , "peer_id" URI.:=: show peer_id
-    , "event_data" URI.:=: L8.unpack $
-      A.encode $
-      A.object ["type" A..= ("show_snackbar" :: String), "text" A..= prompt]
+    , "event_data" URI.:=: L8.unpack . A.encode $ mkJSON prompt
     ]
+  where
+    mkJSON :: String -> A.Value
+    mkJSON p = A.object ["type" A..= ("show_snackbar" :: String), "text" A..= p]
 
 apiMethod :: Handle -> String -> [URI.QueryParam] -> URI.URI
 apiMethod hAPI method qps =
@@ -379,7 +382,8 @@ sendMessageWith ::
        Handle -> Integer -> String -> [URI.QueryParam] -> HTTP.Request
 sendMessageWith hAPI peer_id text qps =
     HTTP.GET . apiMethod hAPI "messages.send" $
-    ["peer_id" URI.:=: show peer_id, "message" URI.:=: text] <> qps
+    ["peer_id" URI.:=: show peer_id, "message" URI.:=: text] <>
+    qps
 
 sendTextMessage :: Handle -> Integer -> String -> HTTP.Request
 sendTextMessage hAPI peer_id text = sendMessageWith hAPI peer_id text mempty
