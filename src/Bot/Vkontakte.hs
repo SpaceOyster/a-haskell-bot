@@ -24,8 +24,7 @@ import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
 import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
-import Exceptions (BotException(..))
-import qualified Exceptions as Priority (Priority(..))
+import qualified Exceptions as Ex (BotException(..), Priority(..))
 import qualified HTTP
 import qualified Logger
 import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
@@ -188,7 +187,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->
             throwM $
-            Ex Priority.Info $ "Unknown CallbackQuery type: " <> show payload
+            Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
 
 -- diff
 getCommand :: VK.Message -> Bot.Command
