@@ -28,7 +28,7 @@ import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex (BotException(..), Priority(..))
 import qualified HTTP
 import qualified Logger
-import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
+import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
 data Config =
     Config
@@ -48,8 +48,6 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog hHTTP = do
     Logger.logInfo hLog "Initiating Vkontakte Bot"
     Logger.logDebug hLog $ "Vkontakte Bot config: " <> T.tshow cfg
-    let stateCfg = UsersDB.Config {defaultEchoMultiplier}
-    state <- UsersDB.new stateCfg
     hAPI <- VK.new VK.Config {..} hLog hHTTP
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}

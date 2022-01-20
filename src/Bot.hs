@@ -27,7 +27,6 @@ import qualified UsersDB (Handle(..), getUserMultiplierM)
 data Handle apiHandle =
     Handle
         { hAPI :: apiHandle
-        , state :: UsersDB.Handle
         , strings :: Strings
         }
 

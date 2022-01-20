@@ -28,7 +28,7 @@ import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified HTTP
 import qualified Logger
-import qualified UsersDB (Config(..), getUserMultiplier, new, setUserMultiplier)
+import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
 data Config =
     Config
@@ -45,8 +45,6 @@ new :: (MonadIO m, MonadThrow m)
 new cfg@Config {..} hLog = do
     Logger.logInfo hLog "Initiating Telegram Bot"
     Logger.logDebug hLog $ "Telegram Bot config: " <> T.tshow cfg
-    let stateCfg = UsersDB.Config {defaultEchoMultiplier}
-    state <- UsersDB.new stateCfg
     hAPI <- TG.new TG.Config {..} hLog
     let strings = Bot.fromStrinsM stringsM
     pure $ Bot.Handle {..}
