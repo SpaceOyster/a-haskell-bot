@@ -4,6 +4,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -13,7 +14,7 @@ module Bot.Vkontakte
     ) where
 
 import qualified API.Vkontakte as VK
-import App.Env (envLogDebug, envLogInfo)
+import App.Env (envLogDebug, envLogInfo, grab)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
@@ -82,6 +83,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => Bot.Handle VK.Handle
         -> VK.GroupEvent
@@ -100,6 +102,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => Bot.Handle VK.Handle
         -> Bot.Command
@@ -122,6 +125,7 @@ reactToCommand ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => Bot.Handle VK.Handle
     -> VK.Message
@@ -141,12 +145,14 @@ reactToMessage ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => Bot.Handle VK.Handle
     -> VK.Message
     -> m [VK.Response]
-reactToMessage hBot@Bot.Handle {hAPI} msg@VK.Message {..} = do
-    n <- UsersDB.getUserMultiplier (Bot.state hBot) $ VK.User from_id
+reactToMessage Bot.Handle {hAPI} msg@VK.Message {..} = do
+    hDB <- grab @UsersDB.Handle
+    n <- UsersDB.getUserMultiplier hDB $ VK.User from_id
     envLogDebug $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
@@ -169,11 +175,13 @@ reactToCallback ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => Bot.Handle VK.Handle
     -> VK.CallbackEvent
     -> m [VK.Response]
 reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
+    hDB <- grab @UsersDB.Handle
     let callback = A.parseMaybe A.parseJSON payload
     let user = VK.User user_id
     case callback of
@@ -182,7 +190,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
                 "setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
             let prompt = hBot & Bot.strings & Bot.settingsSaved
-            UsersDB.setUserMultiplier (Bot.state hBot) user n
+            UsersDB.setUserMultiplier hDB user n
             fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
                 VK.SendMessageEventAnswer cq prompt
         Nothing ->

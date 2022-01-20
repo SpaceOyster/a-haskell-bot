@@ -2,10 +2,11 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Bot where
 
-import App.Env (envLogInfo)
+import App.Env (envLogInfo, grab)
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Monad (join)
@@ -86,12 +87,14 @@ repeatPrompt ::
        , MonadThrow m
        , MonadReader env m
        , Has Logger.Handle env
+       , Has UsersDB.Handle env
        )
     => Handle s
     -> Maybe u
     -> m String
 repeatPrompt hBot userM = do
-    mult <- UsersDB.getUserMultiplierM (state hBot) userM
+    hDB <- grab @UsersDB.Handle
+    mult <- UsersDB.getUserMultiplierM hDB userM
     let prompt' = hBot & Bot.strings & Bot.repeat
     pure $ replaceSubseq prompt' "%n" (show mult)
 
@@ -129,6 +132,7 @@ loop ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => a
     -> Int
@@ -152,6 +156,7 @@ class BotHandle h where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => h
         -> m [Response h]
@@ -165,6 +170,7 @@ class BotHandle h where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => h
         -> Update h
@@ -175,6 +181,7 @@ class BotHandle h where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => h
         -> [Update h]
@@ -189,6 +196,7 @@ class BotHandle h where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => h
         -> Command

@@ -7,6 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Bot.Telegram
     ( Config(..)
@@ -14,7 +15,7 @@ module Bot.Telegram
     ) where
 
 import qualified API.Telegram as TG
-import App.Env (envLogDebug, envLogInfo)
+import App.Env (envLogDebug, envLogInfo, grab)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
@@ -83,6 +84,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => Bot.Handle TG.Handle
         -> TG.Update
@@ -106,6 +108,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
            , MonadReader env m
            , Has Logger.Handle env
            , Has HTTP.Handle env
+           , Has UsersDB.Handle env
            )
         => Bot.Handle TG.Handle
         -> Bot.Command
@@ -129,6 +132,7 @@ reactToCommand ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => Bot.Handle TG.Handle
     -> TG.Message
@@ -146,13 +150,15 @@ reactToMessage ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => Bot.Handle TG.Handle
     -> TG.Message
     -> m [TG.Response]
-reactToMessage hBot@Bot.Handle {hAPI} msg@TG.Message {message_id} = do
+reactToMessage Bot.Handle {hAPI} msg@TG.Message {message_id} = do
+    hDB <- grab @UsersDB.Handle
     author <- TG.getAuthorThrow msg
-    n <- UsersDB.getUserMultiplier (Bot.state hBot) author
+    n <- UsersDB.getUserMultiplier hDB author
     envLogDebug $
         "generating " <>
         T.tshow n <> " echoes for Message: " <> T.tshow message_id
@@ -178,12 +184,14 @@ reactToCallback ::
        , MonadReader env m
        , Has Logger.Handle env
        , Has HTTP.Handle env
+       , Has UsersDB.Handle env
        )
     => Bot.Handle TG.Handle
     -> TG.CallbackQuery
     -> m TG.Response
-reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
+reactToCallback Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
     envLogDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
+    hDB <- grab @UsersDB.Handle
     cdata <- TG.getQDataThrow cq
     let user = from
     case qualifyQuery cdata of
@@ -191,7 +199,7 @@ reactToCallback hBot@Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
             envLogInfo $
                 "Setting echo multiplier = " <>
                 T.tshow n <> " for " <> T.tshow user
-            UsersDB.setUserMultiplier (Bot.state hBot) user n
+            UsersDB.setUserMultiplier hDB user n
             TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
         QDOther s ->
             throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
