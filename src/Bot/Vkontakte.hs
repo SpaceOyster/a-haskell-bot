@@ -13,7 +13,7 @@ module Bot.Vkontakte
     ) where
 
 import qualified API.Vkontakte as VK
-import App.Monad (envLogDebug, envLogInfo)
+import App.Env (envLogDebug, envLogInfo)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))

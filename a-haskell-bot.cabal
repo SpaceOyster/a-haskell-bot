@@ -29,6 +29,7 @@ library
       API.Telegram.Types
       API.Vkontakte
       App.Config
+      App.Env
       App.Monad
       Bot
       Bot.Telegram
@@ -69,6 +70,7 @@ executable a-haskell-bot-exe
       API.Telegram.Types
       API.Vkontakte
       App.Config
+      App.Env
       App.Monad
       Bot
       Bot.Telegram

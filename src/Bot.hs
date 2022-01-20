@@ -5,7 +5,7 @@
 
 module Bot where
 
-import App.Monad (envLogInfo)
+import App.Env (envLogInfo)
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
 import Control.Monad (join)

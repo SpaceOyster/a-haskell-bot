@@ -14,7 +14,7 @@ module Bot.Telegram
     ) where
 
 import qualified API.Telegram as TG
-import App.Monad (envLogDebug, envLogInfo)
+import App.Env (envLogDebug, envLogInfo)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))

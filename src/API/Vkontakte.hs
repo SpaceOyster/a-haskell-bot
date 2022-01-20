@@ -32,7 +32,7 @@ module API.Vkontakte
     , runMethod
     ) where
 
-import App.Monad (envLogDebug, grab)
+import App.Env (envLogDebug, grab)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader)
