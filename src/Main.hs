@@ -1,6 +1,7 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE NamedFieldPuns #-}
 
 module Main where
 
@@ -21,6 +22,7 @@ import qualified HTTP
 import qualified Logger
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
+import qualified UsersDB
 
 data BotToRun
     = Telegram
@@ -70,7 +72,10 @@ runWithApp AppConfig {..} bot =
             "API Polling period is " <>
             T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
         hHTTP <- HTTP.new HTTP.Config {}
-        let env = App.Env {envLogger = hLog, envHTTP = hHTTP}
+        hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
+        let env =
+                App.Env
+                    {envLogger = hLog, envHTTP = hHTTP, envUsersDB = hUsersDB}
         app <-
             case bot of
                 Telegram -> flip Bot.loop poll_period <$> TG.new telegram hLog

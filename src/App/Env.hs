@@ -14,11 +14,13 @@ import Data.Kind (Type)
 import qualified Data.Text as T
 import qualified HTTP
 import qualified Logger
+import qualified UsersDB
 
 data Env (m :: Type -> Type) =
     Env
         { envLogger :: Logger.Handle
         , envHTTP :: HTTP.Handle
+        , envUsersDB :: UsersDB.Handle
         }
 
 instance Has Logger.Handle (Env m) where
@@ -26,6 +28,9 @@ instance Has Logger.Handle (Env m) where
 
 instance Has HTTP.Handle (Env m) where
     obtain = envHTTP
+
+instance Has UsersDB.Handle (Env m) where
+    obtain = envUsersDB
 
 grab ::
        forall field env m. (MonadReader env m, Has field env)

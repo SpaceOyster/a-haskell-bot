@@ -17,6 +17,7 @@ data AppConfig =
     AppConfig
         { poll_period :: Int
         , stringsM :: Bot.StringsM
+        , defaultEchoMultiplier :: Int
         , logger :: Logger.Config
         , telegram :: TG.Config
         , vkontakte :: VK.Config
@@ -33,6 +34,8 @@ instance A.FromJSON AppConfig where
     parseJSON =
         A.withObject "FromJSON Main.AppConfig" $ \o -> do
             defaults <- o A..: "defaults"
+            defaultEchoMultiplier <-
+                defaults A..:? "default-echo-multiplier" A..!= 1
             poll_period_ms <- defaults A..: "poll-period-ms"
             let poll_period = (1000 *) $ max 500 poll_period_ms
             stringsM <- mempty <|> o A..: "strings" >>= parseStringsM
