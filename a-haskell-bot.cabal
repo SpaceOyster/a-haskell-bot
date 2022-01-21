@@ -37,7 +37,6 @@ library
       Data.Aeson.Extended
       Data.Has
       Data.Hashable
-      Data.List.Extended
       Data.Text.Extended
       Exceptions
       HTTP
@@ -78,7 +77,6 @@ executable a-haskell-bot-exe
       Data.Aeson.Extended
       Data.Has
       Data.Hashable
-      Data.List.Extended
       Data.Text.Extended
       Exceptions
       HTTP
@@ -109,7 +107,6 @@ test-suite a-haskell-bot-test
   main-is: Spec.hs
   other-modules:
       API.TelegramSpec
-      Data.List.ExtendedSpec
       Network.URI.ExtendedSpec
       Paths_a_haskell_bot
   hs-source-dirs:
