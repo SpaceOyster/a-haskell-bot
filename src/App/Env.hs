@@ -6,7 +6,6 @@
 
 module App.Env where
 
-import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (MonadReader(..), asks)
 import Data.Has (Has(..))

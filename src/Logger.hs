@@ -42,7 +42,6 @@ import qualified System.IO as IO
     , Handle
     , IOMode(..)
     , hFlush
-    , openFile
     , stdout
     , withFile
     )

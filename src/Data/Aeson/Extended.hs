@@ -6,7 +6,7 @@ module Data.Aeson.Extended
 
 import Control.Monad.Catch (MonadThrow(..))
 import Data.Aeson
-import Data.Aeson.Types (Parser(..), parseEither)
+import Data.Aeson.Types (Parser, parseEither)
 import Data.ByteString.Lazy as LBS (ByteString)
 import Exceptions (ParsingException(..))
 
@@ -17,7 +17,7 @@ throwDecode lbs =
         Right a -> pure a
 
 parseThrow :: (MonadThrow m, FromJSON a) => (a -> Parser b) -> a -> m b
-parseThrow p json =
-    case parseEither p json of
+parseThrow p x =
+    case parseEither p x of
         Left err -> throwM $ ParsingException err
         Right b -> pure b

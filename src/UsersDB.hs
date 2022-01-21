@@ -19,7 +19,7 @@ module UsersDB
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
-import qualified Data.Map as Map (Map, alter, findWithDefault, lookup)
+import qualified Data.Map as Map (Map, alter, lookup)
 import Data.Maybe (fromMaybe)
 
 newtype UserData =

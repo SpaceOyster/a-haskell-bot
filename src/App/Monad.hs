@@ -6,9 +6,6 @@ import App.Env (Env(..))
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Reader (MonadReader(..), ReaderT(..))
-import qualified Data.Text as T
-import qualified HTTP
-import qualified Logger
 
 type AppEnv = Env App
 
