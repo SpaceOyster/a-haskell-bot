@@ -197,7 +197,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
 
 -- diff
 getCommand :: VK.Message -> Bot.Command
-getCommand = Bot.parseCommand . takeWhile (/= ' ') . tail . VK.text
+getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
 
 -- diff
 repeatKeyboard :: VK.Keyboard
@@ -210,7 +210,7 @@ repeatKeyboard =
     repeatAction i =
         VK.KeyboardAction
             { action_type = VK.Callback
-            , label = Just $ show i
+            , label = Just $ T.tshow i
             , payload = Just $ A.toJSON $ RepeatPayload i
             , link = Nothing
             }

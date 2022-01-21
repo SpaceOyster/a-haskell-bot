@@ -164,16 +164,16 @@ reactToMessage Bot.Handle {hAPI} msg@TG.Message {message_id} = do
 
 data QueryData
     = QDRepeat Int
-    | QDOther String
+    | QDOther T.Text
     deriving (Show)
 
-qualifyQuery :: String -> QueryData
+qualifyQuery :: T.Text -> QueryData
 qualifyQuery qstring =
     case qtype of
-        "repeat" -> QDRepeat $ read (tail qdata)
+        "repeat" -> QDRepeat $ read $ T.unpack $ T.tail qdata
         _ -> QDOther qstring
   where
-    (qtype, qdata) = break (== '_') qstring
+    (qtype, qdata) = T.break (== '_') qstring
 
 -- diff
 reactToCallback ::
@@ -206,7 +206,7 @@ reactToCallback Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
 getCommandThrow msg = do
     t <- TG.getTextThrow msg
-    pure . Bot.parseCommand . takeWhile (/= ' ') . tail $ t
+    pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
 -- diff
 repeatKeyboard :: TG.InlineKeyboardMarkup
@@ -215,7 +215,7 @@ repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
     button :: Integer -> TG.InlineKeyboardButton
     button x =
         TG.InlineKeyboardButton
-            {text = show x, callback_data = "repeat_" ++ show x}
+            {text = T.tshow x, callback_data = "repeat_" <> T.tshow x}
 
 -- diff
 isCommandE :: TG.Message -> Bool

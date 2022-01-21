@@ -52,7 +52,7 @@ import qualified Network.URI.Extended as URI
 
 data VKState =
     VKState
-        { lastTS :: String
+        { lastTS :: T.Text
         , pollURI :: URI.URI
         }
     deriving (Show)
@@ -109,22 +109,22 @@ makeBaseURI Config {..} =
 
 data PollServer =
     PollServer
-        { key :: String
-        , server :: String
-        , ts :: String
+        { key :: T.Text
+        , server :: T.Text
+        , ts :: T.Text
         }
     deriving (Show, Generic, A.FromJSON)
 
 data Error =
     Error
         { error_code :: Integer
-        , error_msg :: String
+        , error_msg :: T.Text
         }
     deriving (Show, Generic, A.FromJSON)
 
 data Poll =
     Poll
-        { ts :: String
+        { ts :: T.Text
         , updates :: [GroupEvent]
         }
     deriving (Show, Generic, A.FromJSON)
@@ -172,7 +172,8 @@ initiatePollServer hAPI hHTTP = do
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {key, server} = do
-    maybe ex pure . URI.parseURI $ server <> "?act=a_check&key=" <> key <>
+    maybe ex pure . URI.parseURI $ T.unpack server <> "?act=a_check&key=" <>
+        T.unpack key <>
         "&wait=25"
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
@@ -186,7 +187,7 @@ getLongPollServer hAPI hHTTP = do
     case res of
         PollInitError Error {error_code, error_msg} ->
             throwM $ Ex.APIRespondedWithError $ show error_code <> ": " <>
-            error_msg
+            T.unpack error_msg
         PollInitServer r -> pure r
 
 rememberLastUpdate ::
@@ -220,10 +221,10 @@ runMethod hAPI m = do
 
 data Method
     = GetUpdates
-    | SendMessageEventAnswer CallbackEvent String
-    | SendTextMessage Integer String
+    | SendMessageEventAnswer CallbackEvent T.Text
+    | SendTextMessage Integer T.Text
     | CopyMessage Message
-    | SendKeyboard Integer String Keyboard
+    | SendKeyboard Integer T.Text Keyboard
     deriving (Show)
 
 mkRequest :: Handle -> VKState -> Method -> HTTP.Request
@@ -239,7 +240,7 @@ mkRequest hAPI s m =
 
 getUpdates :: Handle -> VKState -> HTTP.Request
 getUpdates _hAPI VKState {..} =
-    HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: lastTS]
+    HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS]
 
 newtype User =
     User
@@ -256,7 +257,7 @@ data Message =
         , date :: Integer
         , peer_id :: Integer
         , from_id :: Integer
-        , text :: String
+        , text :: T.Text
         , random_id :: Maybe Integer
         , attachments :: [Attachment]
         , payload :: Maybe A.Value
@@ -284,7 +285,7 @@ data MediaDoc =
     MediaDoc
         { mdoc_id :: Integer
         , owner_id :: Integer
-        , access_key :: Maybe String
+        , access_key :: Maybe T.Text
         }
     deriving (Show)
 
@@ -336,13 +337,14 @@ attachmentToQuery a =
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
-        show owner_id <> "_" <> show mdoc_id <> maybe "" ('_' :) access_key
+        show owner_id <> "_" <> show mdoc_id <>
+        maybe "" ('_' :) (T.unpack <$> access_key)
 
 data CallbackEvent =
     CallbackEvent
         { user_id :: Integer
         , peer_id :: Integer
-        , event_id :: String
+        , event_id :: T.Text
         , payload :: A.Value
         , conversation_message_id :: Integer
         }
@@ -362,30 +364,30 @@ instance A.FromJSON GroupEvent where
                 "message_event" -> MessageEvent <$> o A..: "object"
                 _ -> fail "Unknown GroupEvent type"
 
-sendMessageEventAnswer :: Handle -> CallbackEvent -> String -> HTTP.Request
+sendMessageEventAnswer :: Handle -> CallbackEvent -> T.Text -> HTTP.Request
 sendMessageEventAnswer hAPI CallbackEvent {..} prompt =
     HTTP.GET . apiMethod hAPI "messages.sendMessageEventAnswer" $
-    [ "event_id" URI.:=: event_id
+    [ "event_id" URI.:=: T.unpack event_id
     , "user_id" URI.:=: show user_id
     , "peer_id" URI.:=: show peer_id
     , "event_data" URI.:=: L8.unpack . A.encode $ mkJSON prompt
     ]
   where
-    mkJSON :: String -> A.Value
-    mkJSON p = A.object ["type" A..= ("show_snackbar" :: String), "text" A..= p]
+    mkJSON :: T.Text -> A.Value
+    mkJSON p = A.object ["type" A..= ("show_snackbar" :: T.Text), "text" A..= p]
 
-apiMethod :: Handle -> String -> [URI.QueryParam] -> URI.URI
+apiMethod :: Handle -> T.Text -> [URI.QueryParam] -> URI.URI
 apiMethod hAPI method qps =
-    flip URI.addQueryParams qps . URI.addPath (baseURI hAPI) $ method
+    flip URI.addQueryParams qps . URI.addPath (baseURI hAPI) $ T.unpack method
 
 sendMessageWith ::
-       Handle -> Integer -> String -> [URI.QueryParam] -> HTTP.Request
+       Handle -> Integer -> T.Text -> [URI.QueryParam] -> HTTP.Request
 sendMessageWith hAPI peer_id text qps =
     HTTP.GET . apiMethod hAPI "messages.send" $
-    ["peer_id" URI.:=: show peer_id, "message" URI.:=: text] <>
+    ["peer_id" URI.:=: show peer_id, "message" URI.:=: T.unpack text] <>
     qps
 
-sendTextMessage :: Handle -> Integer -> String -> HTTP.Request
+sendTextMessage :: Handle -> Integer -> T.Text -> HTTP.Request
 sendTextMessage hAPI peer_id text = sendMessageWith hAPI peer_id text mempty
 
 copyMessage :: Handle -> Message -> HTTP.Request
@@ -436,9 +438,9 @@ instance A.FromJSON ButtonColor where
 data KeyboardAction =
     KeyboardAction
         { action_type :: KeyboardActionType
-        , label :: Maybe String
+        , label :: Maybe T.Text
         , payload :: Maybe A.Value
-        , link :: Maybe String
+        , link :: Maybe T.Text
         }
     deriving (Show, Generic)
 
@@ -483,7 +485,7 @@ instance A.FromJSON KeyboardActionType where
             "callback" -> pure Callback
             _ -> fail "Unknown Action Type"
 
-sendKeyboard :: Handle -> Integer -> String -> Keyboard -> HTTP.Request
+sendKeyboard :: Handle -> Integer -> T.Text -> Keyboard -> HTTP.Request
 sendKeyboard hAPI peer_id prompt keyboard =
     sendMessageWith
         hAPI

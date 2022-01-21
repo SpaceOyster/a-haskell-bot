@@ -13,12 +13,11 @@ import Control.Monad (join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader, forever)
-import Data.Char (toLower)
 import Data.Function ((&))
 import Data.Has (Has(..))
 import qualified Data.Hashable as H
-import Data.List.Extended (replaceSubseq)
 import Data.Maybe (fromMaybe)
+import qualified Data.Text.Extended as T
 import qualified HTTP
 import qualified Logger
 import Prelude hiding (repeat)
@@ -32,21 +31,21 @@ data Handle apiHandle =
 
 data StringsM =
     StringsM
-        { helpM :: Maybe String
-        , greetingM :: Maybe String
-        , repeatM :: Maybe String
-        , unknownM :: Maybe String
-        , settingsSavedM :: Maybe String
+        { helpM :: Maybe T.Text
+        , greetingM :: Maybe T.Text
+        , repeatM :: Maybe T.Text
+        , unknownM :: Maybe T.Text
+        , settingsSavedM :: Maybe T.Text
         }
     deriving (Show)
 
 data Strings =
     Strings
-        { help :: String
-        , greeting :: String
-        , repeat :: String
-        , unknown :: String
-        , settingsSaved :: String
+        { help :: T.Text
+        , greeting :: T.Text
+        , repeat :: T.Text
+        , unknown :: T.Text
+        , settingsSaved :: T.Text
         }
     deriving (Show)
 
@@ -90,12 +89,12 @@ repeatPrompt ::
        )
     => Handle s
     -> Maybe u
-    -> m String
+    -> m T.Text
 repeatPrompt hBot userM = do
     hDB <- grab @UsersDB.Handle
     mult <- UsersDB.getUserMultiplierM hDB userM
     let prompt' = hBot & Bot.strings & Bot.repeat
-    pure $ replaceSubseq prompt' "%n" (show mult)
+    pure $ T.replace "%n" (T.tshow mult) prompt'
 
 -- | command has to be between 1-32 chars long
 -- description hat to be between 3-256 chars long
@@ -106,23 +105,23 @@ data Command
     | UnknownCommand
     deriving (Show, Enum, Bounded)
 
-describe :: Command -> String
+describe :: Command -> T.Text
 describe Start = "Greet User"
 describe Help = "Show help text"
 describe Repeat = "Set echo multiplier"
 describe UnknownCommand = "Unknown Command"
 
-parseCommand :: String -> Command
+parseCommand :: T.Text -> Command
 parseCommand s =
-    case toLower <$> s of
+    case T.toLower s of
         "start" -> Start
         "help" -> Help
         "repeat" -> Repeat
         _ -> UnknownCommand
 
-isCommand :: String -> Bool
+isCommand :: T.Text -> Bool
 isCommand "" = False
-isCommand s = (== '/') . head $ s
+isCommand s = (== '/') . T.head $ s
 
 loop ::
        ( MonadIO m

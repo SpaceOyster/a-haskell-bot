@@ -38,6 +38,7 @@ import Data.Aeson.Types
   , defaultOptions
   )
 import qualified Data.Hashable as H
+import qualified Data.Text as T
 import qualified Exceptions as Ex (BotException(..), Priority(..))
 import GHC.Generics (Generic)
 
@@ -62,7 +63,7 @@ data Message =
     , from :: Maybe User
     , chat :: Chat
     , date :: Integer
-    , text :: Maybe String
+    , text :: Maybe T.Text
     }
   deriving (Show, Generic, FromJSON)
 
@@ -73,7 +74,7 @@ getAuthorThrow Message {message_id, from} =
     Nothing ->
       throwM $ Ex.Ex Ex.Info $ "Message " ++ show message_id ++ " has no author"
 
-getTextThrow :: (MonadThrow m) => Message -> m String
+getTextThrow :: (MonadThrow m) => Message -> m T.Text
 getTextThrow Message {message_id, text} =
   case text of
     Just t -> pure t
@@ -82,22 +83,22 @@ getTextThrow Message {message_id, text} =
 
 data BotCommand =
   BotCommand
-    { command :: String
-    , description :: String
+    { command :: T.Text
+    , description :: T.Text
     }
   deriving (Show, Generic, FromJSON, ToJSON, Eq, Ord)
 
 data CallbackQuery =
   CallbackQuery
-    { cq_id :: String
+    { cq_id :: T.Text
     , from :: User
     , message :: Maybe Message
-    , inline_message_id :: Maybe String
-    , query_data :: Maybe String
+    , inline_message_id :: Maybe T.Text
+    , query_data :: Maybe T.Text
     }
   deriving (Show)
 
-getQDataThrow :: (MonadThrow m) => CallbackQuery -> m String
+getQDataThrow :: (MonadThrow m) => CallbackQuery -> m T.Text
 getQDataThrow CallbackQuery {cq_id, query_data} =
   case query_data of
     Just d -> pure d
@@ -147,15 +148,15 @@ newtype InlineKeyboardMarkup =
 
 data InlineKeyboardButton =
   InlineKeyboardButton
-    { text :: String
-    , callback_data :: String
+    { text :: T.Text
+    , callback_data :: T.Text
     }
   deriving (Show, Generic, ToJSON)
 
 data Error =
   Error
     { error_code :: Int
-    , description :: String
+    , description :: T.Text
     }
   deriving (Show, Generic, FromJSON)
 
@@ -188,6 +189,7 @@ extractUpdates :: (MonadThrow m) => Response -> m [Update]
 extractUpdates res =
   case res of
     ErrorResponse Error {error_code, description} ->
-      throwM $ Ex.Ex Ex.Warning (show error_code ++ ": " ++ description)
+      throwM $
+      Ex.Ex Ex.Warning (show error_code ++ ": " ++ T.unpack description)
     UpdatesResponse us -> pure us
     _ -> pure []

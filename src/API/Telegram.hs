@@ -52,7 +52,6 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson.Extended ((.=), encode, object, throwDecode)
-import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.Text.Extended as T
 import qualified Exceptions as Ex
 import qualified HTTP
@@ -133,10 +132,10 @@ runMethod hAPI m = do
 
 data Method
     = GetUpdates
-    | AnswerCallbackQuery String
+    | AnswerCallbackQuery T.Text
     | CopyMessage Message
-    | SendMessage Integer String
-    | SendInlineKeyboard Integer String InlineKeyboardMarkup
+    | SendMessage Integer T.Text
+    | SendInlineKeyboard Integer T.Text InlineKeyboardMarkup
     deriving (Show)
 
 mkRequest :: Handle -> TGState -> Method -> HTTP.Request
@@ -158,7 +157,7 @@ getUpdates hAPI st =
      in HTTP.POST (apiMethod hAPI "getUpdates") json
 
 -- API method
-answerCallbackQuery :: Handle -> String -> HTTP.Request
+answerCallbackQuery :: Handle -> T.Text -> HTTP.Request
 answerCallbackQuery hAPI cqid =
     let json = encode . object $ ["callback_query_id" .= cqid]
      in HTTP.POST (apiMethod hAPI "answerCallbackQuery") json
@@ -175,14 +174,14 @@ copyMessage hAPI Message {message_id, chat} =
      in HTTP.POST (apiMethod hAPI "copyMessage") json
 
 -- API method
-sendMessage :: Handle -> Integer -> String -> HTTP.Request
+sendMessage :: Handle -> Integer -> T.Text -> HTTP.Request
 sendMessage hAPI chatId msg =
     let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
      in HTTP.POST (apiMethod hAPI "sendMessage") json
 
 -- API method
 sendInlineKeyboard ::
-       Handle -> Integer -> String -> InlineKeyboardMarkup -> HTTP.Request
+       Handle -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
 sendInlineKeyboard hAPI chatId prompt keyboard =
     let json =
             encode . object $
