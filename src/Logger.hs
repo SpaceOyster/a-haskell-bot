@@ -23,16 +23,10 @@ import Control.Concurrent.MVar (newMVar, withMVar)
 import Control.Exception (bracket)
 import Control.Monad ((<=<), when)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import qualified Data.Aeson as A
-  ( FromJSON(..)
-  , (.!=)
-  , (.:?)
-  , withObject
-  , withText
-  )
+import qualified Data.Aeson as A (FromJSON(..), (.!=), (.:?), withObject)
 import Data.Has (Has(..))
 import Data.IORef (atomicModifyIORef, newIORef, readIORef)
-import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
+import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
