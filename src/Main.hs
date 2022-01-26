@@ -25,60 +25,57 @@ import qualified System.Exit as Exit (die)
 import qualified UsersDB
 
 data BotToRun
-    = Telegram
-    | Vkontakte
+  = Telegram
+  | Vkontakte
 
 main :: IO ()
 main =
-    flip (<|>) (Exit.die usagePrompt) $ do
-        bot:cfgPath:_as <- E.getArgs
-        cfg <- readConfig cfgPath
-        botToRun <- readBotName bot
-        runWithApp cfg botToRun
+  flip (<|>) (Exit.die usagePrompt) $ do
+    bot:cfgPath:_as <- E.getArgs
+    cfg <- readConfig cfgPath
+    botToRun <- readBotName bot
+    runWithApp cfg botToRun
 
 readBotName :: (MonadFail m) => String -> m BotToRun
 readBotName str =
-    case toLower <$> str of
-        "telegram" -> pure Telegram
-        "vkontakte" -> pure Vkontakte
-        _ -> fail "unknown bot type"
+  case toLower <$> str of
+    "telegram" -> pure Telegram
+    "vkontakte" -> pure Vkontakte
+    _ -> fail "unknown bot type"
 
 readConfig :: FilePath -> IO AppConfig
 readConfig cfgPath = do
-    json <- BL.readFile cfgPath
-    A.throwDecode json
+  json <- BL.readFile cfgPath
+  A.throwDecode json
 
 usagePrompt :: String
 usagePrompt =
-    intercalate
-        "\n"
-        [ "a-haskell-bot - Echo bot for Telegram and Vkontakte, written in Haskell"
-        , mempty
-        , "Usage: a-haskell-bot BOT FILE"
-        , mempty
-        , "FILE - is a config file formatted as json, see example config here:"
-        , mempty
-        , "Available bots:"
-        , "  telegram - run bot for Telegram"
-        , "  vkontakte - run bot for Vkontakte "
-        , "INSTRUCTIONS TO FIND EXAMPLE CONFIG"
-        ]
+  intercalate
+    "\n"
+    [ "a-haskell-bot - Echo bot for Telegram and Vkontakte, written in Haskell"
+    , mempty
+    , "Usage: a-haskell-bot BOT FILE"
+    , mempty
+    , "FILE - is a config file formatted as json, see example config here:"
+    , mempty
+    , "Available bots:"
+    , "  telegram - run bot for Telegram"
+    , "  vkontakte - run bot for Vkontakte "
+    , "INSTRUCTIONS TO FIND EXAMPLE CONFIG"
+    ]
 
 runWithApp :: AppConfig -> BotToRun -> IO ()
 runWithApp AppConfig {..} bot =
-    Logger.withHandle logger $ \hLog -> do
-        Logger.logInfo hLog "Initiating Main Bot loop"
-        Logger.logInfo hLog $
-            "API Polling period is " <>
-            T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
-        hHTTP <- HTTP.new HTTP.Config {}
-        hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
-        let env =
-                App.Env
-                    {envLogger = hLog, envHTTP = hHTTP, envUsersDB = hUsersDB}
-        app <-
-            case bot of
-                Telegram -> flip Bot.loop poll_period <$> TG.new telegram hLog
-                Vkontakte ->
-                    flip Bot.loop poll_period <$> VK.new vkontakte hLog hHTTP
-        App.unApp app `runReaderT` env
+  Logger.withHandle logger $ \hLog -> do
+    Logger.logInfo hLog "Initiating Main Bot loop"
+    Logger.logInfo hLog $
+      "API Polling period is " <>
+      T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
+    hHTTP <- HTTP.new HTTP.Config {}
+    hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
+    let env = App.Env {envLogger = hLog, envHTTP = hHTTP, envUsersDB = hUsersDB}
+    let app =
+          case bot of
+            Telegram -> flip Bot.loop poll_period =<< TG.new telegram
+            Vkontakte -> flip Bot.loop poll_period =<< VK.new vkontakte hHTTP
+    App.unApp app `runReaderT` env
