@@ -7,7 +7,9 @@ import App.Env (Env(..), grab)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader(..), ReaderT(..))
+import qualified Effects.HTTP
 import qualified Effects.Log as Log
+import qualified HTTP
 import qualified Logger
 
 type AppEnv = Env App
@@ -32,3 +34,9 @@ instance Log.MonadLog App where
     hLog <- grab @Logger.Handle
     let logAction = Logger.getLog hLog
     App . liftIO $ logAction p t
+
+instance Effects.HTTP.MonadHTTP App where
+  sendRequest req = do
+    hHTTP <- grab @HTTP.Handle
+    let sendAction = HTTP.sendRequest hHTTP
+    App . liftIO $ sendAction req
