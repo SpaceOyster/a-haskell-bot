@@ -38,6 +38,7 @@ library
       Data.Has
       Data.Hashable
       Data.Text.Extended
+      Effects.HTTP
       Effects.Log
       Exceptions
       HTTP
@@ -79,6 +80,7 @@ executable a-haskell-bot-exe
       Data.Has
       Data.Hashable
       Data.Text.Extended
+      Effects.HTTP
       Effects.Log
       Exceptions
       HTTP
