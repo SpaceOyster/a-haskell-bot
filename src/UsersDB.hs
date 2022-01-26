@@ -10,10 +10,6 @@ module UsersDB
   , new
   , getUserData
   , modifyUserData
-  , setUserData
-  , getUserMultiplierM
-  , getUserMultiplier
-  , setUserMultiplier
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
@@ -60,14 +56,6 @@ getUserData hDB user = do
       maybeSettings = Map.lookup uhash $ getUsersMap uMap
   pure $ fromMaybe defaultSettings maybeSettings
 
-getUserMultiplier :: (H.Hashable u, MonadIO m) => Handle -> u -> m Int
-getUserMultiplier hDB user = DB.getEchoMultiplier <$> getUserData hDB user
-
-getUserMultiplierM :: (H.Hashable u, MonadIO m) => Handle -> Maybe u -> m Int
-getUserMultiplierM hDB (Just u) = getUserMultiplier hDB u
-getUserMultiplierM hDB Nothing =
-  pure . DB.getEchoMultiplier $ defaultUserData hDB
-
 modifyUserData ::
      (H.Hashable u, MonadIO m)
   => Handle
@@ -80,12 +68,3 @@ modifyUserData hDB user morph =
         m = getUsersMap uMap
         usettings = Map.alter (fmap morph) uhash m
      in uMap {getUsersMap = usettings}
-
-setUserData ::
-     (Show u, H.Hashable u, MonadIO m) => Handle -> u -> DB.UserData -> m ()
-setUserData hDB user us = modifyUserData hDB user $ const us
-
-setUserMultiplier ::
-     (Show u, H.Hashable u, MonadIO m) => Handle -> u -> Int -> m ()
-setUserMultiplier hDB user multiplier =
-  modifyUserData hDB user $ \us -> us {DB.getEchoMultiplier = multiplier}
