@@ -25,7 +25,6 @@ import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
 import qualified Exceptions as Ex (BotException(..), Priority(..))
-import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
 data Config =
   Config

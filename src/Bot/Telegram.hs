@@ -25,7 +25,6 @@ import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
-import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
 data Config =
   Config

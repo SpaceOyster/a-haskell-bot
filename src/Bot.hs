@@ -18,7 +18,6 @@ import qualified Effects.HTTP as HTTP (MonadHTTP(..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
 import qualified Effects.UsersDB as DB
 import Prelude hiding (repeat)
-import qualified UsersDB (Handle(..), getUserMultiplierM)
 
 data Handle apiHandle =
   Handle
