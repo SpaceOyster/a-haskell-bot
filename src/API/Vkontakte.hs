@@ -44,10 +44,10 @@ import Data.Has (Has(..))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Data.Text.Extended as T
+import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Exceptions as Ex
 import GHC.Generics (Generic)
-import qualified HTTP
 import qualified Network.URI.Extended as URI
 
 data VKState =
@@ -86,16 +86,15 @@ instance Monoid VKState where
   mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
 
 new ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m)
+     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Config
-  -> HTTP.Handle
   -> m Handle
-new cfg hHTTP = do
+new cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
   baseURI <- makeBaseURI cfg
   apiState <- liftIO $ newIORef mempty
   let hAPI = Handle {baseURI, apiState}
-  initiatePollServer hAPI hHTTP
+  initiatePollServer hAPI
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
@@ -162,9 +161,9 @@ instance A.FromJSON PollInitResponse where
         ]
 
 initiatePollServer ::
-     (MonadIO m, MonadThrow m) => Handle -> HTTP.Handle -> m Handle
-initiatePollServer hAPI hHTTP = do
-  ps@PollServer {ts} <- getLongPollServer hAPI hHTTP
+     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => Handle -> m Handle
+initiatePollServer hAPI = do
+  ps@PollServer {ts} <- getLongPollServer hAPI
   pollURI <- makePollURI ps
   let pollCreds = VKState {lastTS = ts, pollURI}
   setState hAPI pollCreds
@@ -179,10 +178,10 @@ makePollURI PollServer {key, server} = do
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
 getLongPollServer ::
-     (MonadIO m, MonadThrow m) => Handle -> HTTP.Handle -> m PollServer
-getLongPollServer hAPI hHTTP = do
+     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => Handle -> m PollServer
+getLongPollServer hAPI = do
   let req = HTTP.GET $ apiMethod hAPI "groups.getLongPollServer" mempty
-  json <- liftIO $ HTTP.sendRequest hHTTP req
+  json <- HTTP.sendRequest req
   res <- A.throwDecode json
   case res of
     PollInitError Error {error_code, error_msg} ->
@@ -205,8 +204,8 @@ runMethod ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Handle
   -> Method
@@ -215,9 +214,7 @@ runMethod hAPI m = do
   state <- getState hAPI
   Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
   let req = mkRequest hAPI state m
-  hHTTP <- grab @HTTP.Handle
-  (liftIO $ HTTP.sendRequest hHTTP req) >>= A.throwDecode >>=
-    rememberLastUpdate hAPI
+  HTTP.sendRequest req >>= A.throwDecode >>= rememberLastUpdate hAPI
 
 data Method
   = GetUpdates

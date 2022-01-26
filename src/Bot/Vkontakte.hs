@@ -25,9 +25,9 @@ import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
 import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
+import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Exceptions as Ex (BotException(..), Priority(..))
-import qualified HTTP
 import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
 data Config =
@@ -41,14 +41,13 @@ data Config =
   deriving (Show)
 
 new ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m)
+     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Config
-  -> HTTP.Handle
   -> m (Bot.Handle VK.Handle)
-new cfg@Config {..} hHTTP = do
+new cfg@Config {..} = do
   Log.logInfo "Initiating Vkontakte Bot"
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
-  hAPI <- VK.new VK.Config {..} hHTTP
+  hAPI <- VK.new VK.Config {..}
   let strings = Bot.fromStrinsM stringsM
   pure $ Bot.Handle {..}
 
@@ -58,8 +57,8 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => Bot.Handle VK.Handle
     -> m [VK.GroupEvent]
@@ -79,9 +78,9 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => Bot.Handle VK.Handle
     -> VK.GroupEvent
@@ -98,9 +97,9 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => Bot.Handle VK.Handle
     -> Bot.Command
@@ -120,9 +119,9 @@ reactToCommand ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Bot.Handle VK.Handle
   -> VK.Message
@@ -140,9 +139,9 @@ reactToMessage ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Bot.Handle VK.Handle
   -> VK.Message
@@ -170,9 +169,9 @@ reactToCallback ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Bot.Handle VK.Handle
   -> VK.CallbackEvent

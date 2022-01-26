@@ -53,9 +53,9 @@ import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Aeson.Extended ((.=), encode, object, throwDecode)
 import qualified Data.Text.Extended as T
+import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Exceptions as Ex
-import qualified HTTP
 import qualified Network.URI.Extended as URI
 
 newtype TGState =
@@ -116,8 +116,8 @@ runMethod ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Handle
   -> Method
@@ -126,9 +126,7 @@ runMethod hAPI m = do
   state <- getState hAPI
   Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
   let req = mkRequest hAPI state m
-  hHTTP <- grab @HTTP.Handle
-  liftIO (HTTP.sendRequest hHTTP req) >>= throwDecode >>=
-    rememberLastUpdate hAPI
+  HTTP.sendRequest req >>= throwDecode >>= rememberLastUpdate hAPI
 
 data Method
   = GetUpdates

@@ -77,5 +77,5 @@ runWithApp AppConfig {..} bot =
     let app =
           case bot of
             Telegram -> flip Bot.loop poll_period =<< TG.new telegram
-            Vkontakte -> flip Bot.loop poll_period =<< VK.new vkontakte hHTTP
+            Vkontakte -> flip Bot.loop poll_period =<< VK.new vkontakte
     App.unApp app `runReaderT` env

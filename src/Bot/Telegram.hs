@@ -24,10 +24,10 @@ import Control.Monad.Reader (MonadReader)
 import Data.Function ((&))
 import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
+import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
-import qualified HTTP
 import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
 data Config =
@@ -55,8 +55,8 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => Bot.Handle TG.Handle
     -> m [TG.Update]
@@ -80,9 +80,9 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => Bot.Handle TG.Handle
     -> TG.Update
@@ -102,9 +102,9 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => Bot.Handle TG.Handle
     -> Bot.Command
@@ -124,9 +124,9 @@ reactToCommand ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Bot.Handle TG.Handle
   -> TG.Message
@@ -142,9 +142,9 @@ reactToMessage ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Bot.Handle TG.Handle
   -> TG.Message
@@ -175,9 +175,9 @@ reactToCallback ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
      , Log.MonadLog m
+     , HTTP.MonadHTTP m
      )
   => Bot.Handle TG.Handle
   -> TG.CallbackQuery

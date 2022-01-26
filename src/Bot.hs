@@ -18,8 +18,8 @@ import Data.Has (Has(..))
 import qualified Data.Hashable as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
+import qualified Effects.HTTP as HTTP (MonadHTTP(..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
-import qualified HTTP
 import Prelude hiding (repeat)
 import qualified UsersDB (Handle(..), getUserMultiplierM)
 
@@ -127,8 +127,8 @@ loop ::
      , MonadThrow m
      , Bot.BotHandle a
      , MonadReader env m
-     , Has HTTP.Handle env
      , Has UsersDB.Handle env
+     , HTTP.MonadHTTP m
      , Log.MonadLog m
      )
   => a
@@ -142,8 +142,8 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => h
     -> m [Update h]
@@ -151,9 +151,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => h
     -> m [Response h]
@@ -165,9 +165,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => h
     -> Update h
@@ -176,9 +176,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => h
     -> [Update h]
@@ -191,9 +191,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has HTTP.Handle env
        , Has UsersDB.Handle env
        , Log.MonadLog m
+       , HTTP.MonadHTTP m
        )
     => h
     -> Command
