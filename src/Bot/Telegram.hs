@@ -26,6 +26,7 @@ import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
+import qualified Effects.UsersDB as DB
 import qualified Exceptions as Priority (Priority(..))
 import Exceptions (BotException(..))
 import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
@@ -80,9 +81,9 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => Bot.Handle TG.Handle
     -> TG.Update
@@ -102,9 +103,9 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => Bot.Handle TG.Handle
     -> Bot.Command
@@ -124,9 +125,9 @@ reactToCommand ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
      , Log.MonadLog m
      , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
      )
   => Bot.Handle TG.Handle
   -> TG.Message
@@ -142,17 +143,16 @@ reactToMessage ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
      , Log.MonadLog m
      , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
      )
   => Bot.Handle TG.Handle
   -> TG.Message
   -> m [TG.Response]
 reactToMessage Bot.Handle {hAPI} msg@TG.Message {message_id} = do
-  hDB <- grab @UsersDB.Handle
   author <- TG.getAuthorThrow msg
-  n <- UsersDB.getUserMultiplier hDB author
+  n <- DB.getUserMultiplier author
   Log.logDebug $
     "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
   n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
@@ -175,23 +175,22 @@ reactToCallback ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
      , Log.MonadLog m
      , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
      )
   => Bot.Handle TG.Handle
   -> TG.CallbackQuery
   -> m TG.Response
 reactToCallback Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} = do
   Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
-  hDB <- grab @UsersDB.Handle
   cdata <- TG.getQDataThrow cq
   let user = from
   case qualifyQuery cdata of
     QDRepeat n -> do
       Log.logInfo $
         "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-      UsersDB.setUserMultiplier hDB user n
+      DB.setUserMultiplier user n
       TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
     QDOther s ->
       throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s

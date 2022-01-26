@@ -27,6 +27,7 @@ import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
+import qualified Effects.UsersDB as DB
 import qualified Exceptions as Ex (BotException(..), Priority(..))
 import qualified UsersDB (Handle, getUserMultiplier, setUserMultiplier)
 
@@ -78,9 +79,9 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => Bot.Handle VK.Handle
     -> VK.GroupEvent
@@ -97,9 +98,9 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => Bot.Handle VK.Handle
     -> Bot.Command
@@ -119,9 +120,9 @@ reactToCommand ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
      , Log.MonadLog m
      , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
      )
   => Bot.Handle VK.Handle
   -> VK.Message
@@ -139,16 +140,15 @@ reactToMessage ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
      , Log.MonadLog m
      , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
      )
   => Bot.Handle VK.Handle
   -> VK.Message
   -> m [VK.Response]
 reactToMessage Bot.Handle {hAPI} msg@VK.Message {..} = do
-  hDB <- grab @UsersDB.Handle
-  n <- UsersDB.getUserMultiplier hDB $ VK.User from_id
+  n <- DB.getUserMultiplier $ VK.User from_id
   Log.logDebug $
     "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
   n `replicateM` VK.runMethod hAPI (VK.CopyMessage msg)
@@ -169,15 +169,14 @@ reactToCallback ::
      ( MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
      , Log.MonadLog m
      , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
      )
   => Bot.Handle VK.Handle
   -> VK.CallbackEvent
   -> m [VK.Response]
 reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
-  hDB <- grab @UsersDB.Handle
   let callback = A.parseMaybe A.parseJSON payload
   let user = VK.User user_id
   case callback of
@@ -185,7 +184,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
       Log.logInfo $
         "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
       let prompt = hBot & Bot.strings & Bot.settingsSaved
-      UsersDB.setUserMultiplier hDB user n
+      DB.setUserMultiplier user n
       fmap (: []) . VK.runMethod (Bot.hAPI hBot) $
         VK.SendMessageEventAnswer cq prompt
     Nothing ->

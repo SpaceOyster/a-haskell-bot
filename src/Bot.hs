@@ -20,6 +20,7 @@ import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP (MonadHTTP(..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
+import qualified Effects.UsersDB as DB
 import Prelude hiding (repeat)
 import qualified UsersDB (Handle(..), getUserMultiplierM)
 
@@ -84,14 +85,13 @@ repeatPrompt ::
      , MonadIO m
      , MonadThrow m
      , MonadReader env m
-     , Has UsersDB.Handle env
+     , DB.MonadUsersDB m
      )
   => Handle s
   -> Maybe u
   -> m T.Text
 repeatPrompt hBot userM = do
-  hDB <- grab @UsersDB.Handle
-  mult <- UsersDB.getUserMultiplierM hDB userM
+  mult <- DB.getUserMultiplierM userM
   let prompt' = hBot & Bot.strings & Bot.repeat
   pure $ T.replace "%n" (T.tshow mult) prompt'
 
@@ -127,9 +127,9 @@ loop ::
      , MonadThrow m
      , Bot.BotHandle a
      , MonadReader env m
-     , Has UsersDB.Handle env
      , HTTP.MonadHTTP m
      , Log.MonadLog m
+     , DB.MonadUsersDB m
      )
   => a
   -> Int
@@ -151,9 +151,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => h
     -> m [Response h]
@@ -165,9 +165,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => h
     -> Update h
@@ -176,9 +176,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => h
     -> [Update h]
@@ -191,9 +191,9 @@ class BotHandle h where
        ( MonadIO m
        , MonadThrow m
        , MonadReader env m
-       , Has UsersDB.Handle env
        , Log.MonadLog m
        , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
        )
     => h
     -> Command
