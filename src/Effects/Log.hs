@@ -2,14 +2,8 @@
 
 module Effects.Log where
 
-import qualified Data.Aeson as A
-  ( FromJSON(..)
-  , (.!=)
-  , (.:?)
-  , withObject
-  , withText
-  )
-import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
+import qualified Data.Aeson as A (FromJSON(..), withText)
+import qualified Data.Text.Extended as T (Text, toUpper, tshow, unpack)
 
 data Priority
   = Debug
