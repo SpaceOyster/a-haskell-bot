@@ -9,8 +9,10 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader(..), ReaderT(..))
 import qualified Effects.HTTP
 import qualified Effects.Log as Log
+import qualified Effects.UsersDB as DB
 import qualified HTTP
 import qualified Logger
+import qualified UsersDB
 
 type AppEnv = Env App
 
@@ -40,3 +42,16 @@ instance Effects.HTTP.MonadHTTP App where
     hHTTP <- grab @HTTP.Handle
     let sendAction = HTTP.sendRequest hHTTP
     App . liftIO $ sendAction req
+
+instance DB.MonadUsersDB App where
+  defaultUserData = do
+    hUsersDB <- grab @UsersDB.Handle
+    pure $ UsersDB.defaultUserData hUsersDB
+  getUserData user = do
+    hUsersDB <- grab @UsersDB.Handle
+    let getAction = UsersDB.getUserData hUsersDB
+    App . liftIO $ getAction user
+  modifyUserData user morph = do
+    hUsersDB <- grab @UsersDB.Handle
+    let modifyAction = UsersDB.modifyUserData hUsersDB
+    App . liftIO $ modifyAction user morph
