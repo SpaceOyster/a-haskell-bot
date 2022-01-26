@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
@@ -14,16 +13,13 @@ module Bot.Vkontakte
   ) where
 
 import qualified API.Vkontakte as VK
-import App.Env (grab)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (MonadReader)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
-import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
@@ -55,12 +51,7 @@ new cfg@Config {..} = do
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
   type Update (Bot.Handle VK.Handle) = VK.GroupEvent
   fetchUpdates ::
-       ( MonadIO m
-       , MonadThrow m
-       , MonadReader env m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       )
+       (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle VK.Handle
     -> m [VK.GroupEvent]
   fetchUpdates Bot.Handle {hAPI} = do
@@ -78,7 +69,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
   reactToUpdate ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -97,7 +87,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
   execCommand ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -119,7 +108,6 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
 reactToCommand ::
      ( MonadIO m
      , MonadThrow m
-     , MonadReader env m
      , Log.MonadLog m
      , HTTP.MonadHTTP m
      , DB.MonadUsersDB m
@@ -139,7 +127,6 @@ reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
 reactToMessage ::
      ( MonadIO m
      , MonadThrow m
-     , MonadReader env m
      , Log.MonadLog m
      , HTTP.MonadHTTP m
      , DB.MonadUsersDB m
@@ -168,7 +155,6 @@ instance A.FromJSON Payload where
 reactToCallback ::
      ( MonadIO m
      , MonadThrow m
-     , MonadReader env m
      , Log.MonadLog m
      , HTTP.MonadHTTP m
      , DB.MonadUsersDB m

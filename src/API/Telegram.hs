@@ -6,7 +6,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
 
 module API.Telegram
   ( Config(..)
@@ -44,9 +43,6 @@ import API.Telegram.Types as Types
   , getQDataThrow
   , getTextThrow
   )
-import App.Env (grab)
-import Control.Monad.Reader (MonadReader)
-import Data.Has (Has(..))
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
@@ -100,7 +96,7 @@ apiMethod :: Handle -> String -> URI.URI
 apiMethod hAPI method = baseURI hAPI `URI.addPath` method
 
 rememberLastUpdate ::
-     (MonadIO m, MonadThrow m, MonadReader env m, Log.MonadLog m)
+     (MonadIO m, MonadThrow m, Log.MonadLog m)
   => Handle
   -> Response
   -> m Response
@@ -113,12 +109,7 @@ newStateFromM (UpdatesResponse us@(_x:_xs)) =
 newStateFromM _ = Nothing
 
 runMethod ::
-     ( MonadIO m
-     , MonadThrow m
-     , MonadReader env m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     )
+     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Handle
   -> Method
   -> m Response

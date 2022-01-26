@@ -2,19 +2,15 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Bot where
 
-import App.Env (grab)
 import Control.Applicative ((<|>))
 import Control.Concurrent (threadDelay)
-import Control.Monad (join)
+import Control.Monad (forever, join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (MonadReader, forever)
 import Data.Function ((&))
-import Data.Has (Has(..))
 import qualified Data.Hashable as H
 import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
@@ -81,12 +77,7 @@ instance Monoid StringsM where
       }
 
 repeatPrompt ::
-     ( H.Hashable u
-     , MonadIO m
-     , MonadThrow m
-     , MonadReader env m
-     , DB.MonadUsersDB m
-     )
+     (H.Hashable u, MonadIO m, MonadThrow m, DB.MonadUsersDB m)
   => Handle s
   -> Maybe u
   -> m T.Text
@@ -126,7 +117,6 @@ loop ::
      ( MonadIO m
      , MonadThrow m
      , Bot.BotHandle a
-     , MonadReader env m
      , HTTP.MonadHTTP m
      , Log.MonadLog m
      , DB.MonadUsersDB m
@@ -139,18 +129,12 @@ loop hBot period = forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
 class BotHandle h where
   type Update h
   fetchUpdates ::
-       ( MonadIO m
-       , MonadThrow m
-       , MonadReader env m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       )
+       (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => h
     -> m [Update h]
   doBotThing ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -164,7 +148,6 @@ class BotHandle h where
   reactToUpdate ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -175,7 +158,6 @@ class BotHandle h where
   reactToUpdates ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -190,7 +172,6 @@ class BotHandle h where
   execCommand ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m

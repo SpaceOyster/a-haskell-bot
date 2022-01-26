@@ -9,7 +9,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE TypeApplications #-}
 
 module API.Vkontakte
   ( Handle(..)
@@ -32,15 +31,12 @@ module API.Vkontakte
   , runMethod
   ) where
 
-import App.Env (grab)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (MonadReader)
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Foldable (asum)
-import Data.Has (Has(..))
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Data.Text.Extended as T
@@ -190,7 +186,7 @@ getLongPollServer hAPI = do
     PollInitServer r -> pure r
 
 rememberLastUpdate ::
-     (MonadIO m, MonadThrow m, MonadReader env m, Log.MonadLog m)
+     (MonadIO m, MonadThrow m, Log.MonadLog m)
   => Handle
   -> Response
   -> m Response
@@ -201,12 +197,7 @@ updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 runMethod ::
-     ( MonadIO m
-     , MonadThrow m
-     , MonadReader env m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     )
+     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Handle
   -> Method
   -> m Response

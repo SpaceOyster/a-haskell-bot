@@ -7,7 +7,6 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeApplications #-}
 
 module Bot.Telegram
   ( Config(..)
@@ -15,14 +14,11 @@ module Bot.Telegram
   ) where
 
 import qualified API.Telegram as TG
-import App.Env (grab)
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.Reader (MonadReader)
 import Data.Function ((&))
-import Data.Has (Has(..))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
@@ -53,12 +49,7 @@ new cfg@Config {..} = do
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
   type Update (Bot.Handle TG.Handle) = TG.Update
   fetchUpdates ::
-       ( MonadIO m
-       , MonadThrow m
-       , MonadReader env m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       )
+       (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle TG.Handle
     -> m [TG.Update]
   fetchUpdates Bot.Handle {hAPI} = do
@@ -80,7 +71,6 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
   reactToUpdate ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -102,7 +92,6 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
   execCommand ::
        ( MonadIO m
        , MonadThrow m
-       , MonadReader env m
        , Log.MonadLog m
        , HTTP.MonadHTTP m
        , DB.MonadUsersDB m
@@ -124,7 +113,6 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
 reactToCommand ::
      ( MonadIO m
      , MonadThrow m
-     , MonadReader env m
      , Log.MonadLog m
      , HTTP.MonadHTTP m
      , DB.MonadUsersDB m
@@ -142,7 +130,6 @@ reactToCommand hBot msg@TG.Message {message_id} = do
 reactToMessage ::
      ( MonadIO m
      , MonadThrow m
-     , MonadReader env m
      , Log.MonadLog m
      , HTTP.MonadHTTP m
      , DB.MonadUsersDB m
@@ -174,7 +161,6 @@ qualifyQuery qstring =
 reactToCallback ::
      ( MonadIO m
      , MonadThrow m
-     , MonadReader env m
      , Log.MonadLog m
      , HTTP.MonadHTTP m
      , DB.MonadUsersDB m
