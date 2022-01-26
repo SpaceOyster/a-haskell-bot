@@ -8,3 +8,7 @@ data Request
   | POST URI.URI L8.ByteString
   deriving (Show)
 
+class Monad m =>
+      MonadHTTP m
+  where
+  sendRequest :: Request -> m L8.ByteString
