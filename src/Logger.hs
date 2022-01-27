@@ -9,7 +9,6 @@ module Logger
   ( Config(..)
   , Handle(..)
   , Log.Priority(..)
-  , HasLog(..)
   , withHandle
   , withHandlePure
   , logDebug
@@ -70,20 +69,11 @@ instance A.FromJSON Config where
 
 newtype Handle =
   Handle
-    { log :: Log.Priority -> T.Text -> IO ()
+    { getLog :: Log.Priority -> T.Text -> IO ()
     }
 
 instance Has Handle Handle where
   obtain = id
-
-class HasLog a where
-  getLog :: a -> (Log.Priority -> T.Text -> IO ())
-
-instance HasLog (Log.Priority -> T.Text -> IO ()) where
-  getLog = id
-
-instance HasLog Handle where
-  getLog = log
 
 withHandle :: Config -> (Handle -> IO ()) -> IO ()
 withHandle Config {..} io =
@@ -99,14 +89,15 @@ newFileLog v hFile = do
   mutex <- newMVar ()
   let doLog p t =
         withMVar mutex $ \() -> composeMessage p t >>= T.hPutStrLn hFile
-  let log = \p t -> when (p >= v) $ doLog p t
-  pure $ Handle {log}
+  let getLog = \p t -> when (p >= v) $ doLog p t
+  pure $ Handle {getLog}
 
 newStdoutLog :: Verbosity -> IO Handle
 newStdoutLog v = do
   let hStdout = IO.stdout
-  let log = \p t -> when (p >= v) $ composeMessage p t >>= T.hPutStrLn hStdout
-  pure $ Handle {log}
+  let getLog =
+        \p t -> when (p >= v) $ composeMessage p t >>= T.hPutStrLn hStdout
+  pure $ Handle {getLog}
 
 closeStdoutLog :: Handle -> IO ()
 closeStdoutLog _hLog = IO.hFlush IO.stdout
@@ -117,10 +108,10 @@ withStdoutLog v = bracket (newStdoutLog v) closeStdoutLog
 withHandlePure :: Config -> (Handle -> IO a) -> IO (a, [(Log.Priority, T.Text)])
 withHandlePure Config {..} io = do
   logRef <- newIORef []
-  let log p t =
+  let logAction p t =
         when (p >= verbosity) $
         atomicModifyIORef logRef $ \l -> ((p, t) : l, ())
-  x <- io $ Handle {log}
+  x <- io $ Handle {getLog = logAction}
   logMsgs <- readIORef logRef
   pure (x, reverse logMsgs)
 
@@ -134,8 +125,7 @@ timeStamp = do
   time <- Time.getZonedTime
   pure . T.pack $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
 
-logDebug, logInfo, logWarning, logError ::
-     (MonadIO m, HasLog a) => a -> T.Text -> m ()
+logDebug, logInfo, logWarning, logError :: MonadIO m => Handle -> T.Text -> m ()
 logDebug h = liftIO . getLog h Log.Debug
 
 logInfo h = liftIO . getLog h Log.Info
