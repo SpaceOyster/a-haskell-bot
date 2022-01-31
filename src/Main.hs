@@ -5,8 +5,6 @@
 
 module Main where
 
-import qualified API.Telegram as TG (TGState)
-import qualified API.Vkontakte as VK (VKState)
 import App.Config
 import qualified App.Env as App
 import qualified App.Monad as App
