@@ -26,8 +26,8 @@ data Handle apiHandle =
     , replies :: Replies
     }
 
-data StringsM =
-  StringsM
+data RepliesM =
+  RepliesM
     { helpM :: Maybe T.Text
     , greetingM :: Maybe T.Text
     , repeatM :: Maybe T.Text
@@ -46,8 +46,8 @@ data Replies =
     }
   deriving (Show)
 
-fromStrinsM :: StringsM -> Replies
-fromStrinsM StringsM {..} =
+fromRepliesM :: RepliesM -> Replies
+fromRepliesM RepliesM {..} =
   Replies
     { help = fromMaybe "" helpM
     , greeting = fromMaybe "" greetingM
@@ -56,9 +56,9 @@ fromStrinsM StringsM {..} =
     , settingsSaved = fromMaybe "" settingsSavedM
     }
 
-instance Semigroup StringsM where
+instance Semigroup RepliesM where
   s0 <> s1 =
-    StringsM
+    RepliesM
       { helpM = helpM s0 <|> helpM s1
       , greetingM = greetingM s0 <|> greetingM s1
       , repeatM = repeatM s0 <|> repeatM s1
@@ -66,9 +66,9 @@ instance Semigroup StringsM where
       , settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
       }
 
-instance Monoid StringsM where
+instance Monoid RepliesM where
   mempty =
-    StringsM
+    RepliesM
       { helpM = mempty
       , greetingM = mempty
       , repeatM = mempty

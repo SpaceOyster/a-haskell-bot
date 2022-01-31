@@ -31,7 +31,7 @@ data Config =
   Config
     { key :: String
     , defaultEchoMultiplier :: Int
-    , repliesM :: Bot.StringsM
+    , repliesM :: Bot.RepliesM
     , group_id :: Integer
     , v :: String
     }
@@ -45,7 +45,7 @@ new cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Vkontakte Bot"
   lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   hAPI <- VK.new VK.Config {..}
-  let replies = Bot.fromStrinsM repliesM
+  let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where

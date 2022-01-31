@@ -16,7 +16,7 @@ import qualified Logger
 data AppConfig =
   AppConfig
     { poll_period :: Int
-    , repliesM :: Bot.StringsM
+    , repliesM :: Bot.RepliesM
     , defaultEchoMultiplier :: Int
     , logger :: Logger.Config
     , telegram :: TG.Config
@@ -24,10 +24,10 @@ data AppConfig =
     }
   deriving (Show)
 
-mergeStringsTG :: TG.Config -> Bot.StringsM -> TG.Config
+mergeStringsTG :: TG.Config -> Bot.RepliesM -> TG.Config
 mergeStringsTG cfg ss = cfg {TG.repliesM = TG.repliesM cfg <> ss}
 
-mergeStringsVK :: VK.Config -> Bot.StringsM -> VK.Config
+mergeStringsVK :: VK.Config -> Bot.RepliesM -> VK.Config
 mergeStringsVK cfg ss = cfg {VK.repliesM = VK.repliesM cfg <> ss}
 
 instance A.FromJSON AppConfig where
@@ -63,7 +63,7 @@ parseVKConfig =
     v <- o A..:? "api-version" A..!= "5.86"
     pure $ VK.Config {..}
 
-parseStringsM :: A.Value -> A.Parser Bot.StringsM
+parseStringsM :: A.Value -> A.Parser Bot.RepliesM
 parseStringsM =
   A.withObject "AppConfig.strings" $ \o -> do
     helpM <- o A..:? "help"
@@ -71,4 +71,4 @@ parseStringsM =
     repeatM <- o A..:? "repeat"
     unknownM <- o A..:? "unknown"
     settingsSavedM <- o A..:? "settings-saved"
-    pure $ Bot.StringsM {..}
+    pure $ Bot.RepliesM {..}

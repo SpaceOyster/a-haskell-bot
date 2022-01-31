@@ -31,7 +31,7 @@ data Config =
   Config
     { key :: String
     , defaultEchoMultiplier :: Int
-    , repliesM :: Bot.StringsM
+    , repliesM :: Bot.RepliesM
     }
   deriving (Show)
 
@@ -43,7 +43,7 @@ new cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Telegram Bot"
   lift $ Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   hAPI <- TG.new TG.Config {..}
-  let replies = Bot.fromStrinsM repliesM
+  let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
