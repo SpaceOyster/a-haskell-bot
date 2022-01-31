@@ -44,11 +44,10 @@ import API.Telegram.Types as Types
   , getQDataThrow
   , getTextThrow
   )
-import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.State (StateT, get, lift, modify', put)
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.State (StateT, get, lift, put)
 import Data.Aeson.Extended ((.=), encode, object, throwDecode)
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -62,9 +61,9 @@ data TGState =
     , apiURI :: URI.URI
     }
 
-newtype Handle =
+data Handle =
   Handle
-    { apiState :: IORef TGState
+    {
     }
 
 newtype Config =
@@ -85,14 +84,11 @@ makeBaseURI Config {..} =
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
 new ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m)
-  => Config
-  -> StateT TGState m Handle
+     (MonadIO m, MonadThrow m, Log.MonadLog m) => Config -> StateT TGState m ()
 new cfg = do
   lift $ Log.logInfo "Initiating Telegram API handle"
   apiURI <- makeBaseURI cfg
-  apiState <- liftIO $ newIORef $ mempty {apiURI}
-  pure $ Handle {apiState}
+  put $ mempty {apiURI}
 
 apiMethod :: TGState -> String -> URI.URI
 apiMethod st method = apiURI st `URI.addPath` method

@@ -32,14 +32,13 @@ module API.Vkontakte
   ) where
 
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (StateT, get, lift, modify', put)
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Foldable (asum)
 import qualified Data.Hashable as H
-import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
@@ -55,9 +54,9 @@ data VKState =
     }
   deriving (Show)
 
-newtype Handle =
+data Handle =
   Handle
-    { apiState :: IORef VKState
+    {
     }
 
 data Config =
@@ -77,14 +76,12 @@ instance Monoid VKState where
 new ::
      (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Config
-  -> StateT VKState m Handle
+  -> StateT VKState m ()
 new cfg = do
   lift $ Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
-  apiState <- liftIO $ newIORef $ mempty {apiURI}
-  let hAPI = Handle {apiState}
+  put $ mempty {apiURI}
   initiatePollServer
-  pure hAPI
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =

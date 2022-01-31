@@ -17,7 +17,7 @@ import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State (StateT, get, lift, modify', put)
+import Control.Monad.State (StateT, lift)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
@@ -44,7 +44,7 @@ new ::
 new cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Vkontakte Bot"
   lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
-  hAPI <- VK.new VK.Config {..}
+  VK.new VK.Config {..}
   let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {..}
 

@@ -18,7 +18,7 @@ import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO)
-import Control.Monad.State (StateT, get, lift, modify', put)
+import Control.Monad.State (StateT, lift)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -42,7 +42,7 @@ new ::
 new cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Telegram Bot"
   lift $ Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
-  hAPI <- TG.new TG.Config {..}
+  TG.new TG.Config {..}
   let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {..}
 

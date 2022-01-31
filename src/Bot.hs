@@ -20,10 +20,9 @@ import qualified Effects.Log as Log (MonadLog, logInfo)
 import qualified Effects.UsersDB as DB
 import Prelude hiding (repeat)
 
-data Handle apiHandle =
+newtype Handle apiHandle =
   Handle
-    { hAPI :: apiHandle
-    , replies :: Replies
+    { replies :: Replies
     }
 
 data RepliesM =
