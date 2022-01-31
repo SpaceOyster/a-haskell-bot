@@ -32,7 +32,6 @@ module API.Vkontakte
   ) where
 
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (StateT, get, lift, modify', put)
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -74,7 +73,7 @@ instance Monoid VKState where
     VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
 new ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Config
   -> StateT VKState m ()
 new cfg = do
@@ -147,8 +146,7 @@ instance A.FromJSON PollInitResponse where
         , PollInitServer <$> o A..: "response"
         ]
 
-initiatePollServer ::
-     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m ()
+initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m ()
 initiatePollServer = do
   ps@PollServer {ts} <- getLongPollServer
   pollURI <- makePollURI ps
@@ -165,7 +163,7 @@ makePollURI PollServer {key, server} = do
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
 getLongPollServer ::
-     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m PollServer
+     (MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m PollServer
 getLongPollServer = do
   st <- get
   let req = HTTP.GET $ apiMethod st "groups.getLongPollServer" mempty
@@ -178,9 +176,7 @@ getLongPollServer = do
     PollInitServer r -> pure r
 
 rememberLastUpdate ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m)
-  => Response
-  -> StateT VKState m Response
+     (MonadThrow m, Log.MonadLog m) => Response -> StateT VKState m Response
 rememberLastUpdate res = modify' (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
@@ -188,7 +184,7 @@ updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 runMethod ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Method
   -> StateT VKState m Response
 runMethod m = do

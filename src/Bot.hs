@@ -76,7 +76,7 @@ instance Monoid RepliesM where
       }
 
 repeatPrompt ::
-     (H.Hashable u, MonadIO m, MonadThrow m, DB.MonadUsersDB m)
+     (H.Hashable u, MonadThrow m, DB.MonadUsersDB m)
   => Handle s
   -> Maybe u
   -> m T.Text
@@ -133,16 +133,11 @@ class (Monoid (APIState h)) =>
       forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
       pure ()
   fetchUpdates ::
-       (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => h
     -> StateT (APIState h) m [Update h]
   doBotThing ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => h
     -> StateT (APIState h) m [Response h]
   doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
@@ -150,22 +145,12 @@ class (Monoid (APIState h)) =>
   type Response h
   qualifyUpdate :: Update h -> Entity h
   reactToUpdate ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => h
     -> Update h
     -> StateT (APIState h) m [Response h]
   reactToUpdates ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => h
     -> [Update h]
     -> StateT (APIState h) m [Response h]
@@ -174,12 +159,7 @@ class (Monoid (APIState h)) =>
     join <$> mapM (reactToUpdate hBot) updates
   type Message h
   execCommand ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => h
     -> Command
     -> (Message h -> StateT (APIState h) m (Response h))

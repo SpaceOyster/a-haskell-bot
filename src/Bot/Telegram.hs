@@ -17,7 +17,6 @@ import qualified API.Telegram as TG
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (StateT, lift)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -36,7 +35,7 @@ data Config =
   deriving (Show)
 
 new ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m)
+     (MonadThrow m, Log.MonadLog m)
   => Config
   -> StateT TG.TGState m (Bot.Handle TG.Handle)
 new cfg@Config {..} = do
@@ -50,7 +49,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
   type APIState (Bot.Handle TG.Handle) = TG.TGState
   type Update (Bot.Handle TG.Handle) = TG.Update
   fetchUpdates ::
-       (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle TG.Handle
     -> StateT TG.TGState m [TG.Update]
   fetchUpdates _ = do
@@ -70,12 +69,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
     , not (isCommandE msg) = EMessage msg
     | otherwise = EOther u
   reactToUpdate ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => Bot.Handle TG.Handle
     -> TG.Update
     -> StateT TG.TGState m [TG.Response]
@@ -93,12 +87,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
   type Message (Bot.Handle TG.Handle) = TG.Message
   execCommand ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => Bot.Handle TG.Handle
     -> Bot.Command
     -> (TG.Message -> StateT TG.TGState m TG.Response)
@@ -114,12 +103,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
 
 -- diff
 reactToCommand ::
-     ( MonadIO m
-     , MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     )
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
   => Bot.Handle TG.Handle
   -> TG.Message
   -> StateT TG.TGState m TG.Response
@@ -132,12 +116,7 @@ reactToCommand hBot msg@TG.Message {message_id} = do
 
 -- diff
 reactToMessage ::
-     ( MonadIO m
-     , MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     )
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
   => Bot.Handle TG.Handle
   -> TG.Message
   -> StateT TG.TGState m [TG.Response]
@@ -164,12 +143,7 @@ qualifyQuery qstring =
 
 -- diff
 reactToCallback ::
-     ( MonadIO m
-     , MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     )
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
   => Bot.Handle TG.Handle
   -> TG.CallbackQuery
   -> StateT TG.TGState m TG.Response

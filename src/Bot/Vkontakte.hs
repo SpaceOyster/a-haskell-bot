@@ -16,7 +16,6 @@ import qualified API.Vkontakte as VK
 import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.State (StateT, lift)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
@@ -38,7 +37,7 @@ data Config =
   deriving (Show)
 
 new ::
-     (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
   => Config
   -> StateT VK.VKState m (Bot.Handle VK.Handle)
 new cfg@Config {..} = do
@@ -52,7 +51,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
   type Update (Bot.Handle VK.Handle) = VK.GroupEvent
   type APIState (Bot.Handle VK.Handle) = VK.VKState
   fetchUpdates ::
-       (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle VK.Handle
     -> StateT VK.VKState m [VK.GroupEvent]
   fetchUpdates _ = do
@@ -68,12 +67,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     | otherwise = EMessage m
   qualifyUpdate (VK.MessageEvent c) = ECallback c
   reactToUpdate ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => Bot.Handle VK.Handle
     -> VK.GroupEvent
     -> StateT VK.VKState m [VK.Response]
@@ -86,12 +80,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
       ECallback cq -> reactToCallback hBot cq
   type Message (Bot.Handle VK.Handle) = VK.Message
   execCommand ::
-       ( MonadIO m
-       , MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       )
+       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
     => Bot.Handle VK.Handle
     -> Bot.Command
     -> (VK.Message -> StateT VK.VKState m VK.Response)
@@ -107,12 +96,7 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
 
 -- diff
 reactToCommand ::
-     ( MonadIO m
-     , MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     )
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
   => Bot.Handle VK.Handle
   -> VK.Message
   -> StateT VK.VKState m VK.Response
@@ -127,12 +111,7 @@ reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
 
 -- diff
 reactToMessage ::
-     ( MonadIO m
-     , MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     )
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
   => Bot.Handle VK.Handle
   -> VK.Message
   -> StateT VK.VKState m [VK.Response]
@@ -156,12 +135,7 @@ instance A.FromJSON Payload where
 
 -- diff
 reactToCallback ::
-     ( MonadIO m
-     , MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     )
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
   => Bot.Handle VK.Handle
   -> VK.CallbackEvent
   -> StateT VK.VKState m [VK.Response]
