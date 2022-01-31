@@ -55,19 +55,10 @@ data VKState =
     }
   deriving (Show)
 
-data Handle =
+newtype Handle =
   Handle
     { apiState :: IORef VKState
     }
-
-getState :: (MonadIO m) => Handle -> m VKState
-getState = liftIO . readIORef . apiState
-
-modifyState :: (MonadIO m) => Handle -> (VKState -> VKState) -> m ()
-modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
-
-setState :: (MonadIO m) => Handle -> VKState -> m ()
-setState hAPI newState = modifyState hAPI $ const newState
 
 data Config =
   Config
@@ -92,7 +83,8 @@ new cfg = do
   apiURI <- makeBaseURI cfg
   apiState <- liftIO $ newIORef $ mempty {apiURI}
   let hAPI = Handle {apiState}
-  lift $ initiatePollServer hAPI
+  initiatePollServer
+  pure hAPI
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
@@ -159,14 +151,13 @@ instance A.FromJSON PollInitResponse where
         ]
 
 initiatePollServer ::
-     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => Handle -> m Handle
-initiatePollServer hAPI = do
-  ps@PollServer {ts} <- getLongPollServer hAPI
+     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m ()
+initiatePollServer = do
+  ps@PollServer {ts} <- getLongPollServer
   pollURI <- makePollURI ps
-  st <- getState hAPI
+  st <- get
   let pollCreds = st {lastTS = ts, pollURI}
-  setState hAPI pollCreds
-  pure hAPI
+  put pollCreds
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {key, server} = do
@@ -177,11 +168,11 @@ makePollURI PollServer {key, server} = do
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
 getLongPollServer ::
-     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => Handle -> m PollServer
-getLongPollServer hAPI = do
-  st <- getState hAPI
+     (MonadIO m, MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m PollServer
+getLongPollServer = do
+  st <- get
   let req = HTTP.GET $ apiMethod st "groups.getLongPollServer" mempty
-  json <- HTTP.sendRequest req
+  json <- lift $ HTTP.sendRequest req
   res <- A.throwDecode json
   case res of
     PollInitError Error {error_code, error_msg} ->
@@ -191,10 +182,9 @@ getLongPollServer hAPI = do
 
 rememberLastUpdate ::
      (MonadIO m, MonadThrow m, Log.MonadLog m)
-  => Handle
-  -> Response
-  -> m Response
-rememberLastUpdate hAPI res = modifyState hAPI (updateStateWith res) >> pure res
+  => Response
+  -> StateT VKState m Response
+rememberLastUpdate res = modify' (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
 updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
@@ -202,14 +192,13 @@ updateStateWith _ = id
 
 runMethod ::
      (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-  => Handle
-  -> Method
-  -> m Response
-runMethod hAPI m = do
-  state <- getState hAPI
-  Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
-  let req = mkRequest hAPI state m
-  HTTP.sendRequest req >>= A.throwDecode >>= rememberLastUpdate hAPI
+  => Method
+  -> StateT VKState m Response
+runMethod m = do
+  state <- get
+  lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
+  let req = mkRequest state m
+  lift (HTTP.sendRequest req) >>= A.throwDecode >>= rememberLastUpdate
 
 data Method
   = GetUpdates
@@ -219,18 +208,18 @@ data Method
   | SendKeyboard Integer T.Text Keyboard
   deriving (Show)
 
-mkRequest :: Handle -> VKState -> Method -> HTTP.Request
-mkRequest hAPI st m =
+mkRequest :: VKState -> Method -> HTTP.Request
+mkRequest st m =
   case m of
-    GetUpdates -> getUpdates hAPI st
+    GetUpdates -> getUpdates st
     SendMessageEventAnswer ce prompt -> sendMessageEventAnswer st ce prompt
     SendTextMessage peer_id text -> sendTextMessage st peer_id text
     CopyMessage msg -> copyMessage st msg
     SendKeyboard peer_id prompt keyboard ->
       sendKeyboard st peer_id prompt keyboard
 
-getUpdates :: Handle -> VKState -> HTTP.Request
-getUpdates _hAPI VKState {..} =
+getUpdates :: VKState -> HTTP.Request
+getUpdates VKState {..} =
   HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS]
 
 newtype User =

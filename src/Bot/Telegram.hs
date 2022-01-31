@@ -53,10 +53,9 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle TG.Handle
     -> StateT TG.TGState m [TG.Update]
-  fetchUpdates Bot.Handle {hAPI} =
-    lift $ do
-      Log.logInfo "fetching Updates"
-      TG.runMethod hAPI TG.GetUpdates >>= TG.extractUpdates
+  fetchUpdates _ = do
+    lift $ Log.logInfo "fetching Updates"
+    TG.runMethod TG.GetUpdates >>= TG.extractUpdates
   data Entity (Bot.Handle TG.Handle) = EMessage TG.Message
                                    | ECommand TG.Message
                                    | ECallback TG.CallbackQuery
@@ -102,11 +101,11 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
        )
     => Bot.Handle TG.Handle
     -> Bot.Command
-    -> (TG.Message -> m TG.Response)
+    -> (TG.Message -> StateT TG.TGState m TG.Response)
   execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
     let address = chat & TG.chat_id
-    prompt <- Bot.repeatPrompt hBot from
-    TG.runMethod hAPI $
+    prompt <- lift $ Bot.repeatPrompt hBot from
+    TG.runMethod $
       case cmd of
         Bot.Start -> TG.SendMessage address (Bot.greeting strings)
         Bot.Help -> TG.SendMessage address (Bot.help strings)
@@ -129,7 +128,7 @@ reactToCommand hBot msg@TG.Message {message_id} = do
   lift $
     Log.logDebug $
     "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
-  lift $ Bot.execCommand hBot cmd msg
+  Bot.execCommand hBot cmd msg
 
 -- diff
 reactToMessage ::
@@ -142,14 +141,13 @@ reactToMessage ::
   => Bot.Handle TG.Handle
   -> TG.Message
   -> StateT TG.TGState m [TG.Response]
-reactToMessage Bot.Handle {hAPI} msg@TG.Message {message_id} =
-  lift $ do
-    author <- TG.getAuthorThrow msg
-    n <- DB.getUserMultiplier author
+reactToMessage _ msg@TG.Message {message_id} = do
+  author <- TG.getAuthorThrow msg
+  n <- lift $ DB.getUserMultiplier author
+  lift $
     Log.logDebug $
-      "generating " <>
-      T.tshow n <> " echoes for Message: " <> T.tshow message_id
-    n `replicateM` TG.runMethod hAPI (TG.CopyMessage msg)
+    "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
+  n `replicateM` TG.runMethod (TG.CopyMessage msg)
 
 data QueryData
   = QDRepeat Int
@@ -175,19 +173,20 @@ reactToCallback ::
   => Bot.Handle TG.Handle
   -> TG.CallbackQuery
   -> StateT TG.TGState m TG.Response
-reactToCallback Bot.Handle {hAPI} cq@TG.CallbackQuery {cq_id, from} =
-  lift $ do
+reactToCallback _ cq@TG.CallbackQuery {cq_id, from} = do
+  lift $
     Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
-    cdata <- TG.getQDataThrow cq
-    let user = from
-    case qualifyQuery cdata of
-      QDRepeat n -> do
+  cdata <- TG.getQDataThrow cq
+  let user = from
+  case qualifyQuery cdata of
+    QDRepeat n -> do
+      lift $
         Log.logInfo $
-          "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-        DB.setUserMultiplier user n
-        TG.runMethod hAPI $ TG.AnswerCallbackQuery cq_id
-      QDOther s ->
-        throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+        "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+      lift $ DB.setUserMultiplier user n
+      TG.runMethod $ TG.AnswerCallbackQuery cq_id
+    QDOther s ->
+      throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command

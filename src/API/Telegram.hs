@@ -67,15 +67,6 @@ newtype Handle =
     { apiState :: IORef TGState
     }
 
-getState :: (MonadIO m) => Handle -> m TGState
-getState = liftIO . readIORef . apiState
-
-modifyState :: (MonadIO m) => Handle -> (TGState -> TGState) -> m ()
-modifyState hAPI morph = liftIO $ apiState hAPI `modifyIORef'` morph
-
-setState :: (MonadIO m) => Handle -> TGState -> m ()
-setState hAPI newState = liftIO . modifyState hAPI $ const newState
-
 newtype Config =
   Config
     { key :: String
@@ -108,12 +99,11 @@ apiMethod st method = apiURI st `URI.addPath` method
 
 rememberLastUpdate ::
      (MonadIO m, MonadThrow m, Log.MonadLog m)
-  => Handle
-  -> Response
-  -> m Response
-rememberLastUpdate hAPI res = do
-  st <- getState hAPI
-  mapM_ (setState hAPI) (newStateFromM res st) >> pure res
+  => Response
+  -> StateT TGState m Response
+rememberLastUpdate res = do
+  st <- get
+  mapM_ put (newStateFromM res st) >> pure res
 
 newStateFromM :: Response -> TGState -> Maybe TGState
 newStateFromM (UpdatesResponse us@(_x:_xs)) st =
@@ -123,14 +113,14 @@ newStateFromM _ _ = Nothing
 
 runMethod ::
      (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-  => Handle
-  -> Method
-  -> m Response
-runMethod hAPI m = do
-  state <- getState hAPI
-  Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
+  => Method
+  -> StateT TGState m Response
+runMethod m = do
+  state <- get
+  lift $
+    Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
   let req = mkRequest state m
-  HTTP.sendRequest req >>= throwDecode >>= rememberLastUpdate hAPI
+  lift (HTTP.sendRequest req) >>= throwDecode >>= rememberLastUpdate
 
 data Method
   = GetUpdates

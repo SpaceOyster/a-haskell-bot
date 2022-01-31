@@ -183,4 +183,4 @@ class (Monoid (APIState h)) =>
        )
     => h
     -> Command
-    -> (Message h -> m (Response h))
+    -> (Message h -> StateT (APIState h) m (Response h))
