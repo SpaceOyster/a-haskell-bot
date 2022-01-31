@@ -100,8 +100,8 @@ new cfg = do
   apiState <- liftIO $ newIORef $ mempty {apiURI = baseURI}
   pure $ Handle {..}
 
-apiMethod :: Handle -> String -> URI.URI
-apiMethod hAPI method = baseURI hAPI `URI.addPath` method
+apiMethod :: TGState -> String -> URI.URI
+apiMethod st method = apiURI st `URI.addPath` method
 
 rememberLastUpdate ::
      (MonadIO m, MonadThrow m, Log.MonadLog m)
@@ -126,7 +126,7 @@ runMethod ::
 runMethod hAPI m = do
   state <- getState hAPI
   Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
-  let req = mkRequest hAPI state m
+  let req = mkRequest state m
   HTTP.sendRequest req >>= throwDecode >>= rememberLastUpdate hAPI
 
 data Method
@@ -137,51 +137,51 @@ data Method
   | SendInlineKeyboard Integer T.Text InlineKeyboardMarkup
   deriving (Show)
 
-mkRequest :: Handle -> TGState -> Method -> HTTP.Request
-mkRequest hAPI s m =
+mkRequest :: TGState -> Method -> HTTP.Request
+mkRequest st m =
   case m of
-    GetUpdates -> getUpdates hAPI s
-    AnswerCallbackQuery cqid -> answerCallbackQuery hAPI cqid
-    CopyMessage msg -> copyMessage hAPI msg
-    SendMessage chatId msg -> sendMessage hAPI chatId msg
+    GetUpdates -> getUpdates st
+    AnswerCallbackQuery cqid -> answerCallbackQuery st cqid
+    CopyMessage msg -> copyMessage st msg
+    SendMessage chatId msg -> sendMessage st chatId msg
     SendInlineKeyboard chatId prompt keyboard ->
-      sendInlineKeyboard hAPI chatId prompt keyboard
+      sendInlineKeyboard st chatId prompt keyboard
 
 -- API method
-getUpdates :: Handle -> TGState -> HTTP.Request
-getUpdates hAPI st =
+getUpdates :: TGState -> HTTP.Request
+getUpdates st =
   let json =
         encode . object $ ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
-   in HTTP.POST (apiMethod hAPI "getUpdates") json
+   in HTTP.POST (apiMethod st "getUpdates") json
 
 -- API method
-answerCallbackQuery :: Handle -> T.Text -> HTTP.Request
-answerCallbackQuery hAPI cqid =
+answerCallbackQuery :: TGState -> T.Text -> HTTP.Request
+answerCallbackQuery st cqid =
   let json = encode . object $ ["callback_query_id" .= cqid]
-   in HTTP.POST (apiMethod hAPI "answerCallbackQuery") json
+   in HTTP.POST (apiMethod st "answerCallbackQuery") json
 
 -- API method
-copyMessage :: Handle -> Message -> HTTP.Request
-copyMessage hAPI Message {message_id, chat} =
+copyMessage :: TGState -> Message -> HTTP.Request
+copyMessage st Message {message_id, chat} =
   let json =
         encode . object $
         [ "chat_id" .= chat_id (chat :: Chat)
         , "from_chat_id" .= chat_id (chat :: Chat)
         , "message_id" .= message_id
         ]
-   in HTTP.POST (apiMethod hAPI "copyMessage") json
+   in HTTP.POST (apiMethod st "copyMessage") json
 
 -- API method
-sendMessage :: Handle -> Integer -> T.Text -> HTTP.Request
-sendMessage hAPI chatId msg =
+sendMessage :: TGState -> Integer -> T.Text -> HTTP.Request
+sendMessage st chatId msg =
   let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-   in HTTP.POST (apiMethod hAPI "sendMessage") json
+   in HTTP.POST (apiMethod st "sendMessage") json
 
 -- API method
 sendInlineKeyboard ::
-     Handle -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
-sendInlineKeyboard hAPI chatId prompt keyboard =
+     TGState -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
+sendInlineKeyboard st chatId prompt keyboard =
   let json =
         encode . object $
         ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
-   in HTTP.POST (apiMethod hAPI "sendMessage") json
+   in HTTP.POST (apiMethod st "sendMessage") json
