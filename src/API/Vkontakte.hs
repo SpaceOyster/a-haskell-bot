@@ -50,6 +50,7 @@ data VKState =
   VKState
     { lastTS :: T.Text
     , pollURI :: URI.URI
+    , apiURI :: URI.URI
     }
   deriving (Show)
 
@@ -79,7 +80,8 @@ instance Semigroup VKState where
   _a <> b = b
 
 instance Monoid VKState where
-  mempty = VKState {lastTS = mempty, pollURI = URI.nullURI}
+  mempty =
+    VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
 new ::
      (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
@@ -88,7 +90,7 @@ new ::
 new cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
   baseURI <- makeBaseURI cfg
-  apiState <- liftIO $ newIORef mempty
+  apiState <- liftIO $ newIORef $ mempty {apiURI = baseURI}
   let hAPI = Handle {baseURI, apiState}
   initiatePollServer hAPI
 
@@ -161,7 +163,8 @@ initiatePollServer ::
 initiatePollServer hAPI = do
   ps@PollServer {ts} <- getLongPollServer hAPI
   pollURI <- makePollURI ps
-  let pollCreds = VKState {lastTS = ts, pollURI}
+  st <- getState hAPI
+  let pollCreds = st {lastTS = ts, pollURI}
   setState hAPI pollCreds
   pure hAPI
 
