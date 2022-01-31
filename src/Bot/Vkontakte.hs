@@ -31,7 +31,7 @@ data Config =
   Config
     { key :: String
     , defaultEchoMultiplier :: Int
-    , stringsM :: Bot.StringsM
+    , repliesM :: Bot.StringsM
     , group_id :: Integer
     , v :: String
     }
@@ -45,7 +45,7 @@ new cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Vkontakte Bot"
   lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   hAPI <- VK.new VK.Config {..}
-  let strings = Bot.fromStrinsM stringsM
+  let replies = Bot.fromStrinsM repliesM
   pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
@@ -100,10 +100,10 @@ instance Bot.BotHandle (Bot.Handle VK.Handle) where
     prompt <- lift $ Bot.repeatPrompt hBot $ Just $ VK.User from_id
     VK.runMethod $
       case cmd of
-        Bot.Start -> VK.SendTextMessage address (Bot.greeting strings)
-        Bot.Help -> VK.SendTextMessage address (Bot.help strings)
+        Bot.Start -> VK.SendTextMessage address (Bot.greeting replies)
+        Bot.Help -> VK.SendTextMessage address (Bot.help replies)
         Bot.Repeat -> VK.SendKeyboard address prompt repeatKeyboard
-        Bot.UnknownCommand -> VK.SendTextMessage address (Bot.unknown strings)
+        Bot.UnknownCommand -> VK.SendTextMessage address (Bot.unknown replies)
 
 -- diff
 reactToCommand ::
@@ -173,7 +173,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
       lift $
         Log.logInfo $
         "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-      let prompt = hBot & Bot.strings & Bot.settingsSaved
+      let prompt = hBot & Bot.replies & Bot.settingsSaved
       lift $ DB.setUserMultiplier user n
       fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
     Nothing ->

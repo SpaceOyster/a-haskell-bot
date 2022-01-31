@@ -31,7 +31,7 @@ data Config =
   Config
     { key :: String
     , defaultEchoMultiplier :: Int
-    , stringsM :: Bot.StringsM
+    , repliesM :: Bot.StringsM
     }
   deriving (Show)
 
@@ -43,7 +43,7 @@ new cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Telegram Bot"
   lift $ Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   hAPI <- TG.new TG.Config {..}
-  let strings = Bot.fromStrinsM stringsM
+  let replies = Bot.fromStrinsM repliesM
   pure $ Bot.Handle {..}
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
@@ -107,10 +107,10 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
     prompt <- lift $ Bot.repeatPrompt hBot from
     TG.runMethod $
       case cmd of
-        Bot.Start -> TG.SendMessage address (Bot.greeting strings)
-        Bot.Help -> TG.SendMessage address (Bot.help strings)
+        Bot.Start -> TG.SendMessage address (Bot.greeting replies)
+        Bot.Help -> TG.SendMessage address (Bot.help replies)
         Bot.Repeat -> TG.SendInlineKeyboard address prompt repeatKeyboard
-        Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown strings)
+        Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown replies)
 
 -- diff
 reactToCommand ::

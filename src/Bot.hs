@@ -23,7 +23,7 @@ import Prelude hiding (repeat)
 data Handle apiHandle =
   Handle
     { hAPI :: apiHandle
-    , strings :: Strings
+    , replies :: Strings
     }
 
 data StringsM =
@@ -83,7 +83,7 @@ repeatPrompt ::
   -> m T.Text
 repeatPrompt hBot userM = do
   mult <- DB.getUserMultiplierM userM
-  let prompt' = hBot & Bot.strings & Bot.repeat
+  let prompt' = hBot & Bot.replies & Bot.repeat
   pure $ T.replace "%n" (T.tshow mult) prompt'
 
 -- | command has to be between 1-32 chars long
