@@ -10,6 +10,7 @@ import Control.Concurrent (threadDelay)
 import Control.Monad (forever, join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.State (StateT, evalStateT, lift)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import Data.Maybe (fromMaybe)
@@ -112,25 +113,30 @@ isCommand :: T.Text -> Bool
 isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
-loop ::
-     ( MonadIO m
-     , MonadThrow m
-     , Bot.BotHandle a
-     , HTTP.MonadHTTP m
-     , Log.MonadLog m
-     , DB.MonadUsersDB m
-     )
-  => a
-  -> Int
-  -> m ()
-loop hBot period = forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
-
-class BotHandle h where
+class (Monoid (APIState h)) =>
+      BotHandle h
+  where
   type Update h
+  type APIState h
+  loop ::
+       ( MonadIO m
+       , MonadThrow m
+       , HTTP.MonadHTTP m
+       , Log.MonadLog m
+       , DB.MonadUsersDB m
+       )
+    => StateT (APIState h) m h
+    -> Int
+    -> m ()
+  loop bMonad period =
+    flip evalStateT mempty $ do
+      hBot <- bMonad
+      forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
+      pure ()
   fetchUpdates ::
        (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => h
-    -> m [Update h]
+    -> StateT (APIState h) m [Update h]
   doBotThing ::
        ( MonadIO m
        , MonadThrow m
@@ -139,7 +145,7 @@ class BotHandle h where
        , DB.MonadUsersDB m
        )
     => h
-    -> m [Response h]
+    -> StateT (APIState h) m [Response h]
   doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
   data Entity h
   type Response h
@@ -153,7 +159,7 @@ class BotHandle h where
        )
     => h
     -> Update h
-    -> m [Response h]
+    -> StateT (APIState h) m [Response h]
   reactToUpdates ::
        ( MonadIO m
        , MonadThrow m
@@ -163,9 +169,9 @@ class BotHandle h where
        )
     => h
     -> [Update h]
-    -> m [Response h]
+    -> StateT (APIState h) m [Response h]
   reactToUpdates hBot updates = do
-    Log.logInfo "processing each update"
+    lift $ Log.logInfo "processing each update"
     join <$> mapM (reactToUpdate hBot) updates
   type Message h
   execCommand ::

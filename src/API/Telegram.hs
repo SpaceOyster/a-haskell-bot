@@ -48,6 +48,7 @@ import Data.IORef (IORef, modifyIORef', newIORef, readIORef)
 
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.State (StateT, get, lift, modify', put)
 import Data.Aeson.Extended ((.=), encode, object, throwDecode)
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -92,9 +93,12 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-new :: (MonadIO m, MonadThrow m, Log.MonadLog m) => Config -> m Handle
+new ::
+     (MonadIO m, MonadThrow m, Log.MonadLog m)
+  => Config
+  -> StateT TGState m Handle
 new cfg = do
-  Log.logInfo "Initiating Telegram API handle"
+  lift $ Log.logInfo "Initiating Telegram API handle"
   apiURI <- makeBaseURI cfg
   apiState <- liftIO $ newIORef $ mempty {apiURI}
   pure $ Handle {apiState}

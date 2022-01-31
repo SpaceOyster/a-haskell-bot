@@ -5,6 +5,8 @@
 
 module Main where
 
+import qualified API.Telegram as TG (TGState)
+import qualified API.Vkontakte as VK (VKState)
 import App.Config
 import qualified App.Env as App
 import qualified App.Monad as App
@@ -76,6 +78,6 @@ runWithApp AppConfig {..} bot =
     let env = App.Env {envLogger = hLog, envHTTP = hHTTP, envUsersDB = hUsersDB}
     let app =
           case bot of
-            Telegram -> flip Bot.loop poll_period =<< TG.new telegram
-            Vkontakte -> flip Bot.loop poll_period =<< VK.new vkontakte
+            Telegram -> TG.new telegram `Bot.loop` poll_period
+            Vkontakte -> VK.new vkontakte `Bot.loop` poll_period
     App.unApp app `runReaderT` env
