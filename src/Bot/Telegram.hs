@@ -16,7 +16,6 @@ import qualified Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.State (StateT, lift)
-import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
@@ -90,7 +89,7 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
     -> Bot.Command
     -> (TG.Message -> StateT TG.TGState m TG.Response)
   execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
-    let address = chat & TG.chat_id
+    let address = TG.chat_id chat
     prompt <- lift $ Bot.repeatPrompt hBot from
     TG.runMethod $
       case cmd of
