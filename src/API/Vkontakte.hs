@@ -56,8 +56,7 @@ data VKState =
 
 data Handle =
   Handle
-    { baseURI :: URI.URI
-    , apiState :: IORef VKState
+    { apiState :: IORef VKState
     }
 
 getState :: (MonadIO m) => Handle -> m VKState
