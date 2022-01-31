@@ -61,10 +61,9 @@ data TGState =
     , apiURI :: URI.URI
     }
 
-data Handle =
+newtype Handle =
   Handle
-    { baseURI :: URI.URI
-    , apiState :: IORef TGState
+    { apiState :: IORef TGState
     }
 
 getState :: (MonadIO m) => Handle -> m TGState
@@ -96,9 +95,9 @@ makeBaseURI Config {..} =
 new :: (MonadIO m, MonadThrow m, Log.MonadLog m) => Config -> m Handle
 new cfg = do
   Log.logInfo "Initiating Telegram API handle"
-  baseURI <- makeBaseURI cfg
-  apiState <- liftIO $ newIORef $ mempty {apiURI = baseURI}
-  pure $ Handle {..}
+  apiURI <- makeBaseURI cfg
+  apiState <- liftIO $ newIORef $ mempty {apiURI}
+  pure $ Handle {apiState}
 
 apiMethod :: TGState -> String -> URI.URI
 apiMethod st method = apiURI st `URI.addPath` method
