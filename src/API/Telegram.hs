@@ -11,6 +11,7 @@ module API.Telegram
   ( Config(..)
   , Method(..)
   , Handle(..)
+  , TGState(..)
   , new
   , runMethod
   , Types.CallbackQuery(..)
@@ -54,9 +55,10 @@ import qualified Effects.Log as Log
 import qualified Exceptions as Ex
 import qualified Network.URI.Extended as URI
 
-newtype TGState =
+data TGState =
   TGState
     { lastUpdate :: Integer
+    , apiURI :: URI.URI
     }
 
 data Handle =
@@ -79,6 +81,12 @@ newtype Config =
     { key :: String
     }
 
+instance Semigroup TGState where
+  _a <> b = b
+
+instance Monoid TGState where
+  mempty = TGState {lastUpdate = 0, apiURI = URI.nullURI}
+
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
   maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
@@ -89,7 +97,7 @@ new :: (MonadIO m, MonadThrow m, Log.MonadLog m) => Config -> m Handle
 new cfg = do
   Log.logInfo "Initiating Telegram API handle"
   baseURI <- makeBaseURI cfg
-  apiState <- liftIO $ newIORef $ TGState 0
+  apiState <- liftIO $ newIORef $ mempty {apiURI = baseURI}
   pure $ Handle {..}
 
 apiMethod :: Handle -> String -> URI.URI
@@ -100,13 +108,15 @@ rememberLastUpdate ::
   => Handle
   -> Response
   -> m Response
-rememberLastUpdate hAPI res =
-  mapM_ (setState hAPI) (newStateFromM res) >> pure res
+rememberLastUpdate hAPI res = do
+  st <- getState hAPI
+  mapM_ (setState hAPI) (newStateFromM res st) >> pure res
 
-newStateFromM :: Response -> Maybe TGState
-newStateFromM (UpdatesResponse us@(_x:_xs)) =
-  Just . TGState . (1 +) . update_id . last $ us
-newStateFromM _ = Nothing
+newStateFromM :: Response -> TGState -> Maybe TGState
+newStateFromM (UpdatesResponse us@(_x:_xs)) st =
+  let uid = (1 +) . update_id . last $ us
+   in Just $ st {lastUpdate = uid}
+newStateFromM _ _ = Nothing
 
 runMethod ::
      (MonadIO m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
