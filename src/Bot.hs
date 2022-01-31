@@ -23,7 +23,7 @@ import Prelude hiding (repeat)
 data Handle apiHandle =
   Handle
     { hAPI :: apiHandle
-    , replies :: Strings
+    , replies :: Replies
     }
 
 data StringsM =
@@ -36,8 +36,8 @@ data StringsM =
     }
   deriving (Show)
 
-data Strings =
-  Strings
+data Replies =
+  Replies
     { help :: T.Text
     , greeting :: T.Text
     , repeat :: T.Text
@@ -46,9 +46,9 @@ data Strings =
     }
   deriving (Show)
 
-fromStrinsM :: StringsM -> Strings
+fromStrinsM :: StringsM -> Replies
 fromStrinsM StringsM {..} =
-  Strings
+  Replies
     { help = fromMaybe "" helpM
     , greeting = fromMaybe "" greetingM
     , repeat = fromMaybe "" repeatM
