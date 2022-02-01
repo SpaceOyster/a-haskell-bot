@@ -419,7 +419,7 @@ instance A.ToJSON KeyboardAction where
   toJSON KeyboardAction {..} =
     A.object $
     filter
-      (\(_, mv) -> mv /= A.Null) -- TODO do better
+      ((/= A.Null) . snd) -- TODO do better
       [ "type" A..= action_type
       , "label" A..= label
       , "payload" A..= payload
