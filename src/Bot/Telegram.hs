@@ -13,6 +13,7 @@ module Bot.Telegram
 
 import qualified API.Telegram as TG
 import qualified Bot
+import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.State (StateT, lift)

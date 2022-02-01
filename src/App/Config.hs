@@ -5,7 +5,7 @@ module App.Config
   ( AppConfig(..)
   ) where
 
-import qualified Bot
+import qualified Bot.Replies as Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))

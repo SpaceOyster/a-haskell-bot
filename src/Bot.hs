@@ -5,7 +5,7 @@
 
 module Bot where
 
-import Control.Applicative ((<|>))
+import Bot.Replies as Bot
 import Control.Concurrent (threadDelay)
 import Control.Monad (forever, join)
 import Control.Monad.Catch (MonadThrow)
@@ -13,7 +13,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (StateT, evalStateT, lift)
 import Data.Function ((&))
 import qualified Data.Hashable as H
-import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP (MonadHTTP(..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
@@ -24,56 +23,6 @@ newtype Handle apiHandle =
   Handle
     { replies :: Replies
     }
-
-data RepliesM =
-  RepliesM
-    { helpM :: Maybe T.Text
-    , greetingM :: Maybe T.Text
-    , repeatM :: Maybe T.Text
-    , unknownM :: Maybe T.Text
-    , settingsSavedM :: Maybe T.Text
-    }
-  deriving (Show)
-
-data Replies =
-  Replies
-    { help :: T.Text
-    , greeting :: T.Text
-    , repeat :: T.Text
-    , unknown :: T.Text
-    , settingsSaved :: T.Text
-    }
-  deriving (Show)
-
-fromRepliesM :: RepliesM -> Replies
-fromRepliesM RepliesM {..} =
-  Replies
-    { help = fromMaybe "" helpM
-    , greeting = fromMaybe "" greetingM
-    , repeat = fromMaybe "" repeatM
-    , unknown = fromMaybe "" unknownM
-    , settingsSaved = fromMaybe "" settingsSavedM
-    }
-
-instance Semigroup RepliesM where
-  s0 <> s1 =
-    RepliesM
-      { helpM = helpM s0 <|> helpM s1
-      , greetingM = greetingM s0 <|> greetingM s1
-      , repeatM = repeatM s0 <|> repeatM s1
-      , unknownM = unknownM s0 <|> unknownM s1
-      , settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
-      }
-
-instance Monoid RepliesM where
-  mempty =
-    RepliesM
-      { helpM = mempty
-      , greetingM = mempty
-      , repeatM = mempty
-      , unknownM = mempty
-      , settingsSavedM = mempty
-      }
 
 repeatPrompt ::
      (H.Hashable u, MonadThrow m, DB.MonadUsersDB m)
@@ -86,7 +35,7 @@ repeatPrompt hBot userM = do
   pure $ T.replace "%n" (T.tshow mult) prompt'
 
 -- | command has to be between 1-32 chars long
--- description hat to be between 3-256 chars long
+-- description has to be between 3-256 chars long
 data Command
   = Start
   | Help
@@ -130,7 +79,7 @@ class (Monoid (APIState h)) =>
   loop bMonad period =
     flip evalStateT mempty $ do
       hBot <- bMonad
-      forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
+      _ <- forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
       pure ()
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)

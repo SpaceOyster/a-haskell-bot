@@ -12,6 +12,7 @@ module Bot.Vkontakte
 
 import qualified API.Vkontakte as VK
 import qualified Bot
+import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.State (StateT, lift)

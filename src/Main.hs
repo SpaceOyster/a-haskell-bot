@@ -9,6 +9,7 @@ import App.Config
 import qualified App.Env as App
 import qualified App.Monad as App
 import qualified Bot
+import qualified Bot.Replies as Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
