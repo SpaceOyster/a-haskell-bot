@@ -1,12 +1,10 @@
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module App.Env where
 
-import Control.Monad.Reader (MonadReader(..), asks)
+import qualified Bot.Replies as Bot
 import Data.Has (Has(..))
 import Data.Kind (Type)
 import qualified HTTP
@@ -29,7 +27,3 @@ instance Has HTTP.Handle (Env m) where
 instance Has UsersDB.Handle (Env m) where
   obtain = envUsersDB
 
-grab ::
-     forall field env m. (MonadReader env m, Has field env)
-  => m field
-grab = asks $ obtain @field

@@ -3,10 +3,11 @@
 
 module App.Monad where
 
-import App.Env (Env(..), grab)
+import App.Env (Env(..))
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader(..), ReaderT(..))
+import Data.Has (grab)
 import qualified Effects.HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
