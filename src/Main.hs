@@ -74,7 +74,13 @@ runWithApp AppConfig {..} bot =
       T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
     hHTTP <- HTTP.new HTTP.Config {}
     hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
-    let env = App.Env {envLogger = hLog, envHTTP = hHTTP, envUsersDB = hUsersDB}
+    let env =
+          App.Env
+            { envLogger = hLog
+            , envHTTP = hHTTP
+            , envUsersDB = hUsersDB
+            , envBotReplies = Bot.fromRepliesM repliesM
+            }
     let app =
           case bot of
             Telegram -> TG.new telegram `Bot.loop` poll_period

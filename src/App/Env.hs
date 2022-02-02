@@ -16,6 +16,7 @@ data Env (m :: Type -> Type) =
     { envLogger :: Logger.Handle
     , envHTTP :: HTTP.Handle
     , envUsersDB :: UsersDB.Handle
+    , envBotReplies :: Bot.Replies
     }
 
 instance Has Logger.Handle (Env m) where
@@ -27,3 +28,5 @@ instance Has HTTP.Handle (Env m) where
 instance Has UsersDB.Handle (Env m) where
   obtain = envUsersDB
 
+instance Has Bot.Replies (Env m) where
+  obtain = envBotReplies
