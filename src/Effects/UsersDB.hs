@@ -1,5 +1,6 @@
 module Effects.UsersDB where
 
+import Control.Monad (join)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 
@@ -14,6 +15,9 @@ class Monad m =>
   defaultUserData :: m UserData
   getUserData :: H.Hashable u => u -> m (Maybe UserData)
   modifyUserData :: H.Hashable u => u -> (UserData -> UserData) -> m ()
+
+getUserDataM :: (H.Hashable u, MonadUsersDB m) => Maybe u -> m (Maybe UserData)
+getUserDataM maybeUser = join <$> traverse getUserData maybeUser
 
 getUserMultiplier :: (H.Hashable u, MonadUsersDB m) => u -> m Int
 getUserMultiplier user =
