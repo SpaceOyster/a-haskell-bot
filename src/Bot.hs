@@ -1,6 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleContexts #-}
 
 module Bot where
