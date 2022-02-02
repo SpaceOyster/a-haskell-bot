@@ -6,12 +6,14 @@ module Bot.Replies
   ( RepliesM(..)
   , Replies(..)
   , fromRepliesM
+  , insertUserData
   ) where
 
 import Control.Applicative ((<|>))
 import Data.Has
 import Data.Maybe (fromMaybe)
-import qualified Data.Text as T (Text)
+import qualified Data.Text.Extended as T (Text, replace, tshow)
+import Effects.UsersDB (UserData(..))
 import Prelude hiding (repeat)
 
 data RepliesM =
@@ -66,3 +68,6 @@ instance Monoid RepliesM where
       , unknownM = mempty
       , settingsSavedM = mempty
       }
+
+insertUserData :: UserData -> T.Text -> T.Text
+insertUserData ud = T.replace "%n" (T.tshow $ getEchoMultiplier ud)
