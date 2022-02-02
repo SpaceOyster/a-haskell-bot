@@ -29,9 +29,9 @@ repeatPrompt ::
   -> Maybe u
   -> m T.Text
 repeatPrompt hBot userM = do
-  mult <- DB.getUserMultiplierM userM
-  let prompt' = hBot & Bot.replies & Bot.repeat
-  pure $ T.replace "%n" (T.tshow mult) prompt'
+  userData <- userM & DB.getUserDataM & DB.orDefaultData
+  let prompt = hBot & Bot.replies & Bot.repeat
+  pure $ Bot.insertUserData userData prompt
 
 -- | command has to be between 1-32 chars long
 -- description has to be between 3-256 chars long
