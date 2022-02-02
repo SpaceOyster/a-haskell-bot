@@ -1,5 +1,6 @@
 module Effects.UsersDB where
 
+import Data.Function ((&))
 import qualified Data.Hashable as H
 
 newtype UserData =
@@ -27,3 +28,12 @@ setUserData user d = modifyUserData user $ const d
 setUserMultiplier :: (H.Hashable u, MonadUsersDB m) => u -> Int -> m ()
 setUserMultiplier user multiplier =
   modifyUserData user $ \us -> us {getEchoMultiplier = multiplier}
+
+{-|
+   suggested usage: 
+   @
+   user & getUserData & orDefaultData
+   @
+-}
+orDefaultData :: (MonadUsersDB m) => m (Maybe UserData) -> m UserData
+orDefaultData liftedUserM = liftedUserM >>= maybe defaultUserData pure
