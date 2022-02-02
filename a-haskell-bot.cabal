@@ -39,6 +39,7 @@ library
       Data.Has
       Data.Hashable
       Data.Text.Extended
+      Effects.BotReplies
       Effects.HTTP
       Effects.Log
       Effects.UsersDB
@@ -83,6 +84,7 @@ executable a-haskell-bot-exe
       Data.Has
       Data.Hashable
       Data.Text.Extended
+      Effects.BotReplies
       Effects.HTTP
       Effects.Log
       Effects.UsersDB
