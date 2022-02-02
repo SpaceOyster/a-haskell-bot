@@ -7,4 +7,6 @@ class (Monad m) =>
       MonadBotReplies m
   where
   getReplies :: m Bot.Replies
-  getReply :: (Bot.Replies -> T.Text) -> m T.Text
+
+getReply :: (MonadBotReplies m) => (Bot.Replies -> T.Text) -> m T.Text
+getReply f = f <$> getReplies
