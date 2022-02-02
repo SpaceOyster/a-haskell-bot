@@ -16,7 +16,6 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
 import qualified Data.Map as Map (Map, alter, lookup)
-import Data.Maybe (fromMaybe)
 import qualified Effects.UsersDB as DB
 
 newtype UsersMap =
@@ -48,13 +47,11 @@ hGetUsersMap hDB = liftIO . readIORef $ state hDB
 hModifyUsersMap :: (MonadIO m) => Handle -> (UsersMap -> UsersMap) -> m ()
 hModifyUsersMap hDB f = liftIO $ state hDB `modifyIORef` f
 
-getUserData :: (H.Hashable u, MonadIO m) => Handle -> u -> m DB.UserData
+getUserData :: (H.Hashable u, MonadIO m) => Handle -> u -> m (Maybe DB.UserData)
 getUserData hDB user = do
   uMap <- hGetUsersMap hDB
-  let defaultSettings = defaultUserData hDB
-      uhash = H.hash user
-      maybeSettings = Map.lookup uhash $ getUsersMap uMap
-  pure $ fromMaybe defaultSettings maybeSettings
+  let uhash = H.hash user
+  pure $ Map.lookup uhash $ getUsersMap uMap
 
 modifyUserData ::
      (H.Hashable u, MonadIO m)
