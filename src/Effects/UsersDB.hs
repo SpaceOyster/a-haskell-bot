@@ -18,8 +18,8 @@ getUserMultiplier :: (H.Hashable u, MonadUsersDB m) => u -> m Int
 getUserMultiplier user = getEchoMultiplier <$> getUserData user
 
 getUserMultiplierM :: (H.Hashable u, MonadUsersDB m) => Maybe u -> m Int
-getUserMultiplierM (Just u) = getUserMultiplier u
-getUserMultiplierM Nothing = getEchoMultiplier <$> defaultUserData
+getUserMultiplierM userMaybe =
+  getEchoMultiplier <$> maybe defaultUserData getUserData userMaybe
 
 setUserData :: (H.Hashable u, MonadUsersDB m) => u -> UserData -> m ()
 setUserData user d = modifyUserData user $ const d
