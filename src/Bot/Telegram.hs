@@ -44,7 +44,7 @@ new cfg@Config {..} = do
   let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {}
 
-instance Bot.BotHandle (Bot.Handle TG.Handle) where
+instance Bot.BotMonad (Bot.Handle TG.Handle) where
   type APIState (Bot.Handle TG.Handle) = TG.TGState
   type Update (Bot.Handle TG.Handle) = TG.Update
   fetchUpdates ::

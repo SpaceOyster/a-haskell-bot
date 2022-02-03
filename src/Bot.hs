@@ -60,7 +60,7 @@ isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
 class (Monoid (APIState h)) =>
-      BotHandle h
+      BotMonad h
   where
   type Update h
   type APIState h

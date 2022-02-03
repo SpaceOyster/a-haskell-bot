@@ -47,7 +47,7 @@ new cfg@Config {..} = do
   let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {}
 
-instance Bot.BotHandle (Bot.Handle VK.Handle) where
+instance Bot.BotMonad (Bot.Handle VK.Handle) where
   type Update (Bot.Handle VK.Handle) = VK.GroupEvent
   type APIState (Bot.Handle VK.Handle) = VK.VKState
   fetchUpdates ::
