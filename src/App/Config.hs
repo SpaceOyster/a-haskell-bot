@@ -37,7 +37,7 @@ instance A.FromJSON AppConfig where
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
       poll_period_ms <- defaults A..: "poll-period-ms"
       let poll_period = (1000 *) $ max 500 poll_period_ms
-      repliesM <- mempty <|> o A..: "strings" >>= parseStringsM
+      repliesM <- mempty <|> o A..: "replies" >>= parseStringsM
       logger <- o A..:? "logger" A..!= mempty
       telegram' <- o A..: "telegram" >>= parseTGConfig
       let telegram = telegram' `mergeStringsTG` repliesM
@@ -50,7 +50,7 @@ parseTGConfig =
   A.withObject "FromJSON Bot.Telegram" $ \o -> do
     defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
-    repliesM <- mempty <|> o A..: "strings" >>= parseStringsM
+    repliesM <- mempty <|> o A..: "replies" >>= parseStringsM
     pure $ TG.Config {..}
 
 parseVKConfig :: A.Value -> A.Parser VK.Config
@@ -58,14 +58,14 @@ parseVKConfig =
   A.withObject "FromJSON Bot.Telegram" $ \o -> do
     defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
-    repliesM <- mempty <|> o A..: "strings" >>= parseStringsM
+    repliesM <- mempty <|> o A..: "replies" >>= parseStringsM
     group_id <- o A..:? "group-id" A..!= 0
     v <- o A..:? "api-version" A..!= "5.86"
     pure $ VK.Config {..}
 
 parseStringsM :: A.Value -> A.Parser Bot.RepliesM
 parseStringsM =
-  A.withObject "AppConfig.strings" $ \o -> do
+  A.withObject "AppConfig.replies" $ \o -> do
     helpM <- o A..:? "help"
     greetingM <- o A..:? "greeting"
     repeatM <- o A..:? "repeat"
