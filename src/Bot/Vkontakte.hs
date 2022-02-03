@@ -47,9 +47,9 @@ new cfg@Config {..} = do
   let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {}
 
-instance Bot.BotMonad (Bot.Handle VK.VKState) where
-  type Update (Bot.Handle VK.VKState) = VK.GroupEvent
-  type APIState (Bot.Handle VK.VKState) = VK.VKState
+instance Bot.StatefulBotMonad VK.VKState where
+  type BotHandle VK.VKState = Bot.Handle VK.VKState
+  type Update VK.VKState = VK.GroupEvent
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle VK.VKState
@@ -57,11 +57,11 @@ instance Bot.BotMonad (Bot.Handle VK.VKState) where
   fetchUpdates _ = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
-  data Entity (Bot.Handle VK.VKState) = EMessage VK.Message
-                                    | ECommand VK.Message
-                                    | ECallback VK.CallbackEvent
-  type Response (Bot.Handle VK.VKState) = VK.Response
-  qualifyUpdate :: VK.GroupEvent -> Bot.Entity (Bot.Handle VK.VKState)
+  data Entity VK.VKState = EMessage VK.Message
+                       | ECommand VK.Message
+                       | ECallback VK.CallbackEvent
+  type Response VK.VKState = VK.Response
+  qualifyUpdate :: VK.GroupEvent -> Bot.Entity VK.VKState
   qualifyUpdate (VK.MessageNew m)
     | isCommandE m = ECommand m
     | otherwise = EMessage m
@@ -83,7 +83,7 @@ instance Bot.BotMonad (Bot.Handle VK.VKState) where
       ECommand msg -> (: []) <$> reactToCommand hBot msg
       EMessage msg -> reactToMessage hBot msg
       ECallback cq -> reactToCallback hBot cq
-  type Message (Bot.Handle VK.VKState) = VK.Message
+  type Message VK.VKState = VK.Message
   execCommand ::
        ( MonadThrow m
        , Log.MonadLog m

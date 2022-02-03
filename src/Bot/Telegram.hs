@@ -44,9 +44,9 @@ new cfg@Config {..} = do
   let replies = Bot.fromRepliesM repliesM
   pure $ Bot.Handle {}
 
-instance Bot.BotMonad (Bot.Handle TG.TGState) where
-  type APIState (Bot.Handle TG.TGState) = TG.TGState
-  type Update (Bot.Handle TG.TGState) = TG.Update
+instance Bot.StatefulBotMonad TG.TGState where
+  type BotHandle TG.TGState = Bot.Handle TG.TGState
+  type Update TG.TGState = TG.Update
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
     => Bot.Handle TG.TGState
@@ -54,12 +54,12 @@ instance Bot.BotMonad (Bot.Handle TG.TGState) where
   fetchUpdates _ = do
     lift $ Log.logInfo "fetching Updates"
     TG.runMethod TG.GetUpdates >>= TG.extractUpdates
-  data Entity (Bot.Handle TG.TGState) = EMessage TG.Message
-                                    | ECommand TG.Message
-                                    | ECallback TG.CallbackQuery
-                                    | EOther TG.Update
-  type Response (Bot.Handle TG.TGState) = TG.Response
-  qualifyUpdate :: TG.Update -> Bot.Entity (Bot.Handle TG.TGState)
+  data Entity TG.TGState = EMessage TG.Message
+                       | ECommand TG.Message
+                       | ECallback TG.CallbackQuery
+                       | EOther TG.Update
+  type Response TG.TGState = TG.Response
+  qualifyUpdate :: TG.Update -> Bot.Entity TG.TGState
   qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = ECallback cq
     | Just msg <- message
@@ -89,7 +89,7 @@ instance Bot.BotMonad (Bot.Handle TG.TGState) where
       EOther TG.Update {update_id} ->
         throwM $
         Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
-  type Message (Bot.Handle TG.TGState) = TG.Message
+  type Message TG.TGState = TG.Message
   execCommand ::
        ( MonadThrow m
        , Log.MonadLog m

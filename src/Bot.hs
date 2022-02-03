@@ -59,11 +59,11 @@ isCommand :: T.Text -> Bool
 isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
-class (Monoid (APIState h)) =>
-      BotMonad h
+class (Monoid st) =>
+      StatefulBotMonad st
   where
-  type Update h
-  type APIState h
+  type Update st
+  type BotHandle st
   loop ::
        ( MonadIO m
        , MonadThrow m
@@ -72,7 +72,7 @@ class (Monoid (APIState h)) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => StateT (APIState h) m h
+    => StateT st m (BotHandle st)
     -> Int
     -> m ()
   loop bMonad period =
@@ -82,8 +82,8 @@ class (Monoid (APIState h)) =>
       pure ()
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-    => h
-    -> StateT (APIState h) m [Update h]
+    => (BotHandle st)
+    -> StateT st m [Update st]
   doBotThing ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -91,12 +91,12 @@ class (Monoid (APIState h)) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => h
-    -> StateT (APIState h) m [Response h]
+    => BotHandle st
+    -> StateT st m [Response st]
   doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
-  data Entity h
-  type Response h
-  qualifyUpdate :: Update h -> Entity h
+  data Entity st
+  type Response st
+  qualifyUpdate :: Update st -> Entity st
   reactToUpdate ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -104,9 +104,9 @@ class (Monoid (APIState h)) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => h
-    -> Update h
-    -> StateT (APIState h) m [Response h]
+    => BotHandle st
+    -> Update st
+    -> StateT st m [Response st]
   reactToUpdates ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -114,13 +114,13 @@ class (Monoid (APIState h)) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => h
-    -> [Update h]
-    -> StateT (APIState h) m [Response h]
+    => BotHandle st
+    -> [Update st]
+    -> StateT st m [Response st]
   reactToUpdates hBot updates = do
     lift $ Log.logInfo "processing each update"
     join <$> mapM (reactToUpdate hBot) updates
-  type Message h
+  type Message st
   execCommand ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -128,6 +128,6 @@ class (Monoid (APIState h)) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => h
+    => (BotHandle st)
     -> Command
-    -> (Message h -> StateT (APIState h) m (Response h))
+    -> (Message st -> StateT st m (Response st))
