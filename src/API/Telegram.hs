@@ -8,7 +8,6 @@
 module API.Telegram
   ( Config(..)
   , Method(..)
-  , Handle(..)
   , TGState(..)
   , new
   , runMethod
@@ -56,11 +55,6 @@ data TGState =
   TGState
     { lastUpdate :: Integer
     , apiURI :: URI.URI
-    }
-
-data Handle =
-  Handle
-    {
     }
 
 newtype Config =
