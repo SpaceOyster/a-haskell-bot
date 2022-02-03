@@ -10,12 +10,13 @@ module UsersDB
   , new
   , getUserData
   , modifyUserData
+  , setUserData
   ) where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Hashable as H
 import Data.IORef (IORef, modifyIORef, newIORef, readIORef)
-import qualified Data.Map as Map (Map, alter, lookup)
+import qualified Data.Map as Map (Map, alter, insert, lookup)
 import qualified Effects.UsersDB as DB
 
 newtype UsersMap =
@@ -65,3 +66,7 @@ modifyUserData hDB user morph =
         m = getUsersMap uMap
         usettings = Map.alter (fmap morph) uhash m
      in uMap {getUsersMap = usettings}
+
+setUserData :: (H.Hashable u, MonadIO m) => Handle -> u -> DB.UserData -> m ()
+setUserData hDB user udata =
+  hModifyUsersMap hDB (UsersMap . Map.insert (H.hash user) udata . getUsersMap)

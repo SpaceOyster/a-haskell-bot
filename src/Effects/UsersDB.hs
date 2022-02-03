@@ -3,6 +3,7 @@ module Effects.UsersDB where
 import Control.Monad (join)
 import Data.Function ((&))
 import qualified Data.Hashable as H
+import Data.Maybe (fromMaybe)
 
 newtype UserData =
   UserData
@@ -14,7 +15,12 @@ class Monad m =>
   where
   defaultUserData :: m UserData
   getUserData :: H.Hashable u => u -> m (Maybe UserData)
+  setUserData :: H.Hashable u => u -> UserData -> m ()
   modifyUserData :: H.Hashable u => u -> (UserData -> UserData) -> m ()
+  modifyUserData user morph = do
+    defaultData <- defaultUserData
+    udata <- getUserData user
+    setUserData user $ morph $ fromMaybe defaultData udata
 
 getUserDataM :: (H.Hashable u, MonadUsersDB m) => Maybe u -> m (Maybe UserData)
 getUserDataM maybeUser = join <$> traverse getUserData maybeUser
@@ -28,12 +34,10 @@ getUserMultiplierM userMaybe =
   getEchoMultiplier <$>
   maybe defaultUserData (orDefaultData . getUserData) userMaybe
 
-setUserData :: (H.Hashable u, MonadUsersDB m) => u -> UserData -> m ()
-setUserData user d = modifyUserData user $ const d
-
 setUserMultiplier :: (H.Hashable u, MonadUsersDB m) => u -> Int -> m ()
-setUserMultiplier user multiplier =
-  modifyUserData user $ \us -> us {getEchoMultiplier = multiplier}
+setUserMultiplier user multiplier = do
+  ud <- getUserData user & orDefaultData
+  setUserData user $ ud {getEchoMultiplier = multiplier}
 
 {-|
    suggested usage: 

@@ -58,6 +58,10 @@ instance DB.MonadUsersDB App where
     hUsersDB <- grab @UsersDB.Handle
     let modifyAction = UsersDB.modifyUserData hUsersDB
     App . liftIO $ modifyAction user morph
+  setUserData user udata = do
+    hUsersDB <- grab @UsersDB.Handle
+    let setAction = UsersDB.setUserData hUsersDB
+    App . liftIO $ setAction user udata
 
 instance BR.MonadBotReplies App where
   getReplies = grab @BR.Replies
