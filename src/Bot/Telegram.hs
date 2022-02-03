@@ -33,25 +33,18 @@ data Config =
     }
   deriving (Show)
 
-new ::
-     (MonadThrow m, Log.MonadLog m)
-  => Config
-  -> StateT TG.TGState m (Bot.Handle TG.TGState)
+new :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
 new cfg@Config {..} = do
-  lift $ Log.logInfo "Initiating Telegram Bot"
-  lift $ Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
+  Log.logInfo "Initiating Telegram Bot"
+  Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   TG.new TG.Config {..}
-  let replies = Bot.fromRepliesM repliesM
-  pure $ Bot.Handle {}
 
 instance Bot.StatefulBotMonad TG.TGState where
-  type BotHandle TG.TGState = Bot.Handle TG.TGState
   type Update TG.TGState = TG.Update
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-    => Bot.Handle TG.TGState
-    -> StateT TG.TGState m [TG.Update]
-  fetchUpdates _ = do
+    => StateT TG.TGState m [TG.Update]
+  fetchUpdates = do
     lift $ Log.logInfo "fetching Updates"
     TG.runMethod TG.GetUpdates >>= TG.extractUpdates
   data Entity TG.TGState = EMessage TG.Message
@@ -74,18 +67,17 @@ instance Bot.StatefulBotMonad TG.TGState where
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => Bot.Handle TG.TGState
-    -> TG.Update
+    => TG.Update
     -> StateT TG.TGState m [TG.Response]
-  reactToUpdate hBot update = do
+  reactToUpdate update = do
     lift $
       Log.logDebug $
       "qualifying Update with id " <> T.tshow (TG.update_id update)
     let qu = Bot.qualifyUpdate update
     case qu of
-      ECommand msg -> (: []) <$> reactToCommand hBot msg
-      EMessage msg -> reactToMessage hBot msg
-      ECallback cq -> (: []) <$> reactToCallback hBot cq
+      ECommand msg -> (: []) <$> reactToCommand msg
+      EMessage msg -> reactToMessage msg
+      ECallback cq -> (: []) <$> reactToCallback cq
       EOther TG.Update {update_id} ->
         throwM $
         Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
@@ -97,10 +89,9 @@ instance Bot.StatefulBotMonad TG.TGState where
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => Bot.Handle TG.TGState
-    -> Bot.Command
+    => Bot.Command
     -> (TG.Message -> StateT TG.TGState m TG.Response)
-  execCommand hBot cmd TG.Message {..} = do
+  execCommand cmd TG.Message {..} = do
     let address = TG.chat_id chat
     prompt <- lift $ Bot.repeatPrompt from
     replies <- lift BR.getReplies
@@ -119,23 +110,21 @@ reactToCommand ::
      , DB.MonadUsersDB m
      , BR.MonadBotReplies m
      )
-  => Bot.Handle TG.TGState
-  -> TG.Message
+  => TG.Message
   -> StateT TG.TGState m TG.Response
-reactToCommand hBot msg@TG.Message {message_id} = do
+reactToCommand msg@TG.Message {message_id} = do
   cmd <- getCommandThrow msg
   lift $
     Log.logDebug $
     "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
-  Bot.execCommand hBot cmd msg
+  Bot.execCommand cmd msg
 
 -- diff
 reactToMessage ::
      (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
-  => Bot.Handle TG.TGState
-  -> TG.Message
+  => TG.Message
   -> StateT TG.TGState m [TG.Response]
-reactToMessage _ msg@TG.Message {message_id} = do
+reactToMessage msg@TG.Message {message_id} = do
   author <- TG.getAuthorThrow msg
   n <- lift $ DB.getUserMultiplier author
   lift $
@@ -159,10 +148,9 @@ qualifyQuery qstring =
 -- diff
 reactToCallback ::
      (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
-  => Bot.Handle TG.TGState
-  -> TG.CallbackQuery
+  => TG.CallbackQuery
   -> StateT TG.TGState m TG.Response
-reactToCallback _ cq@TG.CallbackQuery {cq_id, from} = do
+reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
   lift $
     Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
   cdata <- TG.getQDataThrow cq

@@ -74,11 +74,11 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-new :: (MonadThrow m, Log.MonadLog m) => Config -> StateT TGState m ()
+new :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 new cfg = do
-  lift $ Log.logInfo "Initiating Telegram API handle"
+  Log.logInfo "Initiating Telegram API handle"
   apiURI <- makeBaseURI cfg
-  put $ mempty {apiURI}
+  pure $ mempty {apiURI}
 
 apiMethod :: TGState -> String -> URI.URI
 apiMethod st method = apiURI st `URI.addPath` method

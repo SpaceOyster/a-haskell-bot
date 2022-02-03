@@ -18,7 +18,6 @@ import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.State (StateT, lift)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
-import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
@@ -37,24 +36,18 @@ data Config =
   deriving (Show)
 
 new ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-  => Config
-  -> StateT VK.VKState m (Bot.Handle VK.VKState)
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
 new cfg@Config {..} = do
-  lift $ Log.logInfo "Initiating Vkontakte Bot"
-  lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
+  Log.logInfo "Initiating Vkontakte Bot"
+  Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.new VK.Config {..}
-  let replies = Bot.fromRepliesM repliesM
-  pure $ Bot.Handle {}
 
 instance Bot.StatefulBotMonad VK.VKState where
-  type BotHandle VK.VKState = Bot.Handle VK.VKState
   type Update VK.VKState = VK.GroupEvent
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-    => Bot.Handle VK.VKState
-    -> StateT VK.VKState m [VK.GroupEvent]
-  fetchUpdates _ = do
+    => StateT VK.VKState m [VK.GroupEvent]
+  fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
   data Entity VK.VKState = EMessage VK.Message
@@ -73,16 +66,15 @@ instance Bot.StatefulBotMonad VK.VKState where
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => Bot.Handle VK.VKState
-    -> VK.GroupEvent
+    => VK.GroupEvent
     -> StateT VK.VKState m [VK.Response]
-  reactToUpdate hBot update = do
+  reactToUpdate update = do
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
     let qu = Bot.qualifyUpdate update
     case qu of
-      ECommand msg -> (: []) <$> reactToCommand hBot msg
-      EMessage msg -> reactToMessage hBot msg
-      ECallback cq -> reactToCallback hBot cq
+      ECommand msg -> (: []) <$> reactToCommand msg
+      EMessage msg -> reactToMessage msg
+      ECallback cq -> reactToCallback cq
   type Message VK.VKState = VK.Message
   execCommand ::
        ( MonadThrow m
@@ -91,10 +83,9 @@ instance Bot.StatefulBotMonad VK.VKState where
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => Bot.Handle VK.VKState
-    -> Bot.Command
+    => Bot.Command
     -> (VK.Message -> StateT VK.VKState m VK.Response)
-  execCommand hBot cmd VK.Message {..} = do
+  execCommand cmd VK.Message {..} = do
     let address = peer_id
     prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User from_id
     replies <- lift BR.getReplies
@@ -113,25 +104,23 @@ reactToCommand ::
      , DB.MonadUsersDB m
      , BR.MonadBotReplies m
      )
-  => Bot.Handle VK.VKState
-  -> VK.Message
+  => VK.Message
   -> StateT VK.VKState m VK.Response
-reactToCommand hBot msg@VK.Message {msg_id, peer_id} = do
+reactToCommand msg@VK.Message {msg_id, peer_id} = do
   let cmd = getCommand msg
   lift $
     Log.logDebug $
     "Got command" <>
     T.tshow cmd <>
     " in message id " <> T.tshow msg_id <> " , peer_id: " <> T.tshow peer_id
-  Bot.execCommand hBot cmd msg
+  Bot.execCommand cmd msg
 
 -- diff
 reactToMessage ::
      (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
-  => Bot.Handle VK.VKState
-  -> VK.Message
+  => VK.Message
   -> StateT VK.VKState m [VK.Response]
-reactToMessage _ msg@VK.Message {..} = do
+reactToMessage msg@VK.Message {..} = do
   n <- lift $ DB.getUserMultiplier $ VK.User from_id
   lift $
     Log.logDebug $
@@ -157,10 +146,9 @@ reactToCallback ::
      , DB.MonadUsersDB m
      , BR.MonadBotReplies m
      )
-  => Bot.Handle VK.VKState
-  -> VK.CallbackEvent
+  => VK.CallbackEvent
   -> StateT VK.VKState m [VK.Response]
-reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
+reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
   let callback = A.parseMaybe A.parseJSON payload
   let user = VK.User user_id
   case callback of

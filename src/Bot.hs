@@ -59,31 +59,30 @@ isCommand :: T.Text -> Bool
 isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
+loop ::
+     ( MonadIO m
+     , MonadThrow m
+     , HTTP.MonadHTTP m
+     , Log.MonadLog m
+     , DB.MonadUsersDB m
+     , BR.MonadBotReplies m
+     , StatefulBotMonad st
+     )
+  => Int
+  -> st
+  -> m ()
+loop period st =
+  flip evalStateT st $ do
+    _ <- forever $ Bot.doBotThing >> liftIO (threadDelay period)
+    pure ()
+
 class (Monoid st) =>
       StatefulBotMonad st
   where
   type Update st
-  type BotHandle st
-  loop ::
-       ( MonadIO m
-       , MonadThrow m
-       , HTTP.MonadHTTP m
-       , Log.MonadLog m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => StateT st m (BotHandle st)
-    -> Int
-    -> m ()
-  loop bMonad period =
-    flip evalStateT mempty $ do
-      hBot <- bMonad
-      _ <- forever $ Bot.doBotThing hBot >> liftIO (threadDelay period)
-      pure ()
   fetchUpdates ::
        (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-    => (BotHandle st)
-    -> StateT st m [Update st]
+    => StateT st m [Update st]
   doBotThing ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -91,9 +90,8 @@ class (Monoid st) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => BotHandle st
-    -> StateT st m [Response st]
-  doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
+    => StateT st m [Response st]
+  doBotThing = fetchUpdates >>= reactToUpdates
   data Entity st
   type Response st
   qualifyUpdate :: Update st -> Entity st
@@ -104,8 +102,7 @@ class (Monoid st) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => BotHandle st
-    -> Update st
+    => Update st
     -> StateT st m [Response st]
   reactToUpdates ::
        ( MonadThrow m
@@ -114,12 +111,11 @@ class (Monoid st) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => BotHandle st
-    -> [Update st]
+    => [Update st]
     -> StateT st m [Response st]
-  reactToUpdates hBot updates = do
+  reactToUpdates updates = do
     lift $ Log.logInfo "processing each update"
-    join <$> mapM (reactToUpdate hBot) updates
+    join <$> mapM reactToUpdate updates
   type Message st
   execCommand ::
        ( MonadThrow m
@@ -128,6 +124,5 @@ class (Monoid st) =>
        , DB.MonadUsersDB m
        , BR.MonadBotReplies m
        )
-    => (BotHandle st)
-    -> Command
+    => Command
     -> (Message st -> StateT st m (Response st))

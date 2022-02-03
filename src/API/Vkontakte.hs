@@ -64,15 +64,11 @@ instance Monoid VKState where
   mempty =
     VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
-new ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-  => Config
-  -> StateT VKState m ()
+new :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VKState
 new cfg = do
-  lift $ Log.logInfo "Initiating Vkontakte API handle"
+  Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
-  put $ mempty {apiURI}
-  initiatePollServer
+  initiatePollServer mempty {apiURI}
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
@@ -138,13 +134,12 @@ instance A.FromJSON PollInitResponse where
         , PollInitServer <$> o A..: "response"
         ]
 
-initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m ()
-initiatePollServer = do
-  ps@PollServer {ts} <- getLongPollServer
+initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VKState -> m VKState
+initiatePollServer st = do
+  ps@PollServer {ts} <- getLongPollServer st
   pollURI <- makePollURI ps
-  st <- get
   let pollCreds = st {lastTS = ts, pollURI}
-  put pollCreds
+  pure pollCreds
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {key, server} = do
@@ -154,12 +149,10 @@ makePollURI PollServer {key, server} = do
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
-getLongPollServer ::
-     (MonadThrow m, HTTP.MonadHTTP m) => StateT VKState m PollServer
-getLongPollServer = do
-  st <- get
+getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VKState -> m PollServer
+getLongPollServer st = do
   let req = HTTP.GET $ apiMethod st "groups.getLongPollServer" mempty
-  json <- lift $ HTTP.sendRequest req
+  json <- HTTP.sendRequest req
   res <- A.throwDecode json
   case res of
     PollInitError Error {error_code, error_msg} ->
