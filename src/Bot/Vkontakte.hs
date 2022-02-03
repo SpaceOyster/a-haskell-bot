@@ -45,7 +45,7 @@ new cfg@Config {..} = do
   lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.new VK.Config {..}
   let replies = Bot.fromRepliesM repliesM
-  pure $ Bot.Handle {..}
+  pure $ Bot.Handle {}
 
 instance Bot.BotHandle (Bot.Handle VK.Handle) where
   type Update (Bot.Handle VK.Handle) = VK.GroupEvent
@@ -168,7 +168,7 @@ reactToCallback hBot cq@VK.CallbackEvent {user_id, payload} = do
       lift $
         Log.logInfo $
         "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-      let prompt = hBot & Bot.replies & Bot.settingsSaved
+      prompt <- lift $ BR.getReply Bot.settingsSaved
       lift $ DB.setUserMultiplier user n
       fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
     Nothing ->

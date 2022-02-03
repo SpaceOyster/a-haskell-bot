@@ -42,7 +42,7 @@ new cfg@Config {..} = do
   lift $ Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   TG.new TG.Config {..}
   let replies = Bot.fromRepliesM repliesM
-  pure $ Bot.Handle {..}
+  pure $ Bot.Handle {}
 
 instance Bot.BotHandle (Bot.Handle TG.Handle) where
   type APIState (Bot.Handle TG.Handle) = TG.TGState
