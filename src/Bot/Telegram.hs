@@ -18,6 +18,7 @@ import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow(..))
 import Control.Monad.State (StateT, lift)
 import qualified Data.Text.Extended as T
+import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
@@ -67,7 +68,12 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
     , not (isCommandE msg) = EMessage msg
     | otherwise = EOther u
   reactToUpdate ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+       ( MonadThrow m
+       , Log.MonadLog m
+       , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
+       )
     => Bot.Handle TG.Handle
     -> TG.Update
     -> StateT TG.TGState m [TG.Response]
@@ -85,13 +91,19 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
         Ex Priority.Info $ "Unknown Update Type. Update: " ++ show update_id
   type Message (Bot.Handle TG.Handle) = TG.Message
   execCommand ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+       ( MonadThrow m
+       , Log.MonadLog m
+       , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
+       )
     => Bot.Handle TG.Handle
     -> Bot.Command
     -> (TG.Message -> StateT TG.TGState m TG.Response)
-  execCommand hBot@Bot.Handle {..} cmd TG.Message {..} = do
+  execCommand hBot cmd TG.Message {..} = do
     let address = TG.chat_id chat
-    prompt <- lift $ Bot.repeatPrompt hBot from
+    prompt <- lift $ Bot.repeatPrompt from
+    replies <- lift BR.getReplies
     TG.runMethod $
       case cmd of
         Bot.Start -> TG.SendMessage address (Bot.greeting replies)
@@ -101,7 +113,12 @@ instance Bot.BotHandle (Bot.Handle TG.Handle) where
 
 -- diff
 reactToCommand ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+     ( MonadThrow m
+     , Log.MonadLog m
+     , HTTP.MonadHTTP m
+     , DB.MonadUsersDB m
+     , BR.MonadBotReplies m
+     )
   => Bot.Handle TG.Handle
   -> TG.Message
   -> StateT TG.TGState m TG.Response

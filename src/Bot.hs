@@ -13,10 +13,10 @@ import Control.Monad.State (StateT, evalStateT, lift)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
+import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP (MonadHTTP(..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
 import qualified Effects.UsersDB as DB
-import Prelude hiding (repeat)
 
 newtype Handle apiHandle =
   Handle
@@ -24,13 +24,12 @@ newtype Handle apiHandle =
     }
 
 repeatPrompt ::
-     (H.Hashable u, MonadThrow m, DB.MonadUsersDB m)
-  => Handle s
-  -> Maybe u
+     (H.Hashable u, MonadThrow m, DB.MonadUsersDB m, BR.MonadBotReplies m)
+  => Maybe u
   -> m T.Text
-repeatPrompt hBot userM = do
+repeatPrompt userM = do
   userData <- userM & DB.getUserDataM & DB.orDefaultData
-  let prompt = hBot & Bot.replies & Bot.repeat
+  prompt <- BR.getReply Bot.repeat
   pure $ Bot.insertUserData userData prompt
 
 -- | command has to be between 1-32 chars long
@@ -71,6 +70,7 @@ class (Monoid (APIState h)) =>
        , HTTP.MonadHTTP m
        , Log.MonadLog m
        , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
        )
     => StateT (APIState h) m h
     -> Int
@@ -85,7 +85,12 @@ class (Monoid (APIState h)) =>
     => h
     -> StateT (APIState h) m [Update h]
   doBotThing ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+       ( MonadThrow m
+       , Log.MonadLog m
+       , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
+       )
     => h
     -> StateT (APIState h) m [Response h]
   doBotThing hBot = fetchUpdates hBot >>= reactToUpdates hBot
@@ -93,12 +98,22 @@ class (Monoid (APIState h)) =>
   type Response h
   qualifyUpdate :: Update h -> Entity h
   reactToUpdate ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+       ( MonadThrow m
+       , Log.MonadLog m
+       , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
+       )
     => h
     -> Update h
     -> StateT (APIState h) m [Response h]
   reactToUpdates ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+       ( MonadThrow m
+       , Log.MonadLog m
+       , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
+       )
     => h
     -> [Update h]
     -> StateT (APIState h) m [Response h]
@@ -107,7 +122,12 @@ class (Monoid (APIState h)) =>
     join <$> mapM (reactToUpdate hBot) updates
   type Message h
   execCommand ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
+       ( MonadThrow m
+       , Log.MonadLog m
+       , HTTP.MonadHTTP m
+       , DB.MonadUsersDB m
+       , BR.MonadBotReplies m
+       )
     => h
     -> Command
     -> (Message h -> StateT (APIState h) m (Response h))
