@@ -18,11 +18,6 @@ import qualified Effects.HTTP as HTTP (MonadHTTP(..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
 import qualified Effects.UsersDB as DB
 
-data Handle apiHandle =
-  Handle
-    {
-    }
-
 repeatPrompt ::
      (H.Hashable u, MonadThrow m, DB.MonadUsersDB m, BR.MonadBotReplies m)
   => Maybe u
