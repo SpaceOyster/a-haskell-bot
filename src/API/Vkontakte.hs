@@ -9,8 +9,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 module API.Vkontakte
-  ( Handle(..)
-  , new
+  ( new
   , Config(..)
   , VKState(..)
   , Method(..)
@@ -50,11 +49,6 @@ data VKState =
     , apiURI :: URI.URI
     }
   deriving (Show)
-
-data Handle =
-  Handle
-    {
-    }
 
 data Config =
   Config
