@@ -9,7 +9,7 @@
 {-# LANGUAGE LambdaCase #-}
 
 module API.Vkontakte
-  ( new
+  ( initiate
   , Config(..)
   , VKState(..)
   , Method(..)
@@ -29,7 +29,7 @@ module API.Vkontakte
   ) where
 
 import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.State (StateT, get, lift, modify', put)
+import Control.Monad.State (StateT, get, lift, modify')
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -64,8 +64,9 @@ instance Monoid VKState where
   mempty =
     VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
-new :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VKState
-new cfg = do
+initiate ::
+     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VKState
+initiate cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
   initiatePollServer mempty {apiURI}

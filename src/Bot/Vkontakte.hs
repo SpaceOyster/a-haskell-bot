@@ -40,7 +40,7 @@ initiate ::
 initiate cfg@Config {..} = do
   Log.logInfo "Initiating Vkontakte Bot"
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
-  VK.new VK.Config {..}
+  VK.initiate VK.Config {..}
 
 instance Bot.StatefulBotMonad VK.VKState where
   type Update VK.VKState = VK.GroupEvent
