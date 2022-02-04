@@ -9,7 +9,7 @@ module API.Telegram
   ( Config(..)
   , Method(..)
   , TGState(..)
-  , new
+  , initiate
   , runMethod
   , Types.CallbackQuery(..)
   , Types.Error(..)
@@ -74,8 +74,8 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
 
-new :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
-new cfg = do
+initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
+initiate cfg = do
   Log.logInfo "Initiating Telegram API handle"
   apiURI <- makeBaseURI cfg
   pure $ mempty {apiURI}

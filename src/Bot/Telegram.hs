@@ -37,7 +37,7 @@ initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
 initiate cfg@Config {..} = do
   Log.logInfo "Initiating Telegram Bot"
   Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
-  TG.new TG.Config {..}
+  TG.initiate TG.Config {..}
 
 instance Bot.StatefulBotMonad TG.TGState where
   type Update TG.TGState = TG.Update
