@@ -8,7 +8,7 @@
 
 module Bot.Telegram
   ( Config(..)
-  , new
+  , initiate
   ) where
 
 import qualified API.Telegram as TG
@@ -33,8 +33,8 @@ data Config =
     }
   deriving (Show)
 
-new :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
-new cfg@Config {..} = do
+initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
+initiate cfg@Config {..} = do
   Log.logInfo "Initiating Telegram Bot"
   Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   TG.new TG.Config {..}
