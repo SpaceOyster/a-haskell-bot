@@ -7,7 +7,7 @@
 
 module Bot.Vkontakte
   ( Config(..)
-  , new
+  , initiate
   ) where
 
 import qualified API.Vkontakte as VK
@@ -35,9 +35,9 @@ data Config =
     }
   deriving (Show)
 
-new ::
+initiate ::
      (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
-new cfg@Config {..} = do
+initiate cfg@Config {..} = do
   Log.logInfo "Initiating Vkontakte Bot"
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.new VK.Config {..}

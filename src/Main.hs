@@ -83,6 +83,6 @@ runWithApp AppConfig {..} bot =
             }
     let app =
           case bot of
-            Vkontakte -> VK.new vkontakte >>= Bot.loop poll_period
             Telegram -> TG.initiate telegram >>= Bot.loop poll_period
+            Vkontakte -> VK.initiate vkontakte >>= Bot.loop poll_period
     App.unApp app `runReaderT` env
