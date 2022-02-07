@@ -131,9 +131,17 @@ class (MonadTrans st) => StatefulBotMonad st where
     ) =>
     BotDSL (Update st) () ->
     st m ()
-  interpret (FetchUpdates f) = fetchUpdates >>= interpret . f >> pure ()
-  interpret (ReactToUpdates us b) = reactToUpdates us >> interpret b >> pure ()
-  interpret (Done ret) = pure ret
+  interpret (FetchUpdates next) = fetchUpdates >>= interpret . next >> pure ()
+  interpret (ReactToUpdates us next) =
+    reactToUpdates us >> interpret next >> pure ()
+  interpret (Done ret) = pure ()
 
-botLoop :: BotDSL a b
+botLoop :: BotDSL a ret
 botLoop = FetchUpdates (\us -> ReactToUpdates us botLoop)
+
+andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
+andThen (Done ret) mkProgram = mkProgram ret
+andThen (FetchUpdates next) mkProgram =
+  FetchUpdates $ \updates -> next updates `andThen` mkProgram
+andThen (ReactToUpdates us next) mkProgram =
+  ReactToUpdates us (next `andThen` mkProgram)
