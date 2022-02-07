@@ -26,6 +26,10 @@ repeatPrompt userM = do
   prompt <- BR.getReply Bot.repeat
   pure $ Bot.insertUserData userData prompt
 
+data BotDSL u ret
+  = FetchUpdates ([u] -> BotDSL u ret)
+  | ReactToUpdates [u] (BotDSL u ret)
+  | Done ret
 -- | command has to be between 1-32 chars long
 -- description has to be between 3-256 chars long
 data Command
