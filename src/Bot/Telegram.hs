@@ -52,14 +52,17 @@ instance Bot.StatefulBotMonad TG.TGState where
                        | ECallback TG.CallbackQuery
                        | EOther TG.Update
   type Response TG.TGState = TG.Response
-  qualifyUpdate :: TG.Update -> Bot.Entity TG.TGState
+  qualifyUpdate :: (MonadThrow m) => TG.Update -> m (Bot.Entity TG.TGState)
   qualifyUpdate u@TG.Update {message, callback_query}
-    | Just cq <- callback_query = ECallback cq
+    | Just cq <- callback_query = pure $ ECallback cq
     | Just msg <- message
-    , isCommandE msg = ECommand msg
+    , isCommandE msg = pure $ ECommand msg
     | Just msg <- message
-    , not (isCommandE msg) = EMessage msg
-    | otherwise = EOther u
+    , not (isCommandE msg) = pure $ EMessage msg
+    | otherwise =
+      throwM $
+      Ex Priority.Info $
+      "Unknown Update Type. Update: " ++ show (TG.update_id u)
   reactToUpdate ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -73,7 +76,7 @@ instance Bot.StatefulBotMonad TG.TGState where
     lift $
       Log.logDebug $
       "qualifying Update with id " <> T.tshow (TG.update_id update)
-    let qu = Bot.qualifyUpdate update
+    qu <- Bot.qualifyUpdate update
     case qu of
       ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg

@@ -89,7 +89,7 @@ class (Monoid st) =>
   doBotThing = fetchUpdates >>= reactToUpdates
   data Entity st
   type Response st
-  qualifyUpdate :: Update st -> Entity st
+  qualifyUpdate :: (MonadThrow m) => Update st -> m (Entity st)
   reactToUpdate ::
        ( MonadThrow m
        , Log.MonadLog m

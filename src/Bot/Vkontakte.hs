@@ -54,11 +54,11 @@ instance Bot.StatefulBotMonad VK.VKState where
                        | ECommand VK.Message
                        | ECallback VK.CallbackEvent
   type Response VK.VKState = VK.Response
-  qualifyUpdate :: VK.GroupEvent -> Bot.Entity VK.VKState
+  qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VKState)
   qualifyUpdate (VK.MessageNew m)
-    | isCommandE m = ECommand m
-    | otherwise = EMessage m
-  qualifyUpdate (VK.MessageEvent c) = ECallback c
+    | isCommandE m = pure $ ECommand m
+    | otherwise = pure $ EMessage m
+  qualifyUpdate (VK.MessageEvent c) = pure $ ECallback c
   reactToUpdate ::
        ( MonadThrow m
        , Log.MonadLog m
@@ -70,7 +70,7 @@ instance Bot.StatefulBotMonad VK.VKState where
     -> StateT VK.VKState m [VK.Response]
   reactToUpdate update = do
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
-    let qu = Bot.qualifyUpdate update
+    qu <- Bot.qualifyUpdate update
     case qu of
       ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
