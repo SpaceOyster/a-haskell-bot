@@ -134,3 +134,6 @@ class (MonadTrans st) => StatefulBotMonad st where
   interpret (FetchUpdates f) = fetchUpdates >>= interpret . f >> pure ()
   interpret (ReactToUpdates us b) = reactToUpdates us >> interpret b >> pure ()
   interpret (Done ret) = pure ret
+
+botLoop :: BotDSL a b
+botLoop = FetchUpdates (\us -> ReactToUpdates us botLoop)
