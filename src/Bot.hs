@@ -30,6 +30,7 @@ data BotDSL u ret
   = FetchUpdates ([u] -> BotDSL u ret)
   | ReactToUpdates [u] (BotDSL u ret)
   | Done ret
+
 -- | command has to be between 1-32 chars long
 -- description has to be between 3-256 chars long
 data Command
@@ -120,3 +121,16 @@ class (MonadTrans st) => StatefulBotMonad st where
     ) =>
     Command ->
     (Message st -> st m (Response st))
+  interpret ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      BR.MonadBotReplies m,
+      DB.MonadUsersDB m,
+      Monad (st m)
+    ) =>
+    BotDSL (Update st) () ->
+    st m ()
+  interpret (FetchUpdates f) = fetchUpdates >>= interpret . f >> pure ()
+  interpret (ReactToUpdates us b) = reactToUpdates us >> interpret b >> pure ()
+  interpret (Done ret) = pure ret
