@@ -71,10 +71,7 @@ loop period st =
     _ <- forever $ Bot.doBotThing >> liftIO (threadDelay period)
     pure ()
 
-class
-  (Monoid st) =>
-  StatefulBotMonad st
-  where
+class StatefulBotMonad st where
   runBot ::
     ( MonadThrow m,
       HTTP.MonadHTTP m,
