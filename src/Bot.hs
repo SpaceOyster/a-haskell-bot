@@ -1,6 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE FlexibleContexts #-}
 
 module Bot where
 
@@ -14,14 +14,14 @@ import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
-import qualified Effects.HTTP as HTTP (MonadHTTP(..))
+import qualified Effects.HTTP as HTTP (MonadHTTP (..))
 import qualified Effects.Log as Log (MonadLog, logInfo)
 import qualified Effects.UsersDB as DB
 
 repeatPrompt ::
-     (H.Hashable u, MonadThrow m, DB.MonadUsersDB m, BR.MonadBotReplies m)
-  => Maybe u
-  -> m T.Text
+  (H.Hashable u, MonadThrow m, DB.MonadUsersDB m, BR.MonadBotReplies m) =>
+  Maybe u ->
+  m T.Text
 repeatPrompt userM = do
   userData <- userM & DB.getUserDataM & DB.orDefaultData
   prompt <- BR.getReply Bot.repeat
@@ -55,69 +55,80 @@ isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
 loop ::
-     ( MonadIO m
-     , MonadThrow m
-     , HTTP.MonadHTTP m
-     , Log.MonadLog m
-     , DB.MonadUsersDB m
-     , BR.MonadBotReplies m
-     , StatefulBotMonad st
-     )
-  => Int
-  -> st
-  -> m ()
+  ( MonadIO m,
+    MonadThrow m,
+    HTTP.MonadHTTP m,
+    Log.MonadLog m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m,
+    StatefulBotMonad st
+  ) =>
+  Int ->
+  st ->
+  m ()
 loop period st =
-  flip evalStateT st $ do
+  runBot st $ do
     _ <- forever $ Bot.doBotThing >> liftIO (threadDelay period)
     pure ()
 
-class (Monoid st) =>
-      StatefulBotMonad st
+class
+  (Monoid st) =>
+  StatefulBotMonad st
   where
+  runBot ::
+    ( MonadThrow m,
+      HTTP.MonadHTTP m,
+      Log.MonadLog m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    st ->
+    StateT st m a ->
+    m a
   type Update st
   fetchUpdates ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-    => StateT st m [Update st]
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+    StateT st m [Update st]
   doBotThing ::
-       ( MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => StateT st m [Response st]
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    StateT st m [Response st]
   doBotThing = fetchUpdates >>= reactToUpdates
   data Entity st
   type Response st
   qualifyUpdate :: (MonadThrow m) => Update st -> m (Entity st)
   reactToUpdate ::
-       ( MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => Update st
-    -> StateT st m [Response st]
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    Update st ->
+    StateT st m [Response st]
   reactToUpdates ::
-       ( MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => [Update st]
-    -> StateT st m [Response st]
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    [Update st] ->
+    StateT st m [Response st]
   reactToUpdates updates = do
     lift $ Log.logInfo "processing each update"
     join <$> mapM reactToUpdate updates
   type Message st
   execCommand ::
-       ( MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => Command
-    -> (Message st -> StateT st m (Response st))
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    Command ->
+    (Message st -> StateT st m (Response st))

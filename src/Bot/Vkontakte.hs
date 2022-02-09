@@ -1,21 +1,22 @@
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 
 module Bot.Vkontakte
-  ( Config(..)
-  , initiate
-  ) where
+  ( Config (..),
+    initiate,
+  )
+where
 
 import qualified API.Vkontakte as VK
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
-import Control.Monad.Catch (MonadThrow(..))
-import Control.Monad.State (StateT, lift)
+import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.State (StateT, evalStateT, lift)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import qualified Data.Text.Extended as T
@@ -23,36 +24,47 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import qualified Exceptions as Ex (BotException(..), Priority(..))
+import qualified Exceptions as Ex (BotException (..), Priority (..))
 
-data Config =
-  Config
-    { key :: String
-    , defaultEchoMultiplier :: Int
-    , repliesM :: Bot.RepliesM
-    , group_id :: Integer
-    , v :: String
-    }
+data Config = Config
+  { key :: String,
+    defaultEchoMultiplier :: Int,
+    repliesM :: Bot.RepliesM,
+    group_id :: Integer,
+    v :: String
+  }
   deriving (Show)
 
 initiate ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
 initiate cfg@Config {..} = do
   Log.logInfo "Initiating Vkontakte Bot"
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.initiate VK.Config {..}
 
 instance Bot.StatefulBotMonad VK.VKState where
+  runBot ::
+    ( MonadThrow m,
+      HTTP.MonadHTTP m,
+      Log.MonadLog m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    st ->
+    StateT st m a ->
+    m a
+  runBot st = flip evalStateT st
   type Update VK.VKState = VK.GroupEvent
   fetchUpdates ::
-       (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-    => StateT VK.VKState m [VK.GroupEvent]
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+    StateT VK.VKState m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
-  data Entity VK.VKState = EMessage VK.Message
-                       | ECommand VK.Message
-                       | ECallback VK.CallbackEvent
+  data Entity VK.VKState
+    = EMessage VK.Message
+    | ECommand VK.Message
+    | ECallback VK.CallbackEvent
   type Response VK.VKState = VK.Response
   qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VKState)
   qualifyUpdate (VK.MessageNew m)
@@ -60,14 +72,14 @@ instance Bot.StatefulBotMonad VK.VKState where
     | otherwise = pure $ EMessage m
   qualifyUpdate (VK.MessageEvent c) = pure $ ECallback c
   reactToUpdate ::
-       ( MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => VK.GroupEvent
-    -> StateT VK.VKState m [VK.Response]
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    VK.GroupEvent ->
+    StateT VK.VKState m [VK.Response]
   reactToUpdate update = do
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
     qu <- Bot.qualifyUpdate update
@@ -77,14 +89,14 @@ instance Bot.StatefulBotMonad VK.VKState where
       ECallback cq -> reactToCallback cq
   type Message VK.VKState = VK.Message
   execCommand ::
-       ( MonadThrow m
-       , Log.MonadLog m
-       , HTTP.MonadHTTP m
-       , DB.MonadUsersDB m
-       , BR.MonadBotReplies m
-       )
-    => Bot.Command
-    -> (VK.Message -> StateT VK.VKState m VK.Response)
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    Bot.Command ->
+    (VK.Message -> StateT VK.VKState m VK.Response)
   execCommand cmd VK.Message {..} = do
     let address = peer_id
     prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User from_id
@@ -98,37 +110,40 @@ instance Bot.StatefulBotMonad VK.VKState where
 
 -- diff
 reactToCommand ::
-     ( MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     , BR.MonadBotReplies m
-     )
-  => VK.Message
-  -> StateT VK.VKState m VK.Response
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m
+  ) =>
+  VK.Message ->
+  StateT VK.VKState m VK.Response
 reactToCommand msg@VK.Message {msg_id, peer_id} = do
   let cmd = getCommand msg
   lift $
     Log.logDebug $
-    "Got command" <>
-    T.tshow cmd <>
-    " in message id " <> T.tshow msg_id <> " , peer_id: " <> T.tshow peer_id
+      "Got command"
+        <> T.tshow cmd
+        <> " in message id "
+        <> T.tshow msg_id
+        <> " , peer_id: "
+        <> T.tshow peer_id
   Bot.execCommand cmd msg
 
 -- diff
 reactToMessage ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m)
-  => VK.Message
-  -> StateT VK.VKState m [VK.Response]
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+  VK.Message ->
+  StateT VK.VKState m [VK.Response]
 reactToMessage msg@VK.Message {..} = do
   n <- lift $ DB.getUserMultiplier $ VK.User from_id
   lift $
     Log.logDebug $
-    "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
+      "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
   n `replicateM` VK.runMethod (VK.CopyMessage msg)
 
-newtype Payload =
-  RepeatPayload Int
+newtype Payload
+  = RepeatPayload Int
 
 instance A.ToJSON Payload where
   toJSON (RepeatPayload i) = A.object ["repeat" A..= i]
@@ -140,14 +155,14 @@ instance A.FromJSON Payload where
 
 -- diff
 reactToCallback ::
-     ( MonadThrow m
-     , Log.MonadLog m
-     , HTTP.MonadHTTP m
-     , DB.MonadUsersDB m
-     , BR.MonadBotReplies m
-     )
-  => VK.CallbackEvent
-  -> StateT VK.VKState m [VK.Response]
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m
+  ) =>
+  VK.CallbackEvent ->
+  StateT VK.VKState m [VK.Response]
 reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
   let callback = A.parseMaybe A.parseJSON payload
   let user = VK.User user_id
@@ -155,7 +170,7 @@ reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
     Just (RepeatPayload n) -> do
       lift $
         Log.logInfo $
-        "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+          "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
       prompt <- lift $ BR.getReply Bot.settingsSaved
       lift $ DB.setUserMultiplier user n
       fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
@@ -170,16 +185,19 @@ getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
   VK.Keyboard
-    {one_time = False, inline = True, buttons = [repeatButton <$> [1 .. 5]]}
+    { one_time = False,
+      inline = True,
+      buttons = [repeatButton <$> [1 .. 5]]
+    }
   where
     repeatButton i =
       VK.KeyboardButton {color = VK.Primary, action = repeatAction i}
     repeatAction i =
       VK.KeyboardAction
-        { action_type = VK.Callback
-        , label = Just $ T.tshow i
-        , payload = Just $ A.toJSON $ RepeatPayload i
-        , link = Nothing
+        { action_type = VK.Callback,
+          label = Just $ T.tshow i,
+          payload = Just $ A.toJSON $ RepeatPayload i,
+          link = Nothing
         }
 
 -- diff
