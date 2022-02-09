@@ -50,8 +50,8 @@ instance Bot.StatefulBotMonad VK.VKState where
       DB.MonadUsersDB m,
       BR.MonadBotReplies m
     ) =>
-    st ->
-    StateT st m a ->
+    VK.VKState ->
+    StateT VK.VKState m a ->
     m a
   runBot st = flip evalStateT st
   type Update VK.VKState = VK.GroupEvent

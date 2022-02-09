@@ -47,8 +47,8 @@ instance Bot.StatefulBotMonad TG.TGState where
       DB.MonadUsersDB m,
       BR.MonadBotReplies m
     ) =>
-    st ->
-    StateT st m a ->
+    TG.TGState ->
+    StateT TG.TGState m a ->
     m a
   runBot st = flip evalStateT st
   type Update TG.TGState = TG.Update
