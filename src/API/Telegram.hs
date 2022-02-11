@@ -1,66 +1,64 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module API.Telegram
-  ( Config(..)
-  , Method(..)
-  , TGState(..)
-  , initiate
-  , runMethod
-  , Types.CallbackQuery(..)
-  , Types.Error(..)
-  , Types.Response(..)
-  , Types.InlineKeyboardButton(..)
-  , Types.InlineKeyboardMarkup(..)
-  , Types.Chat(..)
-  , Types.User(..)
-  , Types.Message(..)
-  , Types.Update(..)
-  , Types.extractUpdates
-  , Types.getAuthorThrow
-  , Types.getQDataThrow
-  , Types.getTextThrow
-  ) where
+  ( Config (..),
+    Method (..),
+    TGState (..),
+    initiate,
+    runMethod,
+    Types.CallbackQuery (..),
+    Types.Error (..),
+    Types.Response (..),
+    Types.InlineKeyboardButton (..),
+    Types.InlineKeyboardMarkup (..),
+    Types.Chat (..),
+    Types.User (..),
+    Types.Message (..),
+    Types.Update (..),
+    Types.extractUpdates,
+    Types.getAuthorThrow,
+    Types.getQDataThrow,
+    Types.getTextThrow,
+  )
+where
 
 import API.Telegram.Types as Types
-  ( CallbackQuery(..)
-  , Chat(..)
-  , Error(..)
-  , InlineKeyboardButton(..)
-  , InlineKeyboardMarkup(..)
-  , Message(..)
-  , Response(..)
-  , Update(..)
-  , User(..)
-  , extractUpdates
-  , getAuthorThrow
-  , getQDataThrow
-  , getTextThrow
+  ( CallbackQuery (..),
+    Chat (..),
+    Error (..),
+    InlineKeyboardButton (..),
+    InlineKeyboardMarkup (..),
+    Message (..),
+    Response (..),
+    Update (..),
+    User (..),
+    extractUpdates,
+    getAuthorThrow,
+    getQDataThrow,
+    getTextThrow,
   )
-
-import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (StateT, get, lift, put)
-import Data.Aeson.Extended ((.=), encode, object, throwDecode)
+import Data.Aeson.Extended (encode, object, throwDecode, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Exceptions as Ex
 import qualified Network.URI.Extended as URI
 
-data TGState =
-  TGState
-    { lastUpdate :: Integer
-    , apiURI :: URI.URI
-    }
+data TGState = TGState
+  { lastUpdate :: Integer,
+    apiURI :: URI.URI
+  }
 
-newtype Config =
-  Config
-    { key :: String
-    }
+newtype Config = Config
+  { key :: String
+  }
 
 instance Semigroup TGState where
   _a <> b = b
@@ -84,27 +82,29 @@ apiMethod :: TGState -> String -> URI.URI
 apiMethod st method = apiURI st `URI.addPath` method
 
 rememberLastUpdate ::
-     (MonadThrow m, Log.MonadLog m) => Response -> StateT TGState m Response
+  (MonadThrow m, Log.MonadLog m) => Response -> StateT TGState m Response
 rememberLastUpdate res = do
   st <- get
   mapM_ put (newStateFromM res st) >> pure res
 
 newStateFromM :: Response -> TGState -> Maybe TGState
-newStateFromM (UpdatesResponse us@(_x:_xs)) st =
+newStateFromM (UpdatesResponse us@(_x : _xs)) st =
   let uid = (1 +) . update_id . last $ us
    in Just $ st {lastUpdate = uid}
 newStateFromM _ _ = Nothing
 
 runMethod ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-  => Method
-  -> StateT TGState m Response
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Method ->
+  StateT TGState m Response
 runMethod m = do
   state <- get
   lift $
     Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
   let req = mkRequest state m
-  lift (HTTP.sendRequest req) >>= throwDecode >>= rememberLastUpdate
+  res <- lift (HTTP.sendRequest req) >>= throwDecode
+  lift $ Log.logDebug $ "Got response: " <> T.tshow res
+  rememberLastUpdate res
 
 data Method
   = GetUpdates
@@ -142,10 +142,10 @@ copyMessage :: TGState -> Message -> HTTP.Request
 copyMessage st Message {message_id, chat} =
   let json =
         encode . object $
-        [ "chat_id" .= chat_id (chat :: Chat)
-        , "from_chat_id" .= chat_id (chat :: Chat)
-        , "message_id" .= message_id
-        ]
+          [ "chat_id" .= chat_id (chat :: Chat),
+            "from_chat_id" .= chat_id (chat :: Chat),
+            "message_id" .= message_id
+          ]
    in HTTP.POST (apiMethod st "copyMessage") json
 
 -- API method
@@ -156,9 +156,9 @@ sendMessage st chatId msg =
 
 -- API method
 sendInlineKeyboard ::
-     TGState -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
+  TGState -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
 sendInlineKeyboard st chatId prompt keyboard =
   let json =
         encode . object $
-        ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
+          ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
    in HTTP.POST (apiMethod st "sendMessage") json
