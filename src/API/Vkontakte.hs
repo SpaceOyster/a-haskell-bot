@@ -176,7 +176,9 @@ runMethod m = do
   state <- get
   lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
   let req = mkRequest state m
-  lift (HTTP.sendRequest req) >>= A.throwDecode >>= rememberLastUpdate
+  res <- lift (HTTP.sendRequest req) >>= A.throwDecode
+  lift $ Log.logDebug $ "Got response: " <> T.tshow res
+  rememberLastUpdate res
 
 data Method
   = GetUpdates
