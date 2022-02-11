@@ -1,34 +1,35 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE LambdaCase #-}
 
 module API.Vkontakte
-  ( initiate
-  , Config(..)
-  , VKState(..)
-  , Method(..)
-  , Response(..)
-  , GroupEvent(..)
-  , User(..)
-  , Message(..)
-  , Attachment(..)
-  , CallbackEvent(..)
-  , extractUpdates
-  , Keyboard(..)
-  , KeyboardButton(..)
-  , ButtonColor(..)
-  , KeyboardAction(..)
-  , KeyboardActionType(..)
-  , runMethod
-  ) where
+  ( initiate,
+    Config (..),
+    VKState (..),
+    Method (..),
+    Response (..),
+    GroupEvent (..),
+    User (..),
+    Message (..),
+    Attachment (..),
+    CallbackEvent (..),
+    extractUpdates,
+    Keyboard (..),
+    KeyboardButton (..),
+    ButtonColor (..),
+    KeyboardAction (..),
+    KeyboardActionType (..),
+    runMethod,
+  )
+where
 
-import Control.Monad.Catch (MonadThrow(..))
+import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (StateT, get, lift, modify')
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -42,20 +43,18 @@ import qualified Exceptions as Ex
 import GHC.Generics (Generic)
 import qualified Network.URI.Extended as URI
 
-data VKState =
-  VKState
-    { lastTS :: T.Text
-    , pollURI :: URI.URI
-    , apiURI :: URI.URI
-    }
+data VKState = VKState
+  { lastTS :: T.Text,
+    pollURI :: URI.URI,
+    apiURI :: URI.URI
+  }
   deriving (Show)
 
-data Config =
-  Config
-    { key :: String
-    , group_id :: Integer
-    , v :: String
-    }
+data Config = Config
+  { key :: String,
+    group_id :: Integer,
+    v :: String
+  }
 
 instance Semigroup VKState where
   _a <> b = b
@@ -65,7 +64,7 @@ instance Monoid VKState where
     VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
 initiate ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VKState
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VKState
 initiate cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
@@ -73,34 +72,32 @@ initiate cfg = do
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
-  maybe ex pure . URI.parseURI $ "https://api.vk.com/method/?v=" <> v <>
-  "&access_token=" <>
-  key <>
-  "&group_id=" <>
-  show group_id
+  maybe ex pure . URI.parseURI $
+    "https://api.vk.com/method/?v=" <> v
+      <> "&access_token="
+      <> key
+      <> "&group_id="
+      <> show group_id
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte API URL"
 
-data PollServer =
-  PollServer
-    { key :: T.Text
-    , server :: T.Text
-    , ts :: T.Text
-    }
+data PollServer = PollServer
+  { key :: T.Text,
+    server :: T.Text,
+    ts :: T.Text
+  }
   deriving (Show, Generic, A.FromJSON)
 
-data Error =
-  Error
-    { error_code :: Integer
-    , error_msg :: T.Text
-    }
+data Error = Error
+  { error_code :: Integer,
+    error_msg :: T.Text
+  }
   deriving (Show, Generic, A.FromJSON)
 
-data Poll =
-  Poll
-    { ts :: T.Text
-    , updates :: [GroupEvent]
-    }
+data Poll = Poll
+  { ts :: T.Text,
+    updates :: [GroupEvent]
+  }
   deriving (Show, Generic, A.FromJSON)
 
 data Response
@@ -131,8 +128,8 @@ instance A.FromJSON PollInitResponse where
     A.withObject "FromJSON API.Vkontakte.PollInitResponse" $ \o -> do
       errO <- o A..:? "error" A..!= mempty
       asum
-        [ PollInitError <$> A.parseJSON (A.Object errO)
-        , PollInitServer <$> o A..: "response"
+        [ PollInitError <$> A.parseJSON (A.Object errO),
+          PollInitServer <$> o A..: "response"
         ]
 
 initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VKState -> m VKState
@@ -144,9 +141,9 @@ initiatePollServer st = do
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {key, server} = do
-  maybe ex pure . URI.parseURI $ T.unpack server <> "?act=a_check&key=" <>
-    T.unpack key <>
-    "&wait=25"
+  maybe ex pure . URI.parseURI $
+    T.unpack server <> "?act=a_check&key="
+      <> T.unpack key
   where
     ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
 
@@ -157,12 +154,14 @@ getLongPollServer st = do
   res <- A.throwDecode json
   case res of
     PollInitError Error {error_code, error_msg} ->
-      throwM $ Ex.APIRespondedWithError $ show error_code <> ": " <>
-      T.unpack error_msg
+      throwM $
+        Ex.APIRespondedWithError $
+          show error_code <> ": "
+            <> T.unpack error_msg
     PollInitServer r -> pure r
 
 rememberLastUpdate ::
-     (MonadThrow m, Log.MonadLog m) => Response -> StateT VKState m Response
+  (MonadThrow m, Log.MonadLog m) => Response -> StateT VKState m Response
 rememberLastUpdate res = modify' (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
@@ -170,9 +169,9 @@ updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 runMethod ::
-     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m)
-  => Method
-  -> StateT VKState m Response
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Method ->
+  StateT VKState m Response
 runMethod m = do
   state <- get
   lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
@@ -199,30 +198,28 @@ mkRequest st m =
 
 getUpdates :: VKState -> HTTP.Request
 getUpdates VKState {..} =
-  HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS]
+  HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS, "wait" URI.:=: "25"]
 
-newtype User =
-  User
-    { unUser :: Integer
-    }
+newtype User = User
+  { unUser :: Integer
+  }
   deriving (Show)
 
 instance H.Hashable User where
   hash = unUser
 
-data Message =
-  Message
-    { msg_id :: Integer
-    , date :: Integer
-    , peer_id :: Integer
-    , from_id :: Integer
-    , text :: T.Text
-    , random_id :: Maybe Integer
-    , attachments :: [Attachment]
-    , payload :: Maybe A.Value
-    , keyboard :: Maybe Keyboard
-    , is_cropped :: Maybe Bool
-    }
+data Message = Message
+  { msg_id :: Integer,
+    date :: Integer,
+    peer_id :: Integer,
+    from_id :: Integer,
+    text :: T.Text,
+    random_id :: Maybe Integer,
+    attachments :: [Attachment],
+    payload :: Maybe A.Value,
+    keyboard :: Maybe Keyboard,
+    is_cropped :: Maybe Bool
+  }
   deriving (Show)
 
 instance A.FromJSON Message where
@@ -240,12 +237,11 @@ instance A.FromJSON Message where
       is_cropped <- o A..:? "is_cropped"
       pure $ Message {..}
 
-data MediaDoc =
-  MediaDoc
-    { mdoc_id :: Integer
-    , owner_id :: Integer
-    , access_key :: Maybe T.Text
-    }
+data MediaDoc = MediaDoc
+  { mdoc_id :: Integer,
+    owner_id :: Integer,
+    access_key :: Maybe T.Text
+  }
   deriving (Show)
 
 instance A.FromJSON MediaDoc where
@@ -256,11 +252,10 @@ instance A.FromJSON MediaDoc where
       access_key <- o A..: "access_key"
       pure $ MediaDoc {..}
 
-data Sticker =
-  Sticker
-    { product_id :: Integer
-    , sticker_id :: Integer
-    }
+data Sticker = Sticker
+  { product_id :: Integer,
+    sticker_id :: Integer
+  }
   deriving (Show, Generic, A.FromJSON)
 
 data Attachment
@@ -286,27 +281,26 @@ instance A.FromJSON Attachment where
 attachmentToQuery :: Attachment -> URI.QueryParam
 attachmentToQuery (StickerA s) = "sticker_id" URI.:=: show $ sticker_id s
 attachmentToQuery a =
-  "attachment" URI.:=:
-  case a of
-    Photo m -> "photo" <> mediaToQuery m
-    Audio m -> "audio" <> mediaToQuery m
-    Video m -> "video" <> mediaToQuery m
-    Doc m -> "doc" <> mediaToQuery m
-    StickerA s -> "sticker_id=" <> show (sticker_id s)
+  "attachment"
+    URI.:=: case a of
+      Photo m -> "photo" <> mediaToQuery m
+      Audio m -> "audio" <> mediaToQuery m
+      Video m -> "video" <> mediaToQuery m
+      Doc m -> "doc" <> mediaToQuery m
+      StickerA s -> "sticker_id=" <> show (sticker_id s)
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
-      show owner_id <> "_" <> show mdoc_id <>
-      maybe "" ('_' :) (T.unpack <$> access_key)
+      show owner_id <> "_" <> show mdoc_id
+        <> maybe "" ('_' :) (T.unpack <$> access_key)
 
-data CallbackEvent =
-  CallbackEvent
-    { user_id :: Integer
-    , peer_id :: Integer
-    , event_id :: T.Text
-    , payload :: A.Value
-    , conversation_message_id :: Integer
-    }
+data CallbackEvent = CallbackEvent
+  { user_id :: Integer,
+    peer_id :: Integer,
+    event_id :: T.Text,
+    payload :: A.Value,
+    conversation_message_id :: Integer
+  }
   deriving (Show, Generic, A.FromJSON)
 
 data GroupEvent
@@ -326,11 +320,11 @@ instance A.FromJSON GroupEvent where
 sendMessageEventAnswer :: VKState -> CallbackEvent -> T.Text -> HTTP.Request
 sendMessageEventAnswer st CallbackEvent {..} prompt =
   HTTP.GET . apiMethod st "messages.sendMessageEventAnswer" $
-  [ "event_id" URI.:=: T.unpack event_id
-  , "user_id" URI.:=: show user_id
-  , "peer_id" URI.:=: show peer_id
-  , "event_data" URI.:=: L8.unpack . A.encode $ mkJSON prompt
-  ]
+    [ "event_id" URI.:=: T.unpack event_id,
+      "user_id" URI.:=: show user_id,
+      "peer_id" URI.:=: show peer_id,
+      "event_data" URI.:=: L8.unpack . A.encode $ mkJSON prompt
+    ]
   where
     mkJSON :: T.Text -> A.Value
     mkJSON p = A.object ["type" A..= ("show_snackbar" :: T.Text), "text" A..= p]
@@ -340,11 +334,11 @@ apiMethod st method qps =
   flip URI.addQueryParams qps . URI.addPath (apiURI st) $ T.unpack method
 
 sendMessageWith ::
-     VKState -> Integer -> T.Text -> [URI.QueryParam] -> HTTP.Request
+  VKState -> Integer -> T.Text -> [URI.QueryParam] -> HTTP.Request
 sendMessageWith st peer_id text qps =
   HTTP.GET . apiMethod st "messages.send" $
-  ["peer_id" URI.:=: show peer_id, "message" URI.:=: T.unpack text] <>
-  qps
+    ["peer_id" URI.:=: show peer_id, "message" URI.:=: T.unpack text]
+      <> qps
 
 sendTextMessage :: VKState -> Integer -> T.Text -> HTTP.Request
 sendTextMessage st peer_id text = sendMessageWith st peer_id text mempty
@@ -358,19 +352,17 @@ extractUpdates (PollResponse poll) = pure $ updates poll
 extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
 extractUpdates _ = throwM $ Ex.VKPollError "Expexted PollResponse"
 
-data Keyboard =
-  Keyboard
-    { one_time :: Bool
-    , buttons :: [[KeyboardButton]]
-    , inline :: Bool
-    }
+data Keyboard = Keyboard
+  { one_time :: Bool,
+    buttons :: [[KeyboardButton]],
+    inline :: Bool
+  }
   deriving (Show, Generic, A.ToJSON, A.FromJSON)
 
-data KeyboardButton =
-  KeyboardButton
-    { action :: KeyboardAction
-    , color :: ButtonColor
-    }
+data KeyboardButton = KeyboardButton
+  { action :: KeyboardAction,
+    color :: ButtonColor
+  }
   deriving (Show, Generic, A.ToJSON, A.FromJSON)
 
 data ButtonColor
@@ -394,25 +386,24 @@ instance A.FromJSON ButtonColor where
       "positive" -> pure Positive
       _ -> fail "Unknown color"
 
-data KeyboardAction =
-  KeyboardAction
-    { action_type :: KeyboardActionType
-    , label :: Maybe T.Text
-    , payload :: Maybe A.Value
-    , link :: Maybe T.Text
-    }
+data KeyboardAction = KeyboardAction
+  { action_type :: KeyboardActionType,
+    label :: Maybe T.Text,
+    payload :: Maybe A.Value,
+    link :: Maybe T.Text
+  }
   deriving (Show, Generic)
 
 instance A.ToJSON KeyboardAction where
   toJSON KeyboardAction {..} =
     A.object $
-    filter
-      ((/= A.Null) . snd) -- TODO do better
-      [ "type" A..= action_type
-      , "label" A..= label
-      , "payload" A..= payload
-      , "link" A..= link
-      ]
+      filter
+        ((/= A.Null) . snd) -- TODO do better
+        [ "type" A..= action_type,
+          "label" A..= label,
+          "payload" A..= payload,
+          "link" A..= link
+        ]
 
 instance A.FromJSON KeyboardAction where
   parseJSON =
@@ -447,4 +438,4 @@ instance A.FromJSON KeyboardActionType where
 sendKeyboard :: VKState -> Integer -> T.Text -> Keyboard -> HTTP.Request
 sendKeyboard st peer_id prompt keyboard =
   sendMessageWith st peer_id prompt $
-  ["keyboard" URI.:=: L8.unpack $ A.encode keyboard]
+    ["keyboard" URI.:=: L8.unpack $ A.encode keyboard]
