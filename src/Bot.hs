@@ -5,10 +5,8 @@
 module Bot where
 
 import Bot.Replies as Bot
-import Control.Concurrent (threadDelay)
 import Control.Monad (forever, join)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.State (StateT, evalStateT, lift)
 import Data.Function ((&))
 import qualified Data.Hashable as H
@@ -55,7 +53,7 @@ isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
 loop ::
-  ( MonadIO m,
+  ( 
     MonadThrow m,
     HTTP.MonadHTTP m,
     Log.MonadLog m,
@@ -66,10 +64,7 @@ loop ::
   Int ->
   st ->
   m ()
-loop period st =
-  runBot st $ do
-    _ <- forever $ Bot.doBotThing >> liftIO (threadDelay period)
-    pure ()
+loop period st = runBot st $ forever Bot.doBotThing >> pure ()
 
 class StatefulBotMonad st where
   runBot ::
