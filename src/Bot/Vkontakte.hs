@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -8,6 +9,7 @@
 module Bot.Vkontakte
   ( Config (..),
     initiate,
+    VkontakteT (..),
   )
 where
 
@@ -16,7 +18,7 @@ import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (StateT, evalStateT, lift)
+import Control.Monad.State (MonadState, StateT, evalStateT, lift)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import qualified Data.Text.Extended as T
@@ -34,6 +36,15 @@ data Config = Config
     v :: String
   }
   deriving (Show)
+
+newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VK.VKState m a}
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadThrow,
+      MonadState VK.VKState
+    )
 
 initiate ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
