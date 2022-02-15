@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -9,6 +10,7 @@
 module Bot.Telegram
   ( Config (..),
     initiate,
+    TelegramT (..),
   )
 where
 
@@ -17,7 +19,7 @@ import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (StateT, evalStateT, lift)
+import Control.Monad.State (MonadState, StateT, evalStateT, lift)
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
@@ -32,6 +34,15 @@ data Config = Config
     repliesM :: Bot.RepliesM
   }
   deriving (Show)
+
+newtype TelegramT m a = TelegramT {unTelegramT :: StateT TG.TGState m a}
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadThrow,
+      MonadState TG.TGState
+    )
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
 initiate cfg@Config {..} = do
