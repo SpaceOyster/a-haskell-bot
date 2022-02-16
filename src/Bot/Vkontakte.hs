@@ -9,6 +9,7 @@
 module Bot.Vkontakte
   ( Config (..),
     initiate,
+    evalVkontakteT,
     VkontakteT (..),
   )
 where
@@ -45,6 +46,11 @@ newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VK.VKState m a}
       MonadThrow,
       MonadState VK.VKState
     )
+
+evalVkontakteT :: (Monad m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VkontakteT m a -> m a
+evalVkontakteT cfg t = do
+  st <- initiate cfg
+  evalStateT (unVkontakteT t) st
 
 initiate ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
