@@ -176,7 +176,7 @@ getLongPollServer st = do
     PollInitServer r -> pure r
 
 rememberLastUpdate ::
-  (MonadThrow m, Log.MonadLog m) => Response -> StateT VKState m Response
+  (MonadThrow m, Log.MonadLog m) => Response -> VkontakteT m Response
 rememberLastUpdate res = modify' (updateStateWith res) >> pure res
 
 updateStateWith :: Response -> (VKState -> VKState)
@@ -186,7 +186,7 @@ updateStateWith _ = id
 runMethod ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   Method ->
-  StateT VKState m Response
+  VkontakteT m Response
 runMethod m = do
   state <- get
   lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)

@@ -46,20 +46,20 @@ initiate cfg@Config {..} = do
   Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   TG.initiate TG.Config {..}
 
-instance Bot.StatefulBotMonad TG.TGState where
-  type Update TG.TGState = TG.Update
+instance Bot.StatefulBotMonad TG.TelegramT where
+  type Update TG.TelegramT = TG.Update
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    StateT TG.TGState m [TG.Update]
+    TG.TelegramT m [TG.Update]
   fetchUpdates = do
     lift $ Log.logInfo "fetching Updates"
     TG.runMethod TG.GetUpdates >>= TG.extractUpdates
-  data Entity TG.TGState
+  data Entity TG.TelegramT
     = EMessage TG.Message
     | ECommand TG.Message
     | ECallback TG.CallbackQuery
-  type Response TG.TGState = TG.Response
-  qualifyUpdate :: (MonadThrow m) => TG.Update -> m (Bot.Entity TG.TGState)
+  type Response TG.TelegramT = TG.Response
+  qualifyUpdate :: (MonadThrow m) => TG.Update -> m (Bot.Entity TG.TelegramT)
   qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = pure $ ECallback cq
     | Just msg <- message,
@@ -80,7 +80,7 @@ instance Bot.StatefulBotMonad TG.TGState where
       BR.MonadBotReplies m
     ) =>
     TG.Update ->
-    StateT TG.TGState m [TG.Response]
+    TG.TelegramT m [TG.Response]
   reactToUpdate update = do
     lift $
       Log.logDebug $
@@ -90,7 +90,7 @@ instance Bot.StatefulBotMonad TG.TGState where
       ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
       ECallback cq -> (: []) <$> reactToCallback cq
-  type Message TG.TGState = TG.Message
+  type Message TG.TelegramT = TG.Message
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -99,7 +99,7 @@ instance Bot.StatefulBotMonad TG.TGState where
       BR.MonadBotReplies m
     ) =>
     Bot.Command ->
-    (TG.Message -> StateT TG.TGState m TG.Response)
+    (TG.Message -> TG.TelegramT m TG.Response)
   execCommand cmd TG.Message {..} = do
     let address = TG.chat_id chat
     prompt <- lift $ Bot.repeatPrompt from
@@ -120,7 +120,7 @@ reactToCommand ::
     BR.MonadBotReplies m
   ) =>
   TG.Message ->
-  StateT TG.TGState m TG.Response
+  TG.TelegramT m TG.Response
 reactToCommand msg@TG.Message {message_id} = do
   cmd <- getCommandThrow msg
   lift $
@@ -132,7 +132,7 @@ reactToCommand msg@TG.Message {message_id} = do
 reactToMessage ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
   TG.Message ->
-  StateT TG.TGState m [TG.Response]
+  TG.TelegramT m [TG.Response]
 reactToMessage msg@TG.Message {message_id} = do
   author <- TG.getAuthorThrow msg
   n <- lift $ DB.getUserMultiplier author
@@ -158,7 +158,7 @@ qualifyQuery qstring =
 reactToCallback ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
   TG.CallbackQuery ->
-  StateT TG.TGState m TG.Response
+  TG.TelegramT m TG.Response
 reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
   lift $
     Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id

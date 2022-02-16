@@ -97,7 +97,7 @@ apiMethod :: TGState -> String -> URI.URI
 apiMethod st method = apiURI st `URI.addPath` method
 
 rememberLastUpdate ::
-  (MonadThrow m, Log.MonadLog m) => Response -> StateT TGState m Response
+  (MonadThrow m, Log.MonadLog m) => Response -> TelegramT m Response
 rememberLastUpdate res = do
   st <- get
   mapM_ put (newStateFromM res st) >> pure res
@@ -111,7 +111,7 @@ newStateFromM _ _ = Nothing
 runMethod ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   Method ->
-  StateT TGState m Response
+  TelegramT m Response
 runMethod m = do
   state <- get
   lift $

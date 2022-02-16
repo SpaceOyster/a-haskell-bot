@@ -50,20 +50,20 @@ initiate cfg@Config {..} = do
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.initiate VK.Config {..}
 
-instance Bot.StatefulBotMonad VK.VKState where
-  type Update VK.VKState = VK.GroupEvent
+instance Bot.StatefulBotMonad VK.VkontakteT where
+  type Update VK.VkontakteT = VK.GroupEvent
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    StateT VK.VKState m [VK.GroupEvent]
+    VK.VkontakteT m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
-  data Entity VK.VKState
+  data Entity VK.VkontakteT
     = EMessage VK.Message
     | ECommand VK.Message
     | ECallback VK.CallbackEvent
-  type Response VK.VKState = VK.Response
-  qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VKState)
+  type Response VK.VkontakteT = VK.Response
+  qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VkontakteT)
   qualifyUpdate (VK.MessageNew m)
     | isCommandE m = pure $ ECommand m
     | otherwise = pure $ EMessage m
@@ -76,7 +76,7 @@ instance Bot.StatefulBotMonad VK.VKState where
       BR.MonadBotReplies m
     ) =>
     VK.GroupEvent ->
-    StateT VK.VKState m [VK.Response]
+    VK.VkontakteT m [VK.Response]
   reactToUpdate update = do
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
     qu <- Bot.qualifyUpdate update
@@ -84,7 +84,7 @@ instance Bot.StatefulBotMonad VK.VKState where
       ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
       ECallback cq -> reactToCallback cq
-  type Message VK.VKState = VK.Message
+  type Message VK.VkontakteT = VK.Message
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -93,7 +93,7 @@ instance Bot.StatefulBotMonad VK.VKState where
       BR.MonadBotReplies m
     ) =>
     Bot.Command ->
-    (VK.Message -> StateT VK.VKState m VK.Response)
+    (VK.Message -> VK.VkontakteT m VK.Response)
   execCommand cmd VK.Message {..} = do
     let address = peer_id
     prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User from_id
@@ -114,7 +114,7 @@ reactToCommand ::
     BR.MonadBotReplies m
   ) =>
   VK.Message ->
-  StateT VK.VKState m VK.Response
+  VK.VkontakteT m VK.Response
 reactToCommand msg@VK.Message {msg_id, peer_id} = do
   let cmd = getCommand msg
   lift $
@@ -131,7 +131,7 @@ reactToCommand msg@VK.Message {msg_id, peer_id} = do
 reactToMessage ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
   VK.Message ->
-  StateT VK.VKState m [VK.Response]
+  VK.VkontakteT m [VK.Response]
 reactToMessage msg@VK.Message {..} = do
   n <- lift $ DB.getUserMultiplier $ VK.User from_id
   lift $
@@ -159,7 +159,7 @@ reactToCallback ::
     BR.MonadBotReplies m
   ) =>
   VK.CallbackEvent ->
-  StateT VK.VKState m [VK.Response]
+  VK.VkontakteT m [VK.Response]
 reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
   let callback = A.parseMaybe A.parseJSON payload
   let user = VK.User user_id

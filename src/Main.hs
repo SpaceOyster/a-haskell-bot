@@ -84,6 +84,6 @@ runWithApp AppConfig {..} bot =
             }
     let app =
           case bot of
-            Telegram -> TG.evalTelegramT telegram $ TG.TelegramT (Bot.loop poll_period)
-            Vkontakte -> VK.evalVkontakteT vkontakte $ VK.VkontakteT (Bot.loop poll_period)
+            Telegram -> TG.evalTelegramT telegram $ Bot.loop poll_period
+            Vkontakte -> VK.evalVkontakteT vkontakte $ Bot.loop poll_period
     App.unApp app `runReaderT` env

@@ -8,6 +8,7 @@ import Bot.Replies as Bot
 import Control.Monad (forever, join)
 import Control.Monad.Catch (MonadThrow)
 import Control.Monad.State (StateT, evalStateT, lift)
+import Control.Monad.Trans (MonadTrans (..))
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
@@ -58,25 +59,27 @@ loop ::
     Log.MonadLog m,
     DB.MonadUsersDB m,
     BR.MonadBotReplies m,
-    StatefulBotMonad st
+    StatefulBotMonad st,
+    Monad (st m)
   ) =>
   Int ->
-  StateT st m ()
-loop period = forever Bot.doBotThing >> pure ()
+  st m a
+loop period = forever Bot.doBotThing
 
-class StatefulBotMonad st where
+class (MonadTrans st) => StatefulBotMonad st where
   type Update st
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    StateT st m [Update st]
+    st m [Update st]
   doBotThing ::
     ( MonadThrow m,
       Log.MonadLog m,
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
-      BR.MonadBotReplies m
+      BR.MonadBotReplies m,
+      Monad (st m)
     ) =>
-    StateT st m [Response st]
+    st m [Response st]
   doBotThing = fetchUpdates >>= reactToUpdates
   data Entity st
   type Response st
@@ -89,16 +92,17 @@ class StatefulBotMonad st where
       BR.MonadBotReplies m
     ) =>
     Update st ->
-    StateT st m [Response st]
+    st m [Response st]
   reactToUpdates ::
     ( MonadThrow m,
       Log.MonadLog m,
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
-      BR.MonadBotReplies m
+      BR.MonadBotReplies m,
+      Monad (st m)
     ) =>
     [Update st] ->
-    StateT st m [Response st]
+    st m [Response st]
   reactToUpdates updates = do
     lift $ Log.logInfo "processing each update"
     join <$> mapM reactToUpdate updates
@@ -111,4 +115,4 @@ class StatefulBotMonad st where
       BR.MonadBotReplies m
     ) =>
     Command ->
-    (Message st -> StateT st m (Response st))
+    (Message st -> st m (Response st))
