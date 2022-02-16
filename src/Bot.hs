@@ -53,8 +53,7 @@ isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
 loop ::
-  ( 
-    MonadThrow m,
+  ( MonadThrow m,
     HTTP.MonadHTTP m,
     Log.MonadLog m,
     DB.MonadUsersDB m,
@@ -62,9 +61,8 @@ loop ::
     StatefulBotMonad st
   ) =>
   Int ->
-  st ->
-  m ()
-loop period st = runBot st $ forever Bot.doBotThing >> pure ()
+  StateT st m ()
+loop period = forever Bot.doBotThing >> pure ()
 
 class StatefulBotMonad st where
   runBot ::
