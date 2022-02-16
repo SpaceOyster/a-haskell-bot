@@ -1,7 +1,7 @@
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Main where
 
@@ -32,7 +32,7 @@ data BotToRun
 main :: IO ()
 main =
   flip (<|>) (Exit.die usagePrompt) $ do
-    bot:cfgPath:_as <- E.getArgs
+    bot : cfgPath : _as <- E.getArgs
     cfg <- readConfig cfgPath
     botToRun <- readBotName bot
     runWithApp cfg botToRun
@@ -53,16 +53,16 @@ usagePrompt :: String
 usagePrompt =
   intercalate
     "\n"
-    [ "a-haskell-bot - Echo bot for Telegram and Vkontakte, written in Haskell"
-    , mempty
-    , "Usage: a-haskell-bot BOT FILE"
-    , mempty
-    , "FILE - is a config file formatted as json, see example config here:"
-    , mempty
-    , "Available bots:"
-    , "  telegram - run bot for Telegram"
-    , "  vkontakte - run bot for Vkontakte "
-    , "INSTRUCTIONS TO FIND EXAMPLE CONFIG"
+    [ "a-haskell-bot - Echo bot for Telegram and Vkontakte, written in Haskell",
+      mempty,
+      "Usage: a-haskell-bot BOT FILE",
+      mempty,
+      "FILE - is a config file formatted as json, see example config here:",
+      mempty,
+      "Available bots:",
+      "  telegram - run bot for Telegram",
+      "  vkontakte - run bot for Vkontakte ",
+      "INSTRUCTIONS TO FIND EXAMPLE CONFIG"
     ]
 
 runWithApp :: AppConfig -> BotToRun -> IO ()
@@ -70,19 +70,20 @@ runWithApp AppConfig {..} bot =
   Logger.withHandle logger $ \hLog -> do
     Logger.logInfo hLog "Initiating Main Bot loop"
     Logger.logInfo hLog $
-      "API Polling period is " <>
-      T.tshow (fromIntegral poll_period / 1000 :: Double) <> "ms"
+      "API Polling period is "
+        <> T.tshow (fromIntegral poll_period / 1000 :: Double)
+        <> "ms"
     hHTTP <- HTTP.new HTTP.Config {}
     hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
     let env =
           App.Env
-            { envLogger = hLog
-            , envHTTP = hHTTP
-            , envUsersDB = hUsersDB
-            , envBotReplies = Bot.fromRepliesM repliesM
+            { envLogger = hLog,
+              envHTTP = hHTTP,
+              envUsersDB = hUsersDB,
+              envBotReplies = Bot.fromRepliesM repliesM
             }
     let app =
           case bot of
-            Telegram -> TG.initiate telegram >>= Bot.loop poll_period
-            Vkontakte -> VK.initiate vkontakte >>= Bot.loop poll_period
+            Telegram -> TG.evalTelegramT telegram $ TG.TelegramT (Bot.loop poll_period)
+            Vkontakte -> VK.evalVkontakteT vkontakte $ VK.VkontakteT (Bot.loop poll_period)
     App.unApp app `runReaderT` env
