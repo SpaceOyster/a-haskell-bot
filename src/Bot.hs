@@ -65,16 +65,6 @@ loop ::
 loop period = forever Bot.doBotThing >> pure ()
 
 class StatefulBotMonad st where
-  runBot ::
-    ( MonadThrow m,
-      HTTP.MonadHTTP m,
-      Log.MonadLog m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    st ->
-    StateT st m a ->
-    m a
   type Update st
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>

@@ -57,17 +57,6 @@ initiate cfg@Config {..} = do
   TG.initiate TG.Config {..}
 
 instance Bot.StatefulBotMonad TG.TGState where
-  runBot ::
-    ( MonadThrow m,
-      HTTP.MonadHTTP m,
-      Log.MonadLog m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    TG.TGState ->
-    StateT TG.TGState m a ->
-    m a
-  runBot st = flip evalStateT st
   type Update TG.TGState = TG.Update
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>

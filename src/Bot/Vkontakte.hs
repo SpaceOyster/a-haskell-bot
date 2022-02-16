@@ -60,17 +60,6 @@ initiate cfg@Config {..} = do
   VK.initiate VK.Config {..}
 
 instance Bot.StatefulBotMonad VK.VKState where
-  runBot ::
-    ( MonadThrow m,
-      HTTP.MonadHTTP m,
-      Log.MonadLog m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    VK.VKState ->
-    StateT VK.VKState m a ->
-    m a
-  runBot st = flip evalStateT st
   type Update VK.VKState = VK.GroupEvent
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
