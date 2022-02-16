@@ -33,6 +33,7 @@ where
 
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, lift, modify')
+import Control.Monad.Trans (MonadTrans (..))
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -60,6 +61,9 @@ newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
       MonadThrow,
       MonadState VKState
     )
+
+instance MonadTrans VkontakteT where
+  lift = VkontakteT . lift
 
 data Config = Config
   { key :: String,
