@@ -46,6 +46,7 @@ import API.Telegram.Types as Types
   )
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, lift, put)
+import Control.Monad.Trans (MonadTrans (..))
 import Data.Aeson.Extended (encode, object, throwDecode, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -66,6 +67,9 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
       MonadThrow,
       MonadState TGState
     )
+
+instance MonadTrans TelegramT where
+  lift = TelegramT . lift
 
 newtype Config = Config
   { key :: String
