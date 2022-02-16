@@ -1,6 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -11,7 +10,7 @@ module Bot.Telegram
   ( Config (..),
     initiate,
     evalTelegramT,
-    TelegramT (..),
+    TG.TelegramT (..),
   )
 where
 
@@ -36,19 +35,10 @@ data Config = Config
   }
   deriving (Show)
 
-newtype TelegramT m a = TelegramT {unTelegramT :: StateT TG.TGState m a}
-  deriving
-    ( Functor,
-      Applicative,
-      Monad,
-      MonadThrow,
-      MonadState TG.TGState
-    )
-
-evalTelegramT :: (Monad m, MonadThrow m, Log.MonadLog m) => Config -> TelegramT m a -> m a
+evalTelegramT :: (Monad m, MonadThrow m, Log.MonadLog m) => Config -> TG.TelegramT m a -> m a
 evalTelegramT cfg t = do
   st <- initiate cfg
-  evalStateT (unTelegramT t) st
+  evalStateT (TG.unTelegramT t) st
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
 initiate cfg@Config {..} = do

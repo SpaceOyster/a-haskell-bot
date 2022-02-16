@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
@@ -11,6 +12,7 @@ module API.Telegram
     TGState (..),
     initiate,
     runMethod,
+    TelegramT (..),
     Types.CallbackQuery (..),
     Types.Error (..),
     Types.Response (..),
@@ -43,7 +45,7 @@ import API.Telegram.Types as Types
     getTextThrow,
   )
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (StateT, get, lift, put)
+import Control.Monad.State (MonadState (..), StateT, get, lift, put)
 import Data.Aeson.Extended (encode, object, throwDecode, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -55,6 +57,15 @@ data TGState = TGState
   { lastUpdate :: Integer,
     apiURI :: URI.URI
   }
+
+newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadThrow,
+      MonadState TGState
+    )
 
 newtype Config = Config
   { key :: String
