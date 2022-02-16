@@ -10,6 +10,7 @@
 module Bot.Telegram
   ( Config (..),
     initiate,
+    evalTelegramT,
     TelegramT (..),
   )
 where
@@ -43,6 +44,11 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TG.TGState m a}
       MonadThrow,
       MonadState TG.TGState
     )
+
+evalTelegramT :: (Monad m, MonadThrow m, Log.MonadLog m) => Config -> TelegramT m a -> m a
+evalTelegramT cfg t = do
+  st <- initiate cfg
+  evalStateT (unTelegramT t) st
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
 initiate cfg@Config {..} = do
