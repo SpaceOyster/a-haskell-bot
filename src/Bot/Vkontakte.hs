@@ -10,7 +10,7 @@ module Bot.Vkontakte
   ( Config (..),
     initiate,
     evalVkontakteT,
-    VkontakteT (..),
+    VK.VkontakteT (..),
   )
 where
 
@@ -38,19 +38,10 @@ data Config = Config
   }
   deriving (Show)
 
-newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VK.VKState m a}
-  deriving
-    ( Functor,
-      Applicative,
-      Monad,
-      MonadThrow,
-      MonadState VK.VKState
-    )
-
-evalVkontakteT :: (Monad m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VkontakteT m a -> m a
+evalVkontakteT :: (Monad m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VK.VkontakteT m a -> m a
 evalVkontakteT cfg t = do
   st <- initiate cfg
-  evalStateT (unVkontakteT t) st
+  evalStateT (VK.unVkontakteT t) st
 
 initiate ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState

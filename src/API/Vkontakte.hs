@@ -2,6 +2,7 @@
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -10,6 +11,7 @@
 
 module API.Vkontakte
   ( initiate,
+    VkontakteT (..),
     Config (..),
     VKState (..),
     Method (..),
@@ -30,7 +32,7 @@ module API.Vkontakte
 where
 
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (StateT, get, lift, modify')
+import Control.Monad.State (MonadState (..), StateT, get, lift, modify')
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -49,6 +51,15 @@ data VKState = VKState
     apiURI :: URI.URI
   }
   deriving (Show)
+
+newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
+  deriving
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadThrow,
+      MonadState VKState
+    )
 
 data Config = Config
   { key :: String,
