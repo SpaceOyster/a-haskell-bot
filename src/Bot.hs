@@ -129,12 +129,12 @@ class (MonadTrans st) => StatefulBotMonad st where
       DB.MonadUsersDB m,
       Monad (st m)
     ) =>
-    BotDSL (Update st) () ->
-    st m ()
-  interpret (FetchUpdates next) = fetchUpdates >>= interpret . next >> pure ()
+    BotDSL (Update st) a ->
+    st m a
+  interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
   interpret (ReactToUpdates us next) =
-    reactToUpdates us >> interpret next >> pure ()
-  interpret (Done ret) = pure ()
+    reactToUpdates us >> interpret next
+  interpret (Done ret) = pure ret
 
 botLoop :: BotDSL a ret
 botLoop = FetchUpdates (\us -> ReactToUpdates us botLoop)
