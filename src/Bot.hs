@@ -69,7 +69,7 @@ loop ::
   ) =>
   Int ->
   st m a
-loop period = forever Bot.doBotThing
+loop period = interpret botLoop
 
 class (MonadTrans st) => StatefulBotMonad st where
   type Update st
