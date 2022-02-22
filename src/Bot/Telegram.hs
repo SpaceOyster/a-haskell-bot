@@ -48,17 +48,18 @@ initiate cfg@Config {..} = do
 
 instance Bot.StatefulBotMonad TG.TelegramT where
   type Update TG.TelegramT = TG.Update
+  type Response TG.TelegramT = TG.Response
+  type Message TG.TelegramT = TG.Message
+  data Entity TG.TelegramT
+    = EMessage TG.Message
+    | ECommand TG.Message
+    | ECallback TG.CallbackQuery
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     TG.TelegramT m [TG.Update]
   fetchUpdates = do
     lift $ Log.logInfo "fetching Updates"
     TG.runMethod TG.GetUpdates >>= TG.extractUpdates
-  data Entity TG.TelegramT
-    = EMessage TG.Message
-    | ECommand TG.Message
-    | ECallback TG.CallbackQuery
-  type Response TG.TelegramT = TG.Response
   qualifyUpdate :: (MonadThrow m) => TG.Update -> m (Bot.Entity TG.TelegramT)
   qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = pure $ ECallback cq
@@ -90,7 +91,6 @@ instance Bot.StatefulBotMonad TG.TelegramT where
       ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
       ECallback cq -> (: []) <$> reactToCallback cq
-  type Message TG.TelegramT = TG.Message
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -98,7 +98,7 @@ instance Bot.StatefulBotMonad TG.TelegramT where
       DB.MonadUsersDB m,
       BR.MonadBotReplies m
     ) =>
-    Bot.Command ->
+    Bot.BotCommand ->
     (TG.Message -> TG.TelegramT m TG.Response)
   execCommand cmd TG.Message {..} = do
     let address = TG.chat_id chat
@@ -175,7 +175,7 @@ reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
       throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
-getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.Command
+getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.BotCommand
 getCommandThrow msg = do
   t <- TG.getTextThrow msg
   pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t

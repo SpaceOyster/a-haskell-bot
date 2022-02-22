@@ -33,20 +33,20 @@ data BotDSL u ret
 
 -- | command has to be between 1-32 chars long
 -- description has to be between 3-256 chars long
-data Command
+data BotCommand
   = Start
   | Help
   | Repeat
   | UnknownCommand
   deriving (Show, Enum, Bounded)
 
-describe :: Command -> T.Text
+describe :: BotCommand -> T.Text
 describe Start = "Greet User"
 describe Help = "Show help text"
 describe Repeat = "Set echo multiplier"
 describe UnknownCommand = "Unknown Command"
 
-parseCommand :: T.Text -> Command
+parseCommand :: T.Text -> BotCommand
 parseCommand s =
   case T.toLower s of
     "start" -> Start
@@ -73,6 +73,9 @@ loop period = interpret botLoop
 
 class (MonadTrans st) => StatefulBotMonad st where
   type Update st
+  type Response st
+  type Message st
+  data Entity st
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     st m [Update st]
@@ -86,8 +89,6 @@ class (MonadTrans st) => StatefulBotMonad st where
     ) =>
     st m [Response st]
   doBotThing = fetchUpdates >>= reactToUpdates
-  data Entity st
-  type Response st
   qualifyUpdate :: (MonadThrow m) => Update st -> m (Entity st)
   reactToUpdate ::
     ( MonadThrow m,
@@ -111,7 +112,6 @@ class (MonadTrans st) => StatefulBotMonad st where
   reactToUpdates updates = do
     lift $ Log.logInfo "processing each update"
     join <$> mapM reactToUpdate updates
-  type Message st
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -119,7 +119,7 @@ class (MonadTrans st) => StatefulBotMonad st where
       DB.MonadUsersDB m,
       BR.MonadBotReplies m
     ) =>
-    Command ->
+    BotCommand ->
     (Message st -> st m (Response st))
   interpret ::
     ( MonadThrow m,

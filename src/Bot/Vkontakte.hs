@@ -52,17 +52,18 @@ initiate cfg@Config {..} = do
 
 instance Bot.StatefulBotMonad VK.VkontakteT where
   type Update VK.VkontakteT = VK.GroupEvent
+  type Response VK.VkontakteT = VK.Response
+  type Message VK.VkontakteT = VK.Message
+  data Entity VK.VkontakteT
+    = EMessage VK.Message
+    | ECommand VK.Message
+    | ECallback VK.CallbackEvent
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     VK.VkontakteT m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
-  data Entity VK.VkontakteT
-    = EMessage VK.Message
-    | ECommand VK.Message
-    | ECallback VK.CallbackEvent
-  type Response VK.VkontakteT = VK.Response
   qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VkontakteT)
   qualifyUpdate (VK.MessageNew m)
     | isCommandE m = pure $ ECommand m
@@ -84,7 +85,6 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
       ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
       ECallback cq -> reactToCallback cq
-  type Message VK.VkontakteT = VK.Message
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -92,7 +92,7 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
       DB.MonadUsersDB m,
       BR.MonadBotReplies m
     ) =>
-    Bot.Command ->
+    Bot.BotCommand ->
     (VK.Message -> VK.VkontakteT m VK.Response)
   execCommand cmd VK.Message {..} = do
     let address = peer_id
@@ -175,7 +175,7 @@ reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
       throwM $ Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
 
 -- diff
-getCommand :: VK.Message -> Bot.Command
+getCommand :: VK.Message -> Bot.BotCommand
 getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
 
 -- diff
