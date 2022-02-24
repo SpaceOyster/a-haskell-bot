@@ -84,9 +84,9 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
     qu <- Bot.qualifyUpdate update
     case qu of
-      ECallback cq -> reactToCallback cq
       ECommand msg -> Bot.reactToCommand msg
       EMessage msg -> Bot.reactToMessage msg
+      ECallback cq -> Bot.reactToCallback cq
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -141,6 +141,29 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod (VK.CopyMessage msg)
 
+  -- diff
+  reactToCallback ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    VK.CallbackEvent ->
+    VK.VkontakteT m [VK.Response]
+  reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
+    let callback = A.parseMaybe A.parseJSON payload
+    let user = VK.User user_id
+    case callback of
+      Just (RepeatPayload n) -> do
+        lift $
+          Log.logInfo $
+            "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+        prompt <- lift $ BR.getReply Bot.settingsSaved
+        lift $ DB.setUserMultiplier user n
+        fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
+      Nothing ->
+        throwM $ Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
 
 newtype Payload
   = RepeatPayload Int
@@ -152,30 +175,6 @@ instance A.FromJSON Payload where
   parseJSON =
     A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
       RepeatPayload <$> o A..: "repeat"
-
--- diff
-reactToCallback ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m
-  ) =>
-  VK.CallbackEvent ->
-  VK.VkontakteT m [VK.Response]
-reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
-  let callback = A.parseMaybe A.parseJSON payload
-  let user = VK.User user_id
-  case callback of
-    Just (RepeatPayload n) -> do
-      lift $
-        Log.logInfo $
-          "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-      prompt <- lift $ BR.getReply Bot.settingsSaved
-      lift $ DB.setUserMultiplier user n
-      fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
-    Nothing ->
-      throwM $ Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
 
 -- diff
 getCommand :: VK.Message -> Bot.BotCommand

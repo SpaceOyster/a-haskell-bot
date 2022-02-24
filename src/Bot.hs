@@ -97,7 +97,7 @@ class (MonadTrans st) => StatefulBotMonad st where
       Log.MonadLog m,
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
-      BR.MonadBotReplies m
+      BR.MonadBotReplies m,
       Monad (st m)
     ) =>
     Update st ->
@@ -127,6 +127,10 @@ class (MonadTrans st) => StatefulBotMonad st where
   reactToMessage ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     Message st ->
+    st m [Response st]
+  reactToCallback ::
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m, BR.MonadBotReplies m) =>
+    CallbackQuery st ->
     st m [Response st]
   execCommand ::
     ( MonadThrow m,

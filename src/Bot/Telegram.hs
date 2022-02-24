@@ -90,9 +90,9 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         "qualifying Update with id " <> T.tshow (TG.update_id update)
     qu <- Bot.qualifyUpdate update
     case qu of
-      ECallback cq -> (: []) <$> reactToCallback cq
       ECommand msg -> Bot.reactToCommand msg
       EMessage msg -> Bot.reactToMessage msg
+      ECallback cq -> Bot.reactToCallback cq
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -139,6 +139,24 @@ instance Bot.StatefulBotMonad TG.TelegramT where
       Log.logDebug $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
     n `replicateM` TG.runMethod (TG.CopyMessage msg)
+  reactToCallback ::
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+    TG.CallbackQuery ->
+    TG.TelegramT m [TG.Response]
+  reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
+    lift $
+      Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
+    cdata <- TG.getQDataThrow cq
+    let user = from
+    case qualifyQuery cdata of
+      QDRepeat n -> do
+        lift $
+          Log.logInfo $
+            "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+        lift $ DB.setUserMultiplier user n
+        pure <$> (TG.runMethod $ TG.AnswerCallbackQuery cq_id)
+      QDOther s ->
+        throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 data QueryData
   = QDRepeat Int
@@ -152,26 +170,6 @@ qualifyQuery qstring =
     _ -> QDOther qstring
   where
     (qtype, qdata) = T.break (== '_') qstring
-
--- diff
-reactToCallback ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
-  TG.CallbackQuery ->
-  TG.TelegramT m TG.Response
-reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
-  lift $
-    Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
-  cdata <- TG.getQDataThrow cq
-  let user = from
-  case qualifyQuery cdata of
-    QDRepeat n -> do
-      lift $
-        Log.logInfo $
-          "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-      lift $ DB.setUserMultiplier user n
-      TG.runMethod $ TG.AnswerCallbackQuery cq_id
-    QDOther s ->
-      throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
 -- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.BotCommand
