@@ -50,6 +50,7 @@ instance Bot.StatefulBotMonad TG.TelegramT where
   type Update TG.TelegramT = TG.Update
   type Response TG.TelegramT = TG.Response
   type Message TG.TelegramT = TG.Message
+  type Command TG.TelegramT = TG.Message
   data Entity TG.TelegramT
     = EMessage TG.Message
     | ECommand TG.Message

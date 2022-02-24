@@ -75,6 +75,7 @@ class (MonadTrans st) => StatefulBotMonad st where
   type Update st
   type Response st
   type Message st
+  type Command st
   data Entity st
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>

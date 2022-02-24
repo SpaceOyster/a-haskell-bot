@@ -54,6 +54,7 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
   type Update VK.VkontakteT = VK.GroupEvent
   type Response VK.VkontakteT = VK.Response
   type Message VK.VkontakteT = VK.Message
+  type Command VK.VkontakteT = VK.Message
   data Entity VK.VkontakteT
     = EMessage VK.Message
     | ECommand VK.Message
