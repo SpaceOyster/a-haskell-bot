@@ -84,9 +84,9 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
     qu <- Bot.qualifyUpdate update
     case qu of
-      ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
       ECallback cq -> reactToCallback cq
+      ECommand msg -> Bot.reactToCommand msg
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -107,27 +107,27 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
         Bot.Repeat -> VK.SendKeyboard address prompt repeatKeyboard
         Bot.UnknownCommand -> VK.SendTextMessage address (Bot.unknown replies)
 
--- diff
-reactToCommand ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m
-  ) =>
-  VK.Message ->
-  VK.VkontakteT m VK.Response
-reactToCommand msg@VK.Message {msg_id, peer_id} = do
-  let cmd = getCommand msg
-  lift $
-    Log.logDebug $
-      "Got command"
-        <> T.tshow cmd
-        <> " in message id "
-        <> T.tshow msg_id
-        <> " , peer_id: "
-        <> T.tshow peer_id
-  Bot.execCommand cmd msg
+  -- diff
+  reactToCommand ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    VK.Message ->
+    VK.VkontakteT m [VK.Response]
+  reactToCommand msg@VK.Message {msg_id, peer_id} = do
+    let cmd = getCommand msg
+    lift $
+      Log.logDebug $
+        "Got command"
+          <> T.tshow cmd
+          <> " in message id "
+          <> T.tshow msg_id
+          <> " , peer_id: "
+          <> T.tshow peer_id
+    pure <$> Bot.execCommand cmd msg
 
 -- diff
 reactToMessage ::

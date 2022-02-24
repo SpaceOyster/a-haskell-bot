@@ -98,6 +98,7 @@ class (MonadTrans st) => StatefulBotMonad st where
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
       BR.MonadBotReplies m
+      Monad (st m)
     ) =>
     Update st ->
     st m [Response st]
@@ -114,6 +115,15 @@ class (MonadTrans st) => StatefulBotMonad st where
   reactToUpdates updates = do
     lift $ Log.logInfo "processing each update"
     join <$> mapM reactToUpdate updates
+  reactToCommand ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    Command st ->
+    st m [Response st]
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,

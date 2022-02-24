@@ -90,9 +90,9 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         "qualifying Update with id " <> T.tshow (TG.update_id update)
     qu <- Bot.qualifyUpdate update
     case qu of
-      ECommand msg -> (: []) <$> reactToCommand msg
       EMessage msg -> reactToMessage msg
       ECallback cq -> (: []) <$> reactToCallback cq
+      ECommand msg -> Bot.reactToCommand msg
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -112,23 +112,22 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         Bot.Help -> TG.SendMessage address (Bot.help replies)
         Bot.Repeat -> TG.SendInlineKeyboard address prompt repeatKeyboard
         Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown replies)
+  reactToCommand ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    TG.Message ->
+    TG.TelegramT m [TG.Response]
+  reactToCommand msg@TG.Message {message_id} = do
+    cmd <- getCommandThrow msg
+    lift $
+      Log.logDebug $
+        "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
+    pure <$> Bot.execCommand cmd msg
 
--- diff
-reactToCommand ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m
-  ) =>
-  TG.Message ->
-  TG.TelegramT m TG.Response
-reactToCommand msg@TG.Message {message_id} = do
-  cmd <- getCommandThrow msg
-  lift $
-    Log.logDebug $
-      "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
-  Bot.execCommand cmd msg
 
 -- diff
 reactToMessage ::
