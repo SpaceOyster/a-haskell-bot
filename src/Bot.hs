@@ -26,9 +26,9 @@ repeatPrompt userM = do
   prompt <- BR.getReply Bot.repeat
   pure $ Bot.insertUserData userData prompt
 
-data BotDSL u ret
-  = FetchUpdates ([u] -> BotDSL u ret)
-  | ReactToUpdates [u] (BotDSL u ret)
+data BotDSL api ret
+  = FetchUpdates ([Update api] -> BotDSL api ret)
+  | ReactToUpdates [Update api] (BotDSL api ret)
   | Done ret
 
 -- | command has to be between 1-32 chars long
@@ -129,7 +129,7 @@ class (MonadTrans st) => StatefulBotMonad st where
       DB.MonadUsersDB m,
       Monad (st m)
     ) =>
-    BotDSL (Update st) a ->
+    BotDSL st a ->
     st m a
   interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
   interpret (ReactToUpdates us next) =
