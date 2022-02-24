@@ -124,6 +124,10 @@ class (MonadTrans st) => StatefulBotMonad st where
     ) =>
     Command st ->
     st m [Response st]
+  reactToMessage ::
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+    Message st ->
+    st m [Response st]
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,

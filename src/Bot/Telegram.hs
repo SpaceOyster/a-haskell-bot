@@ -90,9 +90,9 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         "qualifying Update with id " <> T.tshow (TG.update_id update)
     qu <- Bot.qualifyUpdate update
     case qu of
-      EMessage msg -> reactToMessage msg
       ECallback cq -> (: []) <$> reactToCallback cq
       ECommand msg -> Bot.reactToCommand msg
+      EMessage msg -> Bot.reactToMessage msg
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -128,19 +128,17 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
     pure <$> Bot.execCommand cmd msg
 
-
--- diff
-reactToMessage ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
-  TG.Message ->
-  TG.TelegramT m [TG.Response]
-reactToMessage msg@TG.Message {message_id} = do
-  author <- TG.getAuthorThrow msg
-  n <- lift $ DB.getUserMultiplier author
-  lift $
-    Log.logDebug $
-      "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
-  n `replicateM` TG.runMethod (TG.CopyMessage msg)
+  reactToMessage ::
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+    TG.Message ->
+    TG.TelegramT m [TG.Response]
+  reactToMessage msg@TG.Message {message_id} = do
+    author <- TG.getAuthorThrow msg
+    n <- lift $ DB.getUserMultiplier author
+    lift $
+      Log.logDebug $
+        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
+    n `replicateM` TG.runMethod (TG.CopyMessage msg)
 
 data QueryData
   = QDRepeat Int

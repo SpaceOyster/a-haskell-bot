@@ -84,9 +84,9 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
     qu <- Bot.qualifyUpdate update
     case qu of
-      EMessage msg -> reactToMessage msg
       ECallback cq -> reactToCallback cq
       ECommand msg -> Bot.reactToCommand msg
+      EMessage msg -> Bot.reactToMessage msg
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -129,17 +129,18 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
           <> T.tshow peer_id
     pure <$> Bot.execCommand cmd msg
 
--- diff
-reactToMessage ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
-  VK.Message ->
-  VK.VkontakteT m [VK.Response]
-reactToMessage msg@VK.Message {..} = do
-  n <- lift $ DB.getUserMultiplier $ VK.User from_id
-  lift $
-    Log.logDebug $
-      "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
-  n `replicateM` VK.runMethod (VK.CopyMessage msg)
+  -- diff
+  reactToMessage ::
+    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+    VK.Message ->
+    VK.VkontakteT m [VK.Response]
+  reactToMessage msg@VK.Message {..} = do
+    n <- lift $ DB.getUserMultiplier $ VK.User from_id
+    lift $
+      Log.logDebug $
+        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
+    n `replicateM` VK.runMethod (VK.CopyMessage msg)
+
 
 newtype Payload
   = RepeatPayload Int
