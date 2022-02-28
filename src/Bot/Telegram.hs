@@ -15,6 +15,24 @@ module Bot.Telegram
 where
 
 import qualified API.Telegram as TG
+  ( CallbackQuery (..),
+    Chat (..),
+    Config (..),
+    InlineKeyboardButton (..),
+    InlineKeyboardMarkup (..),
+    Message (..),
+    Method (..),
+    Response (..),
+    TGState (..),
+    TelegramT (..),
+    Update (..),
+    extractUpdates,
+    getAuthorThrow,
+    getQDataThrow,
+    getTextThrow,
+    initiate,
+    runMethod,
+  )
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
