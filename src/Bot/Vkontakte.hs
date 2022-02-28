@@ -15,6 +15,24 @@ module Bot.Vkontakte
 where
 
 import qualified API.Vkontakte as VK
+  ( ButtonColor (..),
+    CallbackEvent (..),
+    Config (..),
+    GroupEvent (..),
+    Keyboard (..),
+    KeyboardAction (..),
+    KeyboardActionType (..),
+    KeyboardButton (..),
+    Message (..),
+    Method (..),
+    Response (..),
+    User (..),
+    VKState (..),
+    VkontakteT (..),
+    extractUpdates,
+    initiate,
+    runMethod,
+  )
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
