@@ -30,6 +30,7 @@ data BotDSL api ret
   = FetchUpdates ([Update api] -> BotDSL api ret)
   | ReactToUpdates [Update api] (BotDSL api ret)
   | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
+  | ReactToMessage (Message api) ([Response api] -> BotDSL api ret)
   | Done ret
 
 -- | command has to be between 1-32 chars long
@@ -156,6 +157,7 @@ class (MonadTrans st) => StatefulBotMonad st where
   interpret (ReactToUpdates us next) =
     reactToUpdates us >> interpret next
   interpret (QualifyUpdate u next) = lift (qualifyUpdate u) >>= interpret . next
+  interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
   interpret (Done ret) = pure ret
 
 botLoop :: BotDSL a ret
@@ -168,3 +170,4 @@ andThen (FetchUpdates next) mkProgram =
 andThen (ReactToUpdates us next) mkProgram =
   ReactToUpdates us (next `andThen` mkProgram)
 andThen (QualifyUpdate u next) mkProgram = QualifyUpdate u $ \x -> next x `andThen` mkProgram
+andThen (ReactToMessage m next) mkProgram = ReactToMessage m $ \x -> next x `andThen` mkProgram
