@@ -1,9 +1,9 @@
 {-# LANGUAGE FlexibleInstances #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot.Vkontakte
@@ -74,21 +74,19 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
   type Message VK.VkontakteT = VK.Message
   type Command VK.VkontakteT = VK.Message
   type CallbackQuery VK.VkontakteT = VK.CallbackEvent
-  data Entity VK.VkontakteT
-    = EMessage VK.Message
-    | ECommand VK.Message
-    | ECallback VK.CallbackEvent
+
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     VK.VkontakteT m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
+
   qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VkontakteT)
   qualifyUpdate (VK.MessageNew m)
-    | isCommandE m = pure $ ECommand m
-    | otherwise = pure $ EMessage m
-  qualifyUpdate (VK.MessageEvent c) = pure $ ECallback c
+    | isCommandE m = pure $ Bot.ECommand m
+    | otherwise = pure $ Bot.EMessage m
+  qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
   reactToUpdate ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -100,11 +98,12 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
     VK.VkontakteT m [VK.Response]
   reactToUpdate update = do
     lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
-    qu <- Bot.qualifyUpdate update
+    qu <- Bot.qualifyUpdate @VK.VkontakteT update
     case qu of
-      ECommand msg -> Bot.reactToCommand msg
-      EMessage msg -> Bot.reactToMessage msg
-      ECallback cq -> Bot.reactToCallback cq
+      Bot.ECommand msg -> Bot.reactToCommand msg
+      Bot.EMessage msg -> Bot.reactToMessage msg
+      Bot.ECallback cq -> Bot.reactToCallback cq
+
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -125,7 +124,6 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
         Bot.Repeat -> VK.SendKeyboard address prompt repeatKeyboard
         Bot.UnknownCommand -> VK.SendTextMessage address (Bot.unknown replies)
 
-  -- diff
   reactToCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -147,7 +145,6 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
           <> T.tshow peer_id
     pure <$> Bot.execCommand cmd msg
 
-  -- diff
   reactToMessage ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     VK.Message ->
@@ -159,7 +156,6 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
     n `replicateM` VK.runMethod (VK.CopyMessage msg)
 
-  -- diff
   reactToCallback ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -194,11 +190,9 @@ instance A.FromJSON Payload where
     A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
       RepeatPayload <$> o A..: "repeat"
 
--- diff
 getCommand :: VK.Message -> Bot.BotCommand
 getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
 
--- diff
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
   VK.Keyboard
@@ -217,6 +211,5 @@ repeatKeyboard =
           link = Nothing
         }
 
--- diff
 isCommandE :: VK.Message -> Bool
 isCommandE VK.Message {text} = Bot.isCommand text

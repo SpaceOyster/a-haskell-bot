@@ -75,13 +75,18 @@ loop ::
   st m a
 loop period = interpret botLoop
 
+data Entity api
+  = EMessage (Message api)
+  | ECommand (Command api)
+  | ECallback (CallbackQuery api)
+
 class (MonadTrans st) => StatefulBotMonad st where
   type Update st
   type Response st
   type Message st
   type Command st
   type CallbackQuery st
-  data Entity st
+
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     st m [Update st]

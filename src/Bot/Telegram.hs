@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot.Telegram
@@ -70,25 +71,23 @@ instance Bot.StatefulBotMonad TG.TelegramT where
   type Message TG.TelegramT = TG.Message
   type Command TG.TelegramT = TG.Message
   type CallbackQuery TG.TelegramT = TG.CallbackQuery
-  data Entity TG.TelegramT
-    = EMessage TG.Message
-    | ECommand TG.Message
-    | ECallback TG.CallbackQuery
+
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     TG.TelegramT m [TG.Update]
   fetchUpdates = do
     lift $ Log.logInfo "fetching Updates"
     TG.runMethod TG.GetUpdates >>= TG.extractUpdates
+
   qualifyUpdate :: (MonadThrow m) => TG.Update -> m (Bot.Entity TG.TelegramT)
   qualifyUpdate u@TG.Update {message, callback_query}
-    | Just cq <- callback_query = pure $ ECallback cq
+    | Just cq <- callback_query = pure $ Bot.ECallback cq
     | Just msg <- message,
       isCommandE msg =
-        pure $ ECommand msg
+        pure $ Bot.ECommand msg
     | Just msg <- message,
       not (isCommandE msg) =
-        pure $ EMessage msg
+        pure $ Bot.EMessage msg
     | otherwise =
         throwM $
           Ex Priority.Info $
@@ -106,11 +105,11 @@ instance Bot.StatefulBotMonad TG.TelegramT where
     lift $
       Log.logDebug $
         "qualifying Update with id " <> T.tshow (TG.update_id update)
-    qu <- Bot.qualifyUpdate update
+    qu <- Bot.qualifyUpdate @TG.TelegramT update
     case qu of
-      ECommand msg -> Bot.reactToCommand msg
-      EMessage msg -> Bot.reactToMessage msg
-      ECallback cq -> Bot.reactToCallback cq
+      Bot.ECommand msg -> Bot.reactToCommand msg
+      Bot.EMessage msg -> Bot.reactToMessage msg
+      Bot.ECallback cq -> Bot.reactToCallback cq
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -130,6 +129,7 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         Bot.Help -> TG.SendMessage address (Bot.help replies)
         Bot.Repeat -> TG.SendInlineKeyboard address prompt repeatKeyboard
         Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown replies)
+
   reactToCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -157,6 +157,7 @@ instance Bot.StatefulBotMonad TG.TelegramT where
       Log.logDebug $
         "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
     n `replicateM` TG.runMethod (TG.CopyMessage msg)
+
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
@@ -189,13 +190,11 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = T.break (== '_') qstring
 
--- diff
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.BotCommand
 getCommandThrow msg = do
   t <- TG.getTextThrow msg
   pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
--- diff
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
   where
@@ -206,6 +205,5 @@ repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
           callback_data = "repeat_" <> T.tshow x
         }
 
--- diff
 isCommandE :: TG.Message -> Bool
 isCommandE TG.Message {text} = maybe False Bot.isCommand text
