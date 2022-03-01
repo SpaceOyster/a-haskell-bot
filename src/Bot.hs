@@ -32,6 +32,7 @@ data BotDSL api ret
   | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
   | ReactToMessage (Message api) ([Response api] -> BotDSL api ret)
   | ReactToCommand (Command api) ([Response api] -> BotDSL api ret)
+  | ReactToCallback (CallbackQuery api) ([Response api] -> BotDSL api ret)
   | Done ret
 
 -- | command has to be between 1-32 chars long
@@ -160,6 +161,7 @@ class (MonadTrans st) => StatefulBotMonad st where
   interpret (QualifyUpdate u next) = lift (qualifyUpdate u) >>= interpret . next
   interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
   interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
+  interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
   interpret (Done ret) = pure ret
 
 botLoop :: BotDSL a ret
@@ -174,3 +176,4 @@ andThen (ReactToUpdates us next) mkProgram =
 andThen (QualifyUpdate u next) mkProgram = QualifyUpdate u $ \x -> next x `andThen` mkProgram
 andThen (ReactToMessage m next) mkProgram = ReactToMessage m $ \x -> next x `andThen` mkProgram
 andThen (ReactToCommand c next) mkProgram = ReactToCommand c $ \x -> next x `andThen` mkProgram
+andThen (ReactToCallback c next) mkProgram = ReactToCallback c $ \x -> next x `andThen` mkProgram
