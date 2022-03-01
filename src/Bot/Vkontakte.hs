@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot.Vkontakte
@@ -87,22 +86,6 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
     | isCommandE m = pure $ Bot.ECommand m
     | otherwise = pure $ Bot.EMessage m
   qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
-  reactToUpdate ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    VK.GroupEvent ->
-    VK.VkontakteT m [VK.Response]
-  reactToUpdate update = do
-    lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
-    qu <- Bot.qualifyUpdate @VK.VkontakteT update
-    case qu of
-      Bot.ECommand msg -> Bot.reactToCommand msg
-      Bot.EMessage msg -> Bot.reactToMessage msg
-      Bot.ECallback cq -> Bot.reactToCallback cq
 
   execCommand ::
     ( MonadThrow m,

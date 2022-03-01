@@ -4,7 +4,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot.Telegram
@@ -92,24 +91,7 @@ instance Bot.StatefulBotMonad TG.TelegramT where
         throwM $
           Ex Priority.Info $
             "Unknown Update Type. Update: " ++ show (TG.update_id u)
-  reactToUpdate ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    TG.Update ->
-    TG.TelegramT m [TG.Response]
-  reactToUpdate update = do
-    lift $
-      Log.logDebug $
-        "qualifying Update with id " <> T.tshow (TG.update_id update)
-    qu <- Bot.qualifyUpdate @TG.TelegramT update
-    case qu of
-      Bot.ECommand msg -> Bot.reactToCommand msg
-      Bot.EMessage msg -> Bot.reactToMessage msg
-      Bot.ECallback cq -> Bot.reactToCallback cq
+
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,

@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot where
@@ -111,6 +113,13 @@ class (MonadTrans st) => StatefulBotMonad st where
     ) =>
     Update st ->
     st m [Response st]
+  reactToUpdate update = do
+    -- lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
+    qu <- lift $ qualifyUpdate @st update
+    case qu of
+      Bot.ECommand msg -> Bot.reactToCommand msg
+      Bot.EMessage msg -> Bot.reactToMessage msg
+      Bot.ECallback cq -> Bot.reactToCallback cq
   reactToUpdates ::
     ( MonadThrow m,
       Log.MonadLog m,
