@@ -29,6 +29,7 @@ repeatPrompt userM = do
 data BotDSL api ret
   = FetchUpdates ([Update api] -> BotDSL api ret)
   | ReactToUpdates [Update api] (BotDSL api ret)
+  | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
   | Done ret
 
 -- | command has to be between 1-32 chars long
@@ -154,6 +155,7 @@ class (MonadTrans st) => StatefulBotMonad st where
   interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
   interpret (ReactToUpdates us next) =
     reactToUpdates us >> interpret next
+  interpret (QualifyUpdate u next) = lift (qualifyUpdate u) >>= interpret . next
   interpret (Done ret) = pure ret
 
 botLoop :: BotDSL a ret
@@ -165,3 +167,4 @@ andThen (FetchUpdates next) mkProgram =
   FetchUpdates $ \updates -> next updates `andThen` mkProgram
 andThen (ReactToUpdates us next) mkProgram =
   ReactToUpdates us (next `andThen` mkProgram)
+andThen (QualifyUpdate u next) mkProgram = QualifyUpdate u $ \x -> next x `andThen` mkProgram
