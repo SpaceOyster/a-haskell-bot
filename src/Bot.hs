@@ -93,23 +93,6 @@ class (MonadTrans st) => StatefulBotMonad st where
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     st m [Update st]
   qualifyUpdate :: (MonadThrow m) => Update st -> m (Entity st)
-  reactToUpdate ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m,
-      Monad (st m)
-    ) =>
-    Update st ->
-    st m [Response st]
-  reactToUpdate update = do
-    -- lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
-    qu <- lift $ qualifyUpdate @st update
-    case qu of
-      Bot.ECommand msg -> Bot.reactToCommand msg
-      Bot.EMessage msg -> Bot.reactToMessage msg
-      Bot.ECallback cq -> Bot.reactToCallback cq
   reactToCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -137,6 +120,25 @@ class (MonadTrans st) => StatefulBotMonad st where
     BotCommand ->
     (Message st -> st m (Response st))
 
+reactToUpdate ::
+  forall st m.
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m,
+    StatefulBotMonad st,
+    Monad (st m)
+  ) =>
+  Update st ->
+  st m [Response st]
+reactToUpdate update = do
+  -- lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
+  qu <- lift $ qualifyUpdate @st update
+  case qu of
+    Bot.ECommand msg -> Bot.reactToCommand msg
+    Bot.EMessage msg -> Bot.reactToMessage msg
+    Bot.ECallback cq -> Bot.reactToCallback cq
 
 reactToUpdates ::
   ( MonadThrow m,
