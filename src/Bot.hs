@@ -92,16 +92,6 @@ class (MonadTrans st) => StatefulBotMonad st where
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     st m [Update st]
-  doBotThing ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m,
-      Monad (st m)
-    ) =>
-    st m [Response st]
-  doBotThing = fetchUpdates >>= reactToUpdates
   qualifyUpdate :: (MonadThrow m) => Update st -> m (Entity st)
   reactToUpdate ::
     ( MonadThrow m,
@@ -160,6 +150,18 @@ class (MonadTrans st) => StatefulBotMonad st where
     BotCommand ->
     (Message st -> st m (Response st))
 
+
+doBotThing ::
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m,
+    StatefulBotMonad st,
+    Monad (st m)
+  ) =>
+  st m [Response st]
+doBotThing = fetchUpdates >>= reactToUpdates
 interpret ::
   ( MonadThrow m,
     Log.MonadLog m,
