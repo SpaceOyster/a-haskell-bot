@@ -110,19 +110,6 @@ class (MonadTrans st) => StatefulBotMonad st where
       Bot.ECommand msg -> Bot.reactToCommand msg
       Bot.EMessage msg -> Bot.reactToMessage msg
       Bot.ECallback cq -> Bot.reactToCallback cq
-  reactToUpdates ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m,
-      Monad (st m)
-    ) =>
-    [Update st] ->
-    st m [Response st]
-  reactToUpdates updates = do
-    lift $ Log.logInfo "processing each update"
-    join <$> mapM reactToUpdate updates
   reactToCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -151,6 +138,21 @@ class (MonadTrans st) => StatefulBotMonad st where
     (Message st -> st m (Response st))
 
 
+reactToUpdates ::
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m,
+    StatefulBotMonad st,
+    Monad (st m)
+  ) =>
+  [Update st] ->
+  st m [Response st]
+reactToUpdates updates = do
+  lift $ Log.logInfo "processing each update"
+  join <$> mapM reactToUpdate updates
+
 doBotThing ::
   ( MonadThrow m,
     Log.MonadLog m,
@@ -162,6 +164,7 @@ doBotThing ::
   ) =>
   st m [Response st]
 doBotThing = fetchUpdates >>= reactToUpdates
+
 interpret ::
   ( MonadThrow m,
     Log.MonadLog m,
