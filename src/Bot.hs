@@ -159,24 +159,26 @@ class (MonadTrans st) => StatefulBotMonad st where
     ) =>
     BotCommand ->
     (Message st -> st m (Response st))
-  interpret ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      BR.MonadBotReplies m,
-      DB.MonadUsersDB m,
-      Monad (st m)
-    ) =>
-    BotDSL st a ->
-    st m a
-  interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
-  interpret (ReactToUpdates us next) =
-    reactToUpdates us >> interpret next
-  interpret (QualifyUpdate u next) = lift (qualifyUpdate u) >>= interpret . next
-  interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
-  interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
-  interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
-  interpret (Done ret) = pure ret
+
+interpret ::
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    BR.MonadBotReplies m,
+    DB.MonadUsersDB m,
+    StatefulBotMonad st,
+    Monad (st m)
+  ) =>
+  BotDSL st a ->
+  st m a
+interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
+interpret (ReactToUpdates us next) =
+  reactToUpdates us >> interpret next
+interpret (QualifyUpdate u next) = lift (qualifyUpdate u) >>= interpret . next
+interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
+interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
+interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
+interpret (Done ret) = pure ret
 
 botLoop :: BotDSL a ret
 botLoop = FetchUpdates (\us -> ReactToUpdates us botLoop)
