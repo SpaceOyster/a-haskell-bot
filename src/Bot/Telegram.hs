@@ -64,12 +64,20 @@ initiate cfg@Config {..} = do
   Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
   TG.initiate TG.Config {..}
 
-instance Bot.StatefulBotMonad TG.TelegramT where
-  type Update TG.TelegramT = TG.Update
-  type Response TG.TelegramT = TG.Response
-  type Message TG.TelegramT = TG.Message
-  type Command TG.TelegramT = TG.Message
-  type CallbackQuery TG.TelegramT = TG.CallbackQuery
+instance
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m
+  ) =>
+  Bot.StatefulBotMonad (TG.TelegramT m)
+  where
+  type Update (TG.TelegramT m) = TG.Update
+  type Response (TG.TelegramT m) = TG.Response
+  type Message (TG.TelegramT m) = TG.Message
+  type Command (TG.TelegramT m) = TG.Message
+  type CallbackQuery (TG.TelegramT m) = TG.CallbackQuery
 
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
@@ -78,7 +86,7 @@ instance Bot.StatefulBotMonad TG.TelegramT where
     lift $ Log.logInfo "fetching Updates"
     TG.runMethod TG.GetUpdates >>= TG.extractUpdates
 
-  qualifyUpdate :: (MonadThrow m) => TG.Update -> m (Bot.Entity TG.TelegramT)
+  qualifyUpdate :: (MonadThrow m) => TG.Update -> TG.TelegramT m (Bot.Entity (TG.TelegramT m))
   qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = pure $ Bot.ECallback cq
     | Just msg <- message,

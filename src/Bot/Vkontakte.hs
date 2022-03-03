@@ -67,12 +67,20 @@ initiate cfg@Config {..} = do
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.initiate VK.Config {..}
 
-instance Bot.StatefulBotMonad VK.VkontakteT where
-  type Update VK.VkontakteT = VK.GroupEvent
-  type Response VK.VkontakteT = VK.Response
-  type Message VK.VkontakteT = VK.Message
-  type Command VK.VkontakteT = VK.Message
-  type CallbackQuery VK.VkontakteT = VK.CallbackEvent
+instance
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m
+  ) =>
+  Bot.StatefulBotMonad (VK.VkontakteT m)
+  where
+  type Update (VK.VkontakteT m) = VK.GroupEvent
+  type Response (VK.VkontakteT m) = VK.Response
+  type Message (VK.VkontakteT m) = VK.Message
+  type Command (VK.VkontakteT m) = VK.Message
+  type CallbackQuery (VK.VkontakteT m) = VK.CallbackEvent
 
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
@@ -81,7 +89,7 @@ instance Bot.StatefulBotMonad VK.VkontakteT where
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     VK.runMethod VK.GetUpdates >>= VK.extractUpdates
 
-  qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> m (Bot.Entity VK.VkontakteT)
+  qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> VK.VkontakteT m (Bot.Entity (VK.VkontakteT m))
   qualifyUpdate (VK.MessageNew m)
     | isCommandE m = pure $ Bot.ECommand m
     | otherwise = pure $ Bot.EMessage m

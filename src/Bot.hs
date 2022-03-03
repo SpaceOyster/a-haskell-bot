@@ -9,14 +9,10 @@ module Bot where
 import Bot.Replies as Bot
 import Control.Monad (forever, join)
 import Control.Monad.Catch (MonadThrow)
-import Control.Monad.State (StateT, evalStateT, lift)
-import Control.Monad.Trans (MonadTrans (..))
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
-import qualified Effects.HTTP as HTTP (MonadHTTP (..))
-import qualified Effects.Log as Log (MonadLog, logInfo)
 import qualified Effects.UsersDB as DB
 
 repeatPrompt ::
@@ -64,17 +60,7 @@ isCommand :: T.Text -> Bool
 isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
-loop ::
-  ( MonadThrow m,
-    HTTP.MonadHTTP m,
-    Log.MonadLog m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m,
-    StatefulBotMonad st,
-    Monad (st m)
-  ) =>
-  Int ->
-  st m a
+loop :: StatefulBotMonad st => Int -> st a
 loop period = interpret botLoop
 
 data Entity api
@@ -82,106 +68,40 @@ data Entity api
   | ECommand (Command api)
   | ECallback (CallbackQuery api)
 
-class (MonadTrans st) => StatefulBotMonad st where
+class (Monad st) => StatefulBotMonad st where
   type Update st
   type Response st
   type Message st
   type Command st
   type CallbackQuery st
 
-  fetchUpdates ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    st m [Update st]
-  qualifyUpdate :: (MonadThrow m) => Update st -> m (Entity st)
-  reactToCommand ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    Command st ->
-    st m [Response st]
-  reactToMessage ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
-    Message st ->
-    st m [Response st]
-  reactToCallback ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m, BR.MonadBotReplies m) =>
-    CallbackQuery st ->
-    st m [Response st]
-  execCommand ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    BotCommand ->
-    (Message st -> st m (Response st))
+  fetchUpdates :: st [Update st]
+  qualifyUpdate :: Update st -> st (Entity st)
+  reactToCommand :: Command st -> st [Response st]
+  reactToMessage :: Message st -> st [Response st]
+  reactToCallback :: CallbackQuery st -> st [Response st]
+  execCommand :: BotCommand -> (Message st -> st (Response st))
 
-reactToUpdate ::
-  forall st m.
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m,
-    StatefulBotMonad st,
-    Monad (st m)
-  ) =>
-  Update st ->
-  st m [Response st]
+reactToUpdate :: forall st. StatefulBotMonad st => Update st -> st [Response st]
 reactToUpdate update = do
-  -- lift $ Log.logInfo $ "VK got Update: " <> T.tshow update
-  qu <- lift $ qualifyUpdate @st update
+  qu <- qualifyUpdate @st update
   case qu of
     Bot.ECommand msg -> Bot.reactToCommand msg
     Bot.EMessage msg -> Bot.reactToMessage msg
     Bot.ECallback cq -> Bot.reactToCallback cq
 
-reactToUpdates ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m,
-    StatefulBotMonad st,
-    Monad (st m)
-  ) =>
-  [Update st] ->
-  st m [Response st]
+reactToUpdates :: StatefulBotMonad st => [Update st] -> st [Response st]
 reactToUpdates updates = do
-  lift $ Log.logInfo "processing each update"
   join <$> mapM reactToUpdate updates
 
-doBotThing ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m,
-    StatefulBotMonad st,
-    Monad (st m)
-  ) =>
-  st m [Response st]
-doBotThing = fetchUpdates >>= reactToUpdates
+doBotThing :: StatefulBotMonad st => st [Response st]
+doBotThing = forever (fetchUpdates >>= reactToUpdates)
 
-interpret ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    BR.MonadBotReplies m,
-    DB.MonadUsersDB m,
-    StatefulBotMonad st,
-    Monad (st m)
-  ) =>
-  BotDSL st a ->
-  st m a
+interpret :: StatefulBotMonad st => BotDSL st a -> st a
 interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
 interpret (ReactToUpdates us next) =
   reactToUpdates us >> interpret next
-interpret (QualifyUpdate u next) = lift (qualifyUpdate u) >>= interpret . next
+interpret (QualifyUpdate u next) = qualifyUpdate u >>= interpret . next
 interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
 interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
 interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
