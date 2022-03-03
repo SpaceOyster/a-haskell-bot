@@ -71,7 +71,7 @@ instance
     DB.MonadUsersDB m,
     BR.MonadBotReplies m
   ) =>
-  Bot.StatefulBotMonad (TG.TelegramT m)
+  Bot.EchoBotMonad (TG.TelegramT m)
   where
   type Update (TG.TelegramT m) = TG.Update
   type Response (TG.TelegramT m) = TG.Response

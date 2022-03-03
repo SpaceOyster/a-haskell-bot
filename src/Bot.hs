@@ -60,7 +60,7 @@ isCommand :: T.Text -> Bool
 isCommand "" = False
 isCommand s = (== '/') . T.head $ s
 
-loop :: StatefulBotMonad st => Int -> st a
+loop :: EchoBotMonad m => Int -> m a
 loop period = interpret botLoop
 
 data Entity api
@@ -68,36 +68,36 @@ data Entity api
   | ECommand (Command api)
   | ECallback (CallbackQuery api)
 
-class (Monad st) => StatefulBotMonad st where
-  type Update st
-  type Response st
-  type Message st
-  type Command st
-  type CallbackQuery st
+class (Monad m) => EchoBotMonad m where
+  type Update m
+  type Response m
+  type Message m
+  type Command m
+  type CallbackQuery m
 
-  fetchUpdates :: st [Update st]
-  qualifyUpdate :: Update st -> st (Entity st)
-  reactToCommand :: Command st -> st [Response st]
-  reactToMessage :: Message st -> st [Response st]
-  reactToCallback :: CallbackQuery st -> st [Response st]
-  execCommand :: BotCommand -> (Message st -> st (Response st))
+  fetchUpdates :: m [Update m]
+  qualifyUpdate :: Update m -> m (Entity m)
+  reactToCommand :: Command m -> m [Response m]
+  reactToMessage :: Message m -> m [Response m]
+  reactToCallback :: CallbackQuery m -> m [Response m]
+  execCommand :: BotCommand -> (Message m -> m (Response m))
 
-reactToUpdate :: forall st. StatefulBotMonad st => Update st -> st [Response st]
+reactToUpdate :: forall m. EchoBotMonad m => Update m -> m [Response m]
 reactToUpdate update = do
-  qu <- qualifyUpdate @st update
+  qu <- qualifyUpdate @m update
   case qu of
     Bot.ECommand msg -> Bot.reactToCommand msg
     Bot.EMessage msg -> Bot.reactToMessage msg
     Bot.ECallback cq -> Bot.reactToCallback cq
 
-reactToUpdates :: StatefulBotMonad st => [Update st] -> st [Response st]
+reactToUpdates :: EchoBotMonad m => [Update m] -> m [Response m]
 reactToUpdates updates = do
   join <$> mapM reactToUpdate updates
 
-doBotThing :: StatefulBotMonad st => st [Response st]
+doBotThing :: EchoBotMonad m => m [Response m]
 doBotThing = forever (fetchUpdates >>= reactToUpdates)
 
-interpret :: StatefulBotMonad st => BotDSL st a -> st a
+interpret :: EchoBotMonad m => BotDSL m a -> m a
 interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
 interpret (ReactToUpdates us next) =
   reactToUpdates us >> interpret next

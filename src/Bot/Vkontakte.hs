@@ -74,7 +74,7 @@ instance
     DB.MonadUsersDB m,
     BR.MonadBotReplies m
   ) =>
-  Bot.StatefulBotMonad (VK.VkontakteT m)
+  Bot.EchoBotMonad (VK.VkontakteT m)
   where
   type Update (VK.VkontakteT m) = VK.GroupEvent
   type Response (VK.VkontakteT m) = VK.Response
