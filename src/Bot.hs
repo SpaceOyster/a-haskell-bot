@@ -7,11 +7,12 @@
 module Bot where
 
 import Bot.Replies as Bot
-import Control.Monad (forever, join)
+import Control.Monad (ap, forever, join, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
+import Data.Traversable (fmapDefault)
 import qualified Effects.BotReplies as BR
 import qualified Effects.UsersDB as DB
 
@@ -32,6 +33,28 @@ data BotDSL api ret
   | ReactToCommand (Command api) ([Response api] -> BotDSL api ret)
   | ReactToCallback (CallbackQuery api) ([Response api] -> BotDSL api ret)
   | Done ret
+
+instance Functor (BotDSL a) where
+  fmap = liftM
+
+instance Applicative (BotDSL a) where
+  pure = return
+  (<*>) = ap
+
+instance Monad (BotDSL a) where
+  return = Done
+  t >>= mk =
+    case t of
+      Done ret -> mk ret
+      FetchUpdates next -> FetchUpdates $ next >=> mk
+      ReactToUpdates us next -> ReactToUpdates us (next >>= mk)
+      QualifyUpdate u next -> QualifyUpdate u $ next >=> mk
+      ReactToMessage m next -> ReactToMessage m $ next >=> mk
+      ReactToCommand c next -> ReactToCommand c $ next >=> mk
+      ReactToCallback c next -> ReactToCallback c $ next >=> mk
+
+andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
+andThen = (>>=)
 
 -- | command has to be between 1-32 chars long
 -- description has to be between 3-256 chars long
@@ -99,8 +122,7 @@ doBotThing = forever (fetchUpdates >>= reactToUpdates)
 
 interpret :: EchoBotMonad m => BotDSL m a -> m a
 interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
-interpret (ReactToUpdates us next) =
-  reactToUpdates us >> interpret next
+interpret (ReactToUpdates us next) = reactToUpdates us >> interpret next
 interpret (QualifyUpdate u next) = qualifyUpdate u >>= interpret . next
 interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
 interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
@@ -109,14 +131,3 @@ interpret (Done ret) = pure ret
 
 botLoop :: BotDSL a ret
 botLoop = FetchUpdates (\us -> ReactToUpdates us botLoop)
-
-andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
-andThen (Done ret) mkProgram = mkProgram ret
-andThen (FetchUpdates next) mkProgram =
-  FetchUpdates $ \updates -> next updates `andThen` mkProgram
-andThen (ReactToUpdates us next) mkProgram =
-  ReactToUpdates us (next `andThen` mkProgram)
-andThen (QualifyUpdate u next) mkProgram = QualifyUpdate u $ \x -> next x `andThen` mkProgram
-andThen (ReactToMessage m next) mkProgram = ReactToMessage m $ \x -> next x `andThen` mkProgram
-andThen (ReactToCommand c next) mkProgram = ReactToCommand c $ \x -> next x `andThen` mkProgram
-andThen (ReactToCallback c next) mkProgram = ReactToCallback c $ \x -> next x `andThen` mkProgram
