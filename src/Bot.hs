@@ -132,11 +132,11 @@ fetchUpdates' = FetchUpdates Done
 qualifyUpdate' :: Update api -> BotDSL api (Entity api)
 qualifyUpdate' u = QualifyUpdate u Done
 
-botLoop :: forall a ret. BotDSL a ret
+botLoop :: BotDSL a ret
 botLoop = do
   updates <- fetchUpdates'
   forM_ updates $ \u -> do
-    e <- qualifyUpdate' @a u
+    e <- qualifyUpdate' u
     case e of
       Bot.ECommand msg -> ReactToCommand msg Done
       Bot.EMessage msg -> ReactToMessage msg Done
