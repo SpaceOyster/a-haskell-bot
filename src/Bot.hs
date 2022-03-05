@@ -7,7 +7,7 @@
 module Bot where
 
 import Bot.Replies as Bot
-import Control.Monad (ap, forever, join, liftM, (>=>))
+import Control.Monad (ap, forM_, forever, join, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow)
 import Data.Function ((&))
 import qualified Data.Hashable as H
@@ -129,5 +129,19 @@ interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
 interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
 interpret (Done ret) = pure ret
 
-botLoop :: BotDSL a ret
-botLoop = FetchUpdates (\us -> ReactToUpdates us botLoop)
+fetchUpdates' :: BotDSL api [Update api]
+fetchUpdates' = FetchUpdates Done
+
+qualifyUpdate' :: Update api -> BotDSL api (Entity api)
+qualifyUpdate' u = QualifyUpdate u Done
+
+botLoop :: forall a ret. BotDSL a ret
+botLoop = do
+  updates <- fetchUpdates'
+  forM_ updates $ \u -> do
+    e <- qualifyUpdate' @a u
+    case e of
+      Bot.ECommand msg -> ReactToCommand msg Done
+      Bot.EMessage msg -> ReactToMessage msg Done
+      Bot.ECallback cq -> ReactToCallback cq Done
+  botLoop
