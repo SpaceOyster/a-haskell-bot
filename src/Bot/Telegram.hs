@@ -34,6 +34,7 @@ import qualified API.Telegram as TG
     runMethod,
   )
 import qualified Bot
+import Data.Function ((&))
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
@@ -166,6 +167,11 @@ instance
         pure <$> (TG.runMethod $ TG.AnswerCallbackQuery cq_id)
       QDOther s ->
         throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+
+  getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
+  getAuthorsSettings msg = do
+    author <- TG.getAuthorThrow msg
+    lift $ author & DB.getUserData & DB.orDefaultData
 
 data QueryData
   = QDRepeat Int
