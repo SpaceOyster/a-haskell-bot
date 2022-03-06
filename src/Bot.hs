@@ -150,7 +150,16 @@ botLoop = do
   forM_ updates $ \u -> do
     e <- qualifyUpdate' u
     case e of
-      Bot.ECommand msg -> ReactToCommand msg Done
-      Bot.EMessage msg -> ReactToMessage msg Done
-      Bot.ECallback cq -> ReactToCallback cq Done
+      ECommand cmd -> reactToCommand' cmd
+      EMessage msg -> reactToMessage' msg
+      ECallback cq -> reactToCallback' cq
   botLoop
+
+reactToMessage' :: Message api -> BotDSL api [Response api]
+reactToMessage' msg = ReactToMessage msg Done
+
+reactToCommand' :: Command api -> BotDSL api [Response api]
+reactToCommand' cmd = ReactToCommand cmd Done
+
+reactToCallback' :: CallbackQuery api -> BotDSL api [Response api]
+reactToCallback' cq = ReactToCallback cq Done
