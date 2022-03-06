@@ -12,7 +12,6 @@ import Control.Monad.Catch (MonadThrow)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
-import Data.Traversable (fmapDefault)
 import qualified Effects.BotReplies as BR
 import qualified Effects.UsersDB as DB
 
@@ -31,6 +30,7 @@ data BotDSL api ret
   | ReactToMessage (Message api) ([Response api] -> BotDSL api ret)
   | ReactToCommand (Command api) ([Response api] -> BotDSL api ret)
   | ReactToCallback (CallbackQuery api) ([Response api] -> BotDSL api ret)
+  | GetAuthorsSettings (Message api) (DB.UserData -> BotDSL api ret)
   | Done ret
 
 instance Functor (BotDSL a) where
@@ -50,6 +50,7 @@ instance Monad (BotDSL a) where
       ReactToMessage m next -> ReactToMessage m $ next >=> mk
       ReactToCommand c next -> ReactToCommand c $ next >=> mk
       ReactToCallback c next -> ReactToCallback c $ next >=> mk
+      GetAuthorsSettings m next -> GetAuthorsSettings m $ next >=> mk
 
 andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
 andThen = (>>=)
@@ -102,6 +103,7 @@ class (Monad m) => EchoBotMonad m where
   reactToMessage :: Message m -> m [Response m]
   reactToCallback :: CallbackQuery m -> m [Response m]
   execCommand :: BotCommand -> (Message m -> m (Response m))
+  getAuthorsSettings :: Message m -> m DB.UserData
 
 reactToUpdate :: forall m. EchoBotMonad m => Update m -> m [Response m]
 reactToUpdate update = do
@@ -124,6 +126,7 @@ interpret (QualifyUpdate u next) = qualifyUpdate u >>= interpret . next
 interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
 interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
 interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
+interpret (GetAuthorsSettings m next) = getAuthorsSettings m >>= interpret . next
 interpret (Done ret) = pure ret
 
 fetchUpdates' :: BotDSL api [Update api]
