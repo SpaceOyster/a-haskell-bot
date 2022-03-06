@@ -38,6 +38,7 @@ import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState, StateT, evalStateT, lift)
 import qualified Data.Aeson as A
+import Data.Function((&))
 import qualified Data.Aeson.Types as A (parseMaybe)
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
@@ -169,6 +170,11 @@ instance
         fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
       Nothing ->
         throwM $ Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
+
+  getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
+  getAuthorsSettings VK.Message{from_id} = do
+    let author = VK.User from_id 
+    lift $ author & DB.getUserData & DB.orDefaultData
 
 newtype Payload
   = RepeatPayload Int
