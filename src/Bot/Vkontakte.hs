@@ -141,12 +141,10 @@ instance
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     VK.Message ->
     VK.VkontakteT m [VK.Response]
-  reactToMessage msg@VK.Message {..} = do
-    n <- lift $ DB.getUserMultiplier $ VK.User from_id
-    lift $
-      Log.logDebug $
-        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow msg_id
-    n `replicateM` VK.runMethod (VK.CopyMessage msg)
+  reactToMessage msg = do
+    settings <- Bot.getAuthorsSettings msg
+    let n = DB.getEchoMultiplier settings
+    Bot.echoMessageNTimes msg n
 
   reactToCallback ::
     ( MonadThrow m,
@@ -177,7 +175,10 @@ instance
     lift $ author & DB.getUserData & DB.orDefaultData
 
   echoMessageNTimes :: VK.Message  -> Int -> VK.VkontakteT m [VK.Response]
-  echoMessageNTimes msg n= n `replicateM` VK.runMethod (VK.CopyMessage msg)
+  echoMessageNTimes msg n = do
+    lift $ Log.logDebug $ "generating " <> T.tshow n 
+      <> " echoes for Message: " <> T.tshow (VK.msg_id msg)
+    n `replicateM` VK.runMethod (VK.CopyMessage msg)
 
 
 newtype Payload
