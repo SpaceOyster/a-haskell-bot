@@ -156,7 +156,16 @@ botLoop = do
   botLoop
 
 reactToMessage' :: Message api -> BotDSL api [Response api]
-reactToMessage' msg = ReactToMessage msg Done
+reactToMessage' msg = do
+  settings <- getAuthorsSettings' msg
+  let n = DB.getEchoMultiplier settings
+  echoMessageNTimes' msg n
+
+getAuthorsSettings' :: Message api -> BotDSL api DB.UserData
+getAuthorsSettings' msg = GetAuthorsSettings msg Done
+
+echoMessageNTimes' :: Message api -> Int -> BotDSL api [Response api]
+echoMessageNTimes' msg n = EchoMessageNTimes msg n Done
 
 reactToCommand' :: Command api -> BotDSL api [Response api]
 reactToCommand' cmd = ReactToCommand cmd Done
