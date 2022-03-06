@@ -176,6 +176,10 @@ instance
     let author = VK.User from_id 
     lift $ author & DB.getUserData & DB.orDefaultData
 
+  echoMessageNTimes :: VK.Message  -> Int -> VK.VkontakteT m [VK.Response]
+  echoMessageNTimes msg n= n `replicateM` VK.runMethod (VK.CopyMessage msg)
+
+
 newtype Payload
   = RepeatPayload Int
 
