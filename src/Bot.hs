@@ -135,37 +135,37 @@ interpret (GetAuthorsSettings m next) = getAuthorsSettings m >>= interpret . nex
 interpret (EchoMessageNTimes m n next) = echoMessageNTimes m n >>= interpret . next
 interpret (Done ret) = pure ret
 
-fetchUpdates' :: BotDSL api [Update api]
-fetchUpdates' = FetchUpdates Done
+fetchUpdatesDSL :: BotDSL api [Update api]
+fetchUpdatesDSL = FetchUpdates Done
 
-qualifyUpdate' :: Update api -> BotDSL api (Entity api)
-qualifyUpdate' u = QualifyUpdate u Done
+qualifyUpdateDSL :: Update api -> BotDSL api (Entity api)
+qualifyUpdateDSL u = QualifyUpdate u Done
 
 botLoop :: BotDSL a ret
 botLoop = do
-  updates <- fetchUpdates'
+  updates <- fetchUpdatesDSL
   forM_ updates $ \u -> do
-    e <- qualifyUpdate' u
+    e <- qualifyUpdateDSL u
     case e of
-      ECommand cmd -> reactToCommand' cmd
-      EMessage msg -> reactToMessage' msg
-      ECallback cq -> reactToCallback' cq
+      ECommand cmd -> reactToCommandDSL cmd
+      EMessage msg -> reactToMessageDSL msg
+      ECallback cq -> reactToCallbackDSL cq
   botLoop
 
-reactToMessage' :: Message api -> BotDSL api [Response api]
-reactToMessage' msg = do
-  settings <- getAuthorsSettings' msg
+reactToMessageDSL :: Message api -> BotDSL api [Response api]
+reactToMessageDSL msg = do
+  settings <- getAuthorsSettingsDSL msg
   let n = DB.getEchoMultiplier settings
-  echoMessageNTimes' msg n
+  echoMessageNTimesDSL msg n
 
-getAuthorsSettings' :: Message api -> BotDSL api DB.UserData
-getAuthorsSettings' msg = GetAuthorsSettings msg Done
+getAuthorsSettingsDSL :: Message api -> BotDSL api DB.UserData
+getAuthorsSettingsDSL msg = GetAuthorsSettings msg Done
 
-echoMessageNTimes' :: Message api -> Int -> BotDSL api [Response api]
-echoMessageNTimes' msg n = EchoMessageNTimes msg n Done
+echoMessageNTimesDSL :: Message api -> Int -> BotDSL api [Response api]
+echoMessageNTimesDSL msg n = EchoMessageNTimes msg n Done
 
-reactToCommand' :: Command api -> BotDSL api [Response api]
-reactToCommand' cmd = ReactToCommand cmd Done
+reactToCommandDSL :: Command api -> BotDSL api [Response api]
+reactToCommandDSL cmd = ReactToCommand cmd Done
 
-reactToCallback' :: CallbackQuery api -> BotDSL api [Response api]
-reactToCallback' cq = ReactToCallback cq Done
+reactToCallbackDSL :: CallbackQuery api -> BotDSL api [Response api]
+reactToCallbackDSL cq = ReactToCallback cq Done
