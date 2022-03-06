@@ -141,13 +141,10 @@ instance
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.Message ->
     TG.TelegramT m [TG.Response]
-  reactToMessage msg@TG.Message {message_id} = do
-    author <- TG.getAuthorThrow msg
-    n <- lift $ DB.getUserMultiplier author
-    lift $
-      Log.logDebug $
-        "generating " <> T.tshow n <> " echoes for Message: " <> T.tshow message_id
-    n `replicateM` TG.runMethod (TG.CopyMessage msg)
+  reactToMessage msg = do
+    settings <- Bot.getAuthorsSettings msg
+    let n = DB.getEchoMultiplier settings
+    Bot.echoMessageNTimes msg n
 
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
@@ -164,7 +161,7 @@ instance
           Log.logInfo $
             "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         lift $ DB.setUserMultiplier user n
-        pure <$> (TG.runMethod $ TG.AnswerCallbackQuery cq_id)
+        pure <$> TG.runMethod (TG.AnswerCallbackQuery cq_id)
       QDOther s ->
         throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
 
@@ -174,7 +171,10 @@ instance
     lift $ author & DB.getUserData & DB.orDefaultData
 
   echoMessageNTimes :: TG.Message  -> Int -> TG.TelegramT m [TG.Response]
-  echoMessageNTimes msg n = n `replicateM` TG.runMethod (TG.CopyMessage msg)
+  echoMessageNTimes msg n = do
+    lift $ Log.logDebug $ "generating " <> T.tshow n 
+      <> " echoes for Message: " <> T.tshow (TG.message_id msg)
+    n `replicateM` TG.runMethod (TG.CopyMessage msg)
 
 data QueryData
   = QDRepeat Int
