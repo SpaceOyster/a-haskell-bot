@@ -31,6 +31,7 @@ data BotDSL api ret
   | ReactToCommand (Command api) ([Response api] -> BotDSL api ret)
   | ReactToCallback (CallbackQuery api) ([Response api] -> BotDSL api ret)
   | GetAuthorsSettings (Message api) (DB.UserData -> BotDSL api ret)
+  | EchoMessageNTimes (Message api) Int ([Response api] -> BotDSL api ret)
   | Done ret
 
 instance Functor (BotDSL a) where
@@ -51,6 +52,7 @@ instance Monad (BotDSL a) where
       ReactToCommand c next -> ReactToCommand c $ next >=> mk
       ReactToCallback c next -> ReactToCallback c $ next >=> mk
       GetAuthorsSettings m next -> GetAuthorsSettings m $ next >=> mk
+      EchoMessageNTimes m n next -> EchoMessageNTimes m n $ next >=> mk
 
 andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
 andThen = (>>=)
@@ -104,6 +106,7 @@ class (Monad m) => EchoBotMonad m where
   reactToCallback :: CallbackQuery m -> m [Response m]
   execCommand :: BotCommand -> (Message m -> m (Response m))
   getAuthorsSettings :: Message m -> m DB.UserData
+  echoMessageNTimes :: Message m -> Int -> m [Response m]
 
 reactToUpdate :: forall m. EchoBotMonad m => Update m -> m [Response m]
 reactToUpdate update = do
@@ -127,6 +130,7 @@ interpret (ReactToMessage m next) = reactToMessage m >>= interpret . next
 interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
 interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
 interpret (GetAuthorsSettings m next) = getAuthorsSettings m >>= interpret . next
+interpret (EchoMessageNTimes m n next) = echoMessageNTimes m n >>= interpret . next
 interpret (Done ret) = pure ret
 
 fetchUpdates' :: BotDSL api [Update api]
