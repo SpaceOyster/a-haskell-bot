@@ -137,15 +137,6 @@ instance
           <> T.tshow peer_id
     pure <$> Bot.execCommand cmd msg
 
-  reactToMessage ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
-    VK.Message ->
-    VK.VkontakteT m [VK.Response]
-  reactToMessage msg = do
-    settings <- Bot.getAuthorsSettings msg
-    let n = DB.getEchoMultiplier settings
-    Bot.echoMessageNTimes msg n
-
   reactToCallback ::
     ( MonadThrow m,
       Log.MonadLog m,

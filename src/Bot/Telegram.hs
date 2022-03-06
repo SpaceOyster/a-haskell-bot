@@ -137,15 +137,6 @@ instance
         "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
     pure <$> Bot.execCommand cmd msg
 
-  reactToMessage ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
-    TG.Message ->
-    TG.TelegramT m [TG.Response]
-  reactToMessage msg = do
-    settings <- Bot.getAuthorsSettings msg
-    let n = DB.getEchoMultiplier settings
-    Bot.echoMessageNTimes msg n
-
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
