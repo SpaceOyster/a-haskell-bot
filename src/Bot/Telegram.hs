@@ -173,6 +173,9 @@ instance
     author <- TG.getAuthorThrow msg
     lift $ author & DB.getUserData & DB.orDefaultData
 
+  echoMessageNTimes :: TG.Message  -> Int -> TG.TelegramT m [TG.Response]
+  echoMessageNTimes msg n = n `replicateM` TG.runMethod (TG.CopyMessage msg)
+
 data QueryData
   = QDRepeat Int
   | QDOther T.Text
