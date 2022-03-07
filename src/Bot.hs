@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot where
@@ -113,17 +112,16 @@ reactToMessage msg = do
   let n = DB.getEchoMultiplier settings
   Bot.echoMessageNTimes msg n
 
-reactToUpdate :: forall m. EchoBotMonad m => Update m -> m [Response m]
+reactToUpdate :: EchoBotMonad m => Update m -> m [Response m]
 reactToUpdate update = do
-  qu <- qualifyUpdate @m update
+  qu <- qualifyUpdate update
   case qu of
     Bot.ECommand msg -> Bot.reactToCommand msg
     Bot.EMessage msg -> Bot.reactToMessage msg
     Bot.ECallback cq -> Bot.reactToCallback cq
 
 reactToUpdates :: EchoBotMonad m => [Update m] -> m [Response m]
-reactToUpdates updates = do
-  join <$> mapM reactToUpdate updates
+reactToUpdates updates = join <$> mapM reactToUpdate updates
 
 doBotThing :: EchoBotMonad m => m [Response m]
 doBotThing = forever (fetchUpdates >>= reactToUpdates)
