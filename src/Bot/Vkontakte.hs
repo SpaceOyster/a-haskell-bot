@@ -126,7 +126,7 @@ instance
     VK.Message ->
     VK.VkontakteT m [VK.Response]
   reactToCommand msg@VK.Message {msg_id, peer_id} = do
-    let cmd = getCommand msg
+    cmd <- getCommandThrow msg
     lift $
       Log.logDebug $
         "Got command"
@@ -183,8 +183,8 @@ instance A.FromJSON Payload where
     A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
       RepeatPayload <$> o A..: "repeat"
 
-getCommand :: VK.Message -> Bot.BotCommand
-getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
+getCommandThrow :: (MonadThrow m) => VK.Message -> m Bot.BotCommand
+getCommandThrow = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =

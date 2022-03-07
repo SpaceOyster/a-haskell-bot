@@ -90,16 +90,10 @@ instance
   qualifyUpdate :: (MonadThrow m) => TG.Update -> TG.TelegramT m (Bot.Entity (TG.TelegramT m))
   qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = pure $ Bot.ECallback cq
-    | Just msg <- message,
-      isCommandE msg =
-        pure $ Bot.ECommand msg
-    | Just msg <- message,
-      not (isCommandE msg) =
-        pure $ Bot.EMessage msg
-    | otherwise =
-        throwM $
-          Ex Priority.Info $
-            "Unknown Update Type. Update: " ++ show (TG.update_id u)
+    | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
+    | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
+    | otherwise = throwM $ Ex Priority.Info $
+            "Unknown Update Type. Update: " <> show (TG.update_id u)
 
   execCommand ::
     ( MonadThrow m,
@@ -183,7 +177,7 @@ qualifyQuery qstring =
 getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.BotCommand
 getCommandThrow msg = do
   t <- TG.getTextThrow msg
-  pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
+  Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
