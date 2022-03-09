@@ -1,13 +1,14 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE TypeApplications #-}
 
 module App.Monad where
 
-import App.Env (Env(..))
+import App.Env (Env (..))
 import qualified Bot.Replies as BR
-import Control.Monad.Catch (MonadThrow)
+import Control.Monad.Catch (MonadCatch, MonadThrow)
 import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Reader (MonadReader(..), ReaderT(..))
+import Control.Monad.Reader (MonadReader (..), ReaderT (..))
 import Data.Has (grab)
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP
@@ -19,17 +20,18 @@ import qualified UsersDB
 
 type AppEnv = Env App
 
-newtype App a =
-  App
-    { unApp :: ReaderT AppEnv IO a
-    }
-  deriving ( Functor
-           , Applicative
-           , Monad
-           , MonadIO
-           , MonadThrow
-           , MonadReader AppEnv
-           )
+newtype App a = App
+  { unApp :: ReaderT AppEnv IO a
+  }
+  deriving newtype
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadIO,
+      MonadThrow,
+      MonadCatch,
+      MonadReader AppEnv
+    )
 
 runApp :: AppEnv -> App a -> IO a
 runApp env = (`runReaderT` env) . unApp
