@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -31,9 +32,9 @@ module API.Vkontakte
   )
 where
 
-import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, lift, modify')
 import Control.Monad.Trans (MonadTrans (..))
+import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -54,11 +55,12 @@ data VKState = VKState
   deriving (Show)
 
 newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
-  deriving
+  deriving newtype
     ( Functor,
       Applicative,
       Monad,
       MonadThrow,
+      MonadCatch,
       MonadState VKState
     )
 
