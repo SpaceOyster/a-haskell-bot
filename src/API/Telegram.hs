@@ -1,3 +1,4 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -44,9 +45,9 @@ import API.Telegram.Types as Types
     getQDataThrow,
     getTextThrow,
   )
-import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, lift, put)
 import Control.Monad.Trans (MonadTrans (..))
+import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Data.Aeson.Extended (encode, object, throwDecode, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -60,11 +61,12 @@ data TGState = TGState
   }
 
 newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
-  deriving
+  deriving newtype
     ( Functor,
       Applicative,
       Monad,
       MonadThrow,
+      MonadCatch,
       MonadState TGState
     )
 
