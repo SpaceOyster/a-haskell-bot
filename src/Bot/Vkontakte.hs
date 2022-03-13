@@ -36,10 +36,10 @@ import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (MonadState, StateT, evalStateT, lift)
+import Control.Monad.State (evalStateT, lift)
 import qualified Data.Aeson as A
-import Data.Function((&))
 import qualified Data.Aeson.Types as A (parseMaybe)
+import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
@@ -161,16 +161,15 @@ instance
         throwM $ Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
-  getAuthorsSettings VK.Message{from_id} = do
-    let author = VK.User from_id 
+  getAuthorsSettings VK.Message {from_id} = do
+    let author = VK.User from_id
     lift $ author & DB.getUserData & DB.orDefaultData
 
-  echoMessageNTimes :: VK.Message  -> Int -> VK.VkontakteT m [VK.Response]
+  echoMessageNTimes :: VK.Message -> Int -> VK.VkontakteT m [VK.Response]
   echoMessageNTimes msg n = do
     lift $ Log.logDebug $ "generating " <> T.tshow n 
       <> " echoes for Message: " <> T.tshow (VK.msg_id msg)
     n `replicateM` VK.runMethod (VK.CopyMessage msg)
-
 
 newtype Payload
   = RepeatPayload Int

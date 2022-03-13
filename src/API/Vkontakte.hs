@@ -32,9 +32,9 @@ module API.Vkontakte
   )
 where
 
-import Control.Monad.State (MonadState (..), StateT, get, lift, modify')
-import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
+import Control.Monad.State (MonadState (..), StateT, get, modify')
+import Control.Monad.Trans (MonadTrans (..), lift)
 import qualified Data.Aeson.Extended as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
@@ -190,9 +190,9 @@ runMethod ::
   Method ->
   VkontakteT m Response
 runMethod m = do
-  state <- get
-  lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS state)
-  let req = mkRequest state m
+  st <- get
+  lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
+  let req = mkRequest st m
   res <- lift (HTTP.sendRequest req) >>= A.throwDecode
   lift $ Log.logDebug $ "Got response: " <> T.tshow res
   rememberLastUpdate res

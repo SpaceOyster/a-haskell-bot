@@ -34,11 +34,11 @@ import qualified API.Telegram as TG
     runMethod,
   )
 import qualified Bot
-import Data.Function ((&))
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (MonadState, StateT, evalStateT, lift)
+import Control.Monad.State (evalStateT, lift)
+import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
@@ -155,7 +155,7 @@ instance
     author <- TG.getAuthorThrow msg
     lift $ author & DB.getUserData & DB.orDefaultData
 
-  echoMessageNTimes :: TG.Message  -> Int -> TG.TelegramT m [TG.Response]
+  echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m [TG.Response]
   echoMessageNTimes msg n = do
     lift $ Log.logDebug $ "generating " <> T.tshow n 
       <> " echoes for Message: " <> T.tshow (TG.message_id msg)

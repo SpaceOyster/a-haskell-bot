@@ -45,9 +45,9 @@ import API.Telegram.Types as Types
     getQDataThrow,
     getTextThrow,
   )
-import Control.Monad.State (MonadState (..), StateT, get, lift, put)
-import Control.Monad.Trans (MonadTrans (..))
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
+import Control.Monad.State (MonadState (..), StateT, get, put)
+import Control.Monad.Trans (MonadTrans (..), lift)
 import Data.Aeson.Extended (encode, object, throwDecode, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -115,10 +115,10 @@ runMethod ::
   Method ->
   TelegramT m Response
 runMethod m = do
-  state <- get
+  st <- get
   lift $
-    Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate state)
-  let req = mkRequest state m
+    Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
+  let req = mkRequest st m
   res <- lift (HTTP.sendRequest req) >>= throwDecode
   lift $ Log.logDebug $ "Got response: " <> T.tshow res
   rememberLastUpdate res
