@@ -44,8 +44,8 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import Exceptions (BotException (..))
-import qualified Exceptions as Priority (Priority (..))
+import App.Error (BotException (..))
+import qualified App.Error as Priority (Priority (..))
 
 data Config = Config
   { key :: String,

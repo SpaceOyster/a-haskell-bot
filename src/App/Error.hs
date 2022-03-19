@@ -1,4 +1,4 @@
-module Exceptions where
+module App.Error where
 
 import Control.Monad.Catch (Exception(..))
 import Data.Typeable (Typeable)

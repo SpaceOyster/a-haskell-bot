@@ -6,8 +6,8 @@
 module Bot where
 
 import Bot.Replies as Bot
-import Exceptions as Ex (BotException(..))
-import qualified Exceptions as Priority (Priority (..))
+import App.Error as Ex (BotException(..))
+import qualified App.Error as Priority (Priority (..))
 import Control.Monad (ap, forM_, forever, join, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Function ((&))

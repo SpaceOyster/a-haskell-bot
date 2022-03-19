@@ -52,7 +52,7 @@ import Data.Aeson.Extended (encode, object, throwDecode, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
-import qualified Exceptions as Ex
+import qualified App.Error as Ex
 import qualified Network.URI.Extended as URI
 
 data TGState = TGState

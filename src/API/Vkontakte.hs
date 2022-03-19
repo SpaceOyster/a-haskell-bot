@@ -43,7 +43,7 @@ import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
-import qualified Exceptions as Ex
+import qualified App.Error as Ex
 import GHC.Generics (Generic)
 import qualified Network.URI.Extended as URI
 

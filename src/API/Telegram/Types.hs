@@ -39,7 +39,7 @@ import Data.Aeson.Types
   )
 import qualified Data.Hashable as H
 import qualified Data.Text as T
-import qualified Exceptions as Ex (BotException(..), Priority(..))
+import qualified App.Error as Ex (BotException(..), Priority(..))
 import GHC.Generics (Generic)
 
 data Update =

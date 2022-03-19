@@ -30,6 +30,7 @@ library
       API.Vkontakte
       App.Config
       App.Env
+      App.Error
       App.Monad
       Bot
       Bot.Replies
@@ -43,7 +44,6 @@ library
       Effects.HTTP
       Effects.Log
       Effects.UsersDB
-      Exceptions
       HTTP
       Logger
       Main
@@ -75,6 +75,7 @@ executable a-haskell-bot-exe
       API.Vkontakte
       App.Config
       App.Env
+      App.Error
       App.Monad
       Bot
       Bot.Replies
@@ -88,7 +89,6 @@ executable a-haskell-bot-exe
       Effects.HTTP
       Effects.Log
       Effects.UsersDB
-      Exceptions
       HTTP
       Logger
       Network.URI.Extended
