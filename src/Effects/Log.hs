@@ -23,7 +23,7 @@ instance A.FromJSON Priority where
         "info" -> pure Info
         "warning" -> pure Warning
         "error" -> pure Error
-        _ -> fail $ "Unknown verbosity: " ++ T.unpack t
+        _ -> fail $ "Unknown verbosity: " <> T.unpack t
 
 class Monad m =>
       MonadLog m

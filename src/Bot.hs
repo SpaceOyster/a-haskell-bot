@@ -7,7 +7,6 @@ module Bot where
 
 import Bot.Replies as Bot
 import App.Error as Ex (BotException(..))
-import qualified App.Error as Priority (Priority (..))
 import Control.Monad (ap, forM_, forever, join, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Function ((&))
@@ -77,7 +76,7 @@ parseCommand s =
     "start" -> pure Start
     "help" ->  pure Help
     "repeat" ->  pure Repeat
-    _ -> throwM $ Ex.Ex Priority.Info $ "Unknown Command: " <> show s
+    _ -> throwM $ Ex.Ex $ "Unknown Command: " <> show s
 
 isCommand :: T.Text -> Bool
 isCommand "" = False

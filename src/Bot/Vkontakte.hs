@@ -45,7 +45,7 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import qualified App.Error as Ex (BotException (..), Priority (..))
+import qualified App.Error as Ex (BotException (..))
 
 data Config = Config
   { key :: String,
@@ -158,7 +158,7 @@ instance
         lift $ DB.setUserMultiplier user n
         fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
       Nothing ->
-        throwM $ Ex.Ex Ex.Info $ "Unknown CallbackQuery type: " <> show payload
+        throwM $ Ex.Ex $ "Unknown CallbackQuery type: " <> show payload
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {from_id} = do

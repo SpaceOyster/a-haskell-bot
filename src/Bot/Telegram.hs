@@ -45,7 +45,6 @@ import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
 import App.Error (BotException (..))
-import qualified App.Error as Priority (Priority (..))
 
 data Config = Config
   { key :: String,
@@ -92,7 +91,7 @@ instance
     | Just cq <- callback_query = pure $ Bot.ECallback cq
     | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
     | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
-    | otherwise = throwM $ Ex Priority.Info $
+    | otherwise = throwM $ Ex $
             "Unknown Update Type. Update: " <> show (TG.update_id u)
 
   execCommand ::
@@ -148,7 +147,7 @@ instance
         lift $ DB.setUserMultiplier user n
         pure <$> TG.runMethod (TG.AnswerCallbackQuery cq_id)
       QDOther s ->
-        throwM $ Ex Priority.Info $ "Unknown CallbackQuery type: " ++ show s
+        throwM $ Ex $ "Unknown CallbackQuery type: " <> show s
 
   getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do

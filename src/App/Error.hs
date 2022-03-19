@@ -11,14 +11,14 @@ data Priority
     deriving (Eq, Enum, Show)
 
 data BotException
-    = Ex Priority !String
+    = Ex !String
     | URLParsing !String
     deriving (Typeable)
 
 instance Exception BotException
 
 instance Show BotException where
-    show (Ex priority description) = "[" ++ show priority ++ "] " ++ description
+    show (Ex description) =  "Ex: " <> description
     show (URLParsing description) = "URLParsing: " <> description
 
 data APIException
