@@ -32,6 +32,7 @@ import qualified API.Vkontakte as VK
     initiate,
     runMethod,
   )
+import qualified App.Error as Ex (BotException (..))
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
@@ -45,7 +46,6 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import qualified App.Error as Ex (BotException (..))
 
 data Config = Config
   { key :: String,
@@ -126,7 +126,7 @@ instance
     VK.Message ->
     VK.VkontakteT m [VK.Response]
   reactToCommand msg@VK.Message {msg_id, peer_id} = do
-    cmd <- getCommandThrow msg
+    let cmd = getCommand msg
     lift $
       Log.logDebug $
         "Got command"
@@ -182,8 +182,8 @@ instance A.FromJSON Payload where
     A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
       RepeatPayload <$> o A..: "repeat"
 
-getCommandThrow :: (MonadThrow m) => VK.Message -> m Bot.BotCommand
-getCommandThrow = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
+getCommand :: VK.Message -> Bot.BotCommand
+getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =

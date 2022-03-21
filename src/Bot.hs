@@ -5,8 +5,8 @@
 
 module Bot where
 
+import App.Error as Ex (BotException (..))
 import Bot.Replies as Bot
-import App.Error as Ex (BotException(..))
 import Control.Monad (ap, forM_, forever, join, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Function ((&))
@@ -70,13 +70,13 @@ describe Help = "Show help text"
 describe Repeat = "Set echo multiplier"
 describe UnknownCommand = "Unknown Command"
 
-parseCommand :: (MonadThrow m) => T.Text -> m BotCommand
+parseCommand :: T.Text -> BotCommand
 parseCommand s =
   case T.toLower s of
-    "start" -> pure Start
-    "help" ->  pure Help
-    "repeat" ->  pure Repeat
-    _ -> throwM $ Ex.Ex $ "Unknown Command: " <> show s
+    "start" -> Start
+    "help" -> Help
+    "repeat" -> Repeat
+    _ -> UnknownCommand
 
 isCommand :: T.Text -> Bool
 isCommand "" = False

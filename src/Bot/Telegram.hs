@@ -33,6 +33,7 @@ import qualified API.Telegram as TG
     initiate,
     runMethod,
   )
+import App.Error (BotException (..))
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
@@ -44,7 +45,6 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import App.Error (BotException (..))
 
 data Config = Config
   { key :: String,
@@ -124,7 +124,7 @@ instance
     TG.Message ->
     TG.TelegramT m [TG.Response]
   reactToCommand msg@TG.Message {message_id} = do
-    cmd <- getCommandThrow msg
+    let cmd = getCommand msg
     lift $
       Log.logDebug $
         "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
@@ -173,10 +173,11 @@ qualifyQuery qstring =
   where
     (qtype, qdata) = T.break (== '_') qstring
 
-getCommandThrow :: (MonadThrow m) => TG.Message -> m Bot.BotCommand
-getCommandThrow msg = do
-  t <- TG.getTextThrow msg
-  Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
+getCommand :: TG.Message -> Bot.BotCommand
+getCommand TG.Message {text} =
+  case text of
+    Nothing -> Bot.UnknownCommand
+    Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
