@@ -36,7 +36,6 @@ library
       Bot.Replies
       Bot.Telegram
       Bot.Vkontakte
-      Data.Aeson.Extended
       Data.Has
       Data.Hashable
       Data.Text.Extended
@@ -81,7 +80,6 @@ executable a-haskell-bot-exe
       Bot.Replies
       Bot.Telegram
       Bot.Vkontakte
-      Data.Aeson.Extended
       Data.Has
       Data.Hashable
       Data.Text.Extended
