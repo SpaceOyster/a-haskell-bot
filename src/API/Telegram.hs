@@ -45,14 +45,14 @@ import API.Telegram.Types as Types
     getQDataThrow,
     getTextThrow,
   )
+import qualified App.Error as Ex
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, put)
 import Control.Monad.Trans (MonadTrans (..), lift)
-import Data.Aeson.Extended (encode, object, throwDecode, (.=))
+import Data.Aeson (decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
-import qualified App.Error as Ex
 import qualified Network.URI.Extended as URI
 
 data TGState = TGState
@@ -116,12 +116,13 @@ runMethod ::
   TelegramT m Response
 runMethod m = do
   st <- get
-  lift $
-    Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
+  lift $ Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
   let req = mkRequest st m
-  res <- lift (HTTP.sendRequest req) >>= throwDecode
-  lift $ Log.logDebug $ "Got response: " <> T.tshow res
-  rememberLastUpdate res
+  json <- lift $ HTTP.sendRequest req
+  lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
+  maybe (ex json) rememberLastUpdate $ decode json
+  where
+    ex json = throwM $ Ex.apiUnexpectedResponse $ T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates
