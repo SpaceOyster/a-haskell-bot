@@ -32,6 +32,7 @@ module API.Vkontakte
   )
 where
 
+import qualified App.Error as Ex
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, modify')
 import Control.Monad.Trans (MonadTrans (..), lift)
@@ -43,7 +44,6 @@ import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
-import qualified App.Error as Ex
 import GHC.Generics (Generic)
 import qualified Network.URI.Extended as URI
 
@@ -193,9 +193,11 @@ runMethod m = do
   st <- get
   lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
   let req = mkRequest st m
-  res <- lift (HTTP.sendRequest req) >>= A.throwDecode
-  lift $ Log.logDebug $ "Got response: " <> T.tshow res
-  rememberLastUpdate res
+  json <- lift $ HTTP.sendRequest req
+  lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
+  maybe (ex json) rememberLastUpdate $ A.decode json
+  where
+    ex json = throwM $ Ex.apiUnexpectedResponse $ T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates
