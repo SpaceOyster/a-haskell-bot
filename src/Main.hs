@@ -14,7 +14,7 @@ import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
 import Control.Monad.Reader (runReaderT)
-import qualified Data.Aeson.Extended as A (throwDecode)
+import qualified Data.Aeson as A (decode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
@@ -47,7 +47,9 @@ readBotName str =
 readConfig :: FilePath -> IO AppConfig
 readConfig cfgPath = do
   json <- BL.readFile cfgPath
-  A.throwDecode json
+  case A.decode json of
+    Just cfg -> pure cfg
+    Nothing -> let str = "Unable to parse App Config\n" in putStrLn str >> fail str
 
 usagePrompt :: String
 usagePrompt =
