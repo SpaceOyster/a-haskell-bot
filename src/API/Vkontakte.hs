@@ -36,7 +36,7 @@ import qualified App.Error as Ex
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, modify')
 import Control.Monad.Trans (MonadTrans (..), lift)
-import qualified Data.Aeson.Extended as A
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Char (toLower)
 import Data.Foldable (asum)
@@ -168,14 +168,13 @@ getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VKState -> m PollServer
 getLongPollServer st = do
   let req = HTTP.GET $ apiMethod st "groups.getLongPollServer" mempty
   json <- HTTP.sendRequest req
-  res <- A.throwDecode json
-  case res of
-    PollInitError Error {error_code, error_msg} ->
+  case A.decode json of
+    Just (PollInitServer r) -> pure r
+    Just (PollInitError Error {error_code, error_msg}) ->
       throwM $
         Ex.APIRespondedWithError $
-          show error_code <> ": "
-            <> T.unpack error_msg
-    PollInitServer r -> pure r
+          show error_code <> ": " <> T.unpack error_msg
+    Nothing -> throwM $ Ex.apiUnexpectedResponse $ T.lazyDecodeUtf8 json
 
 rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => Response -> VkontakteT m Response
