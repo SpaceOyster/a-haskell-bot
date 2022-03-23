@@ -96,7 +96,7 @@ makeBaseURI Config {..} =
       <> "&group_id="
       <> show group_id
   where
-    ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte API URL"
+    ex = throwM $ Ex.apiError "Unable to parse Vkontakte API URL"
 
 data PollServer = PollServer
   { key :: T.Text,
@@ -162,7 +162,7 @@ makePollURI PollServer {key, server} = do
     T.unpack server <> "?act=a_check&key="
       <> T.unpack key
   where
-    ex = throwM $ Ex.URLParsing "Unable to parse Vkontakte Long Poll URL"
+    ex = throwM $ Ex.apiError "Unable to parse Vkontakte long poll URL"
 
 getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VKState -> m PollServer
 getLongPollServer st = do
@@ -172,8 +172,11 @@ getLongPollServer st = do
     Just (PollInitServer r) -> pure r
     Just (PollInitError Error {error_code, error_msg}) ->
       throwM $
-        Ex.APIRespondedWithError $
-          show error_code <> ": " <> T.unpack error_msg
+        Ex.apiError $
+          "Vkontakte poll server responded with error: "
+            <> T.tshow error_code
+            <> ": "
+            <> error_msg
     Nothing -> throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 rememberLastUpdate ::
@@ -369,8 +372,8 @@ copyMessage st Message {..} =
 
 extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
 extractUpdates (PollResponse poll) = pure $ updates poll
-extractUpdates (PollError c) = throwM $ Ex.VKPollError $ show c
-extractUpdates _ = throwM $ Ex.VKPollError "Expexted PollResponse"
+extractUpdates (PollError c) = throwM $ Ex.apiError $ "Vkontakte Poll Error: " <> T.tshow c
+extractUpdates _ = throwM $ Ex.apiError "Expexted poll response"
 
 data Keyboard = Keyboard
   { one_time :: Bool,

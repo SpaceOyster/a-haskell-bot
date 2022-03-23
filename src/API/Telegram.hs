@@ -87,7 +87,7 @@ makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
   maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
   where
-    ex = throwM $ Ex.URLParsing "Unable to parse Telegram API URL"
+    ex = throwM $ Ex.apiError "Unable to parse Telegram API URL"
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
