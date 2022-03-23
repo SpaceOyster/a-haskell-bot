@@ -5,7 +5,6 @@
 
 module Bot where
 
-import App.Error as Ex (BotException (..))
 import Bot.Replies as Bot
 import Control.Monad (ap, forM_, forever, join, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow (..))

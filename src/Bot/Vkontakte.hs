@@ -32,7 +32,7 @@ import qualified API.Vkontakte as VK
     initiate,
     runMethod,
   )
-import qualified App.Error as Ex (BotException (..))
+import qualified App.Error as Ex
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
@@ -158,7 +158,7 @@ instance
         lift $ DB.setUserMultiplier user n
         fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
       Nothing ->
-        throwM $ Ex.Ex $ "Unknown CallbackQuery type: " <> show payload
+        throwM $ Ex.botError $ "Unknown CallbackQuery type: " <> T.tshow payload
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {from_id} = do
@@ -167,8 +167,11 @@ instance
 
   echoMessageNTimes :: VK.Message -> Int -> VK.VkontakteT m [VK.Response]
   echoMessageNTimes msg n = do
-    lift $ Log.logDebug $ "generating " <> T.tshow n 
-      <> " echoes for Message: " <> T.tshow (VK.msg_id msg)
+    lift $
+      Log.logDebug $
+        "generating " <> T.tshow n
+          <> " echoes for Message: "
+          <> T.tshow (VK.msg_id msg)
     n `replicateM` VK.runMethod (VK.CopyMessage msg)
 
 newtype Payload
