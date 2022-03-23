@@ -43,10 +43,16 @@ instance Exception ParsingException
 instance Show ParsingException where
   show (ParsingException description) = "ParsingException: " <> description
 
-data AppError = NotFound | APIError Text
+data AppError
+  = NotFound
+  | APIError Text
+  | BotError Text
   deriving (Show)
 
 instance Exception AppError
 
 apiError :: Text -> AppError
 apiError = APIError
+
+botError :: Text -> AppError
+botError = BotError
