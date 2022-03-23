@@ -174,7 +174,7 @@ getLongPollServer st = do
       throwM $
         Ex.APIRespondedWithError $
           show error_code <> ": " <> T.unpack error_msg
-    Nothing -> throwM $ Ex.apiUnexpectedResponse $ T.lazyDecodeUtf8 json
+    Nothing -> throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => Response -> VkontakteT m Response
@@ -196,7 +196,7 @@ runMethod m = do
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) rememberLastUpdate $ A.decode json
   where
-    ex json = throwM $ Ex.apiUnexpectedResponse $ T.lazyDecodeUtf8 json
+    ex json = throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates

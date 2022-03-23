@@ -122,7 +122,7 @@ runMethod m = do
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) rememberLastUpdate $ decode json
   where
-    ex json = throwM $ Ex.apiUnexpectedResponse $ T.lazyDecodeUtf8 json
+    ex json = throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates
