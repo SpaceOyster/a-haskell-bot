@@ -14,6 +14,7 @@ data AppError
   = NotFound
   | APIError Text
   | BotError Text
+  | HTTPError Text
   deriving (Show)
 
 instance Exception AppError
@@ -23,3 +24,6 @@ apiError = APIError
 
 botError :: Text -> AppError
 botError = BotError
+
+httpError :: Text -> AppError
+httpError = HTTPError
