@@ -15,6 +15,7 @@ data AppError
   | APIError Text
   | BotError Text
   | HTTPError Text
+  | LoggerError Text
   deriving (Show)
 
 instance Exception AppError
@@ -27,3 +28,6 @@ botError = BotError
 
 httpError :: Text -> AppError
 httpError = HTTPError
+
+loggerError :: Text -> AppError
+loggerError = LoggerError
