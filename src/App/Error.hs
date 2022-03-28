@@ -16,6 +16,7 @@ data AppError
   | BotError Text
   | HTTPError Text
   | LoggerError Text
+  | DBError Text
   deriving (Show)
 
 instance Exception AppError
@@ -31,3 +32,6 @@ httpError = HTTPError
 
 loggerError :: Text -> AppError
 loggerError = LoggerError
+
+dbError :: Text -> AppError
+dbError = DBError
