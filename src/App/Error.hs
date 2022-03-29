@@ -11,8 +11,7 @@ data Priority
   deriving (Eq, Enum, Show)
 
 data AppError
-  = NotFound
-  | APIError Text
+  = APIError Text
   | BotError Text
   | HTTPError Text
   | LoggerError Text
