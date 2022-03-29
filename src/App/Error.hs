@@ -1,7 +1,7 @@
 module App.Error where
 
-import Control.Monad.Catch (Exception (..))
-import Data.Text.Extended
+import Control.Monad.Catch (Exception)
+import Data.Text
 
 data Priority
   = Debug
