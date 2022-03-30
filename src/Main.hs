@@ -13,9 +13,8 @@ import qualified Bot.Replies as Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
-import Control.Monad.Reader (runReaderT)
-import qualified Data.Aeson as A (decode)
 import Control.Monad.Catch (SomeException, catchAll)
+import qualified Data.Aeson as Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
@@ -49,14 +48,17 @@ readBotName str =
   case toLower <$> str of
     "telegram" -> pure Telegram
     "vkontakte" -> pure Vkontakte
-    _ -> fail "unknown bot type"
+    _ -> fail "Unknown bot type"
 
 readConfig :: FilePath -> IO AppConfig
 readConfig cfgPath = do
   json <- BL.readFile cfgPath
-  case A.decode json of
-    Just cfg -> pure cfg
-    Nothing -> let str = "Unable to parse App Config\n" in putStrLn str >> fail str
+  case Aeson.eitherDecode json of
+    Right cfg -> pure cfg
+    Left err -> putStrLn (failPrompt err) >> fail (failPrompt err)
+  where
+    failPrompt :: String -> String
+    failPrompt e = "Unable to parse App Config: \n\t" <> e <> "\n"
 
 usagePrompt :: String
 usagePrompt =
@@ -91,8 +93,6 @@ runWithApp AppConfig {..} bot =
               envUsersDB = hUsersDB,
               envBotReplies = Bot.fromRepliesM repliesM
             }
-    let app =
-          case bot of
-            Telegram -> TG.evalTelegramT telegram $ Bot.loop poll_period
-            Vkontakte -> VK.evalVkontakteT vkontakte $ Bot.loop poll_period
-    App.unApp app `runReaderT` env
+    let app Telegram = TG.evalTelegramT telegram $ Bot.loop poll_period
+        app Vkontakte = VK.evalVkontakteT vkontakte $ Bot.loop poll_period
+    App.runApp env $ app bot
