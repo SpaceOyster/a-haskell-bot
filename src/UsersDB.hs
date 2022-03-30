@@ -19,7 +19,6 @@ import qualified App.Error
 import Control.Monad.Catch
   ( MonadCatch,
     MonadThrow,
-    SomeException,
     catch,
     throwM,
   )
@@ -49,10 +48,10 @@ hGetUsersMap hDB = liftIO . readIORef $ state hDB
 hModifyUsersMap :: (MonadIO m) => Handle -> (UsersMap -> UsersMap) -> m ()
 hModifyUsersMap hDB f = liftIO $ state hDB `modifyIORef` f
 
-rethrow :: (MonadThrow m) => SomeException -> m a
+rethrow :: (MonadThrow m) => IOError -> m a
 rethrow = throwM . toDbError
 
-toDbError :: SomeException -> App.Error.AppError
+toDbError :: IOError -> App.Error.AppError
 toDbError = App.Error.dbError . T.tshow
 
 catchToRethrow :: (MonadCatch m) => m a -> m a
