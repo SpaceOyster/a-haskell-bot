@@ -19,7 +19,6 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
-import qualified Effects.Log as Log
 import qualified HTTP
 import qualified Logger
 import qualified System.Environment as E
@@ -78,22 +77,27 @@ usagePrompt =
     ]
 
 runWithApp :: AppConfig -> BotToRun -> IO ()
-runWithApp AppConfig {..} bot =
+runWithApp cfg@AppConfig {..} bot =
   Logger.withHandle logger $ \hLog -> do
     Logger.hLogInfo hLog "Initiating Main Bot loop"
     Logger.hLogInfo hLog $
       "API Polling period is "
         <> T.tshow (fromIntegral poll_period / 1000 :: Double)
         <> "ms"
-    hHTTP <- HTTP.new HTTP.Config {}
-    hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
-    let env =
-          App.Env
-            { envLogger = hLog,
-              envHTTP = hHTTP,
-              envUsersDB = hUsersDB,
-              envBotReplies = Bot.fromRepliesM repliesM
-            }
+    env <- newAppEnv hLog cfg
     let app Telegram = TG.evalTelegramT telegram $ Bot.loop poll_period
         app Vkontakte = VK.evalVkontakteT vkontakte $ Bot.loop poll_period
     App.runApp env $ app bot
+
+newAppEnv :: Logger.Handle -> AppConfig -> IO App.AppEnv
+newAppEnv hLog appCfg = do
+  let defaultEchoMultiplier = App.Config.defaultEchoMultiplier appCfg
+  hHTTP <- HTTP.new HTTP.Config {}
+  hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
+  pure $
+    App.Env
+      { envLogger = hLog,
+        envHTTP = hHTTP,
+        envUsersDB = hUsersDB,
+        envBotReplies = Bot.fromRepliesM $ repliesM appCfg
+      }
