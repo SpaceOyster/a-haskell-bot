@@ -1,10 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Logger.File (module Logger.Internal, withHandle, new) where
 
-import Control.Concurrent.MVar (newMVar, withMVar)
+import qualified App.Error
+import Control.Concurrent.MVar (MVar, newMVar, withMVar)
 import Control.Monad (when, (<=<))
-import Data.Text (Text)
+import Control.Monad.Catch (MonadThrow, catch, throwM)
+import Data.Text.Extended as T (Text, tshow)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Effects.Log as Log (Priority, Verbosity, composeMessage)
 import Logger.Internal
@@ -19,11 +22,23 @@ withHandle :: Log.Verbosity -> IO.FilePath -> (Handle -> IO ()) -> IO ()
 withHandle v path io = IO.withFile path IO.AppendMode (io <=< new v)
 
 new :: Log.Verbosity -> IO.Handle -> IO Handle
-new verbosity hFile = do
+new verbosity hFile = new_ verbosity hFile `catch` rethrow
+  where
+    rethrow :: MonadThrow m => IOError -> m a
+    rethrow = throwM . App.Error.loggerError . ("Logger Initiation Error: " <>) . T.tshow
+
+new_ :: Log.Verbosity -> IO.Handle -> IO Handle
+new_ verbosity hFile = do
   mutex <- newMVar ()
   let doLog :: Log.Priority -> Text -> IO ()
-      doLog priority t =
-        withMVar mutex $ \_ -> Log.composeMessage priority t >>= T.hPutStrLn hFile
+      doLog = doLog_ mutex hFile
   let getLog :: Log.Priority -> Text -> IO ()
-      getLog = \priority t -> when (priority >= verbosity) $ doLog priority t
+      getLog p t = when (p >= verbosity) (doLog p t) `catch` rethrow
   pure $ Handle {getLog}
+  where
+    rethrow :: MonadThrow m => IOError -> m a
+    rethrow = throwM . App.Error.loggerError . ("Logger failed to append to file: " <>) . T.tshow
+
+doLog_ :: MVar () -> IO.Handle -> Log.Priority -> Text -> IO ()
+doLog_ mutex hFile priority t =
+  withMVar mutex $ \_ -> Log.composeMessage priority t >>= T.hPutStrLn hFile
