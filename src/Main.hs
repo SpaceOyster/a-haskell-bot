@@ -15,6 +15,7 @@ import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
 import Control.Monad.Reader (runReaderT)
 import qualified Data.Aeson as A (decode)
+import Control.Monad.Catch (SomeException, catchAll)
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
@@ -30,12 +31,18 @@ data BotToRun
   | Vkontakte
 
 main :: IO ()
-main =
-  flip (<|>) (Exit.die usagePrompt) $ do
-    bot : cfgPath : _as <- E.getArgs
-    cfg <- readConfig cfgPath
-    botToRun <- readBotName bot
-    runWithApp cfg botToRun
+main = initiateAndRun <|> Exit.die usagePrompt
+  where
+    initiateAndRun :: IO ()
+    initiateAndRun = do
+      bot : cfgPath : _as <- E.getArgs
+      cfg <- readConfig cfgPath
+      botToRun <- readBotName bot
+      runWithApp cfg botToRun `catchAll` uncaughtExceptions
+    uncaughtExceptions :: SomeException -> IO ()
+    uncaughtExceptions e = do
+      putStrLn . ("Uncaught Exception: " <>) . show $ e
+      Exit.die "\nClosing application."
 
 readBotName :: (MonadFail m) => String -> m BotToRun
 readBotName str =
