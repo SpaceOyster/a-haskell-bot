@@ -30,10 +30,8 @@ new verbosity hFile = new_ verbosity hFile `catch` rethrow
 new_ :: Log.Verbosity -> IO.Handle -> IO Handle
 new_ verbosity hFile = do
   mutex <- newMVar ()
-  let doLog :: Log.Priority -> Text -> IO ()
-      doLog = doLog_ mutex hFile
   let getLog :: Log.Priority -> Text -> IO ()
-      getLog p t = when (p >= verbosity) (doLog p t) `catch` rethrow
+      getLog p t = getLog_ verbosity mutex hFile p t `catch` rethrow
   pure $ Handle {getLog}
   where
     rethrow :: MonadThrow m => IOError -> m a
@@ -42,3 +40,7 @@ new_ verbosity hFile = do
 doLog_ :: MVar () -> IO.Handle -> Log.Priority -> Text -> IO ()
 doLog_ mutex hFile priority t =
   withMVar mutex $ \_ -> Log.composeMessage priority t >>= T.hPutStrLn hFile
+
+getLog_ :: Log.Verbosity -> MVar () -> IO.Handle -> Log.Priority -> Text -> IO ()
+getLog_ verbosity mutex hFile p t =
+  when (p >= verbosity) (doLog_ mutex hFile p t)
