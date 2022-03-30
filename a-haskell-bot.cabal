@@ -45,6 +45,9 @@ library
       Effects.UsersDB
       HTTP
       Logger
+      Logger.File
+      Logger.Internal
+      Logger.StdOut
       Main
       Network.URI.Extended
       UsersDB
@@ -89,6 +92,9 @@ executable a-haskell-bot-exe
       Effects.UsersDB
       HTTP
       Logger
+      Logger.File
+      Logger.Internal
+      Logger.StdOut
       Network.URI.Extended
       UsersDB
       Paths_a_haskell_bot

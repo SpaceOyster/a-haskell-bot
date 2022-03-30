@@ -19,6 +19,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
+import qualified Effects.Log as Log
 import qualified HTTP
 import qualified Logger
 import qualified System.Environment as E
@@ -79,8 +80,8 @@ usagePrompt =
 runWithApp :: AppConfig -> BotToRun -> IO ()
 runWithApp AppConfig {..} bot =
   Logger.withHandle logger $ \hLog -> do
-    Logger.logInfo hLog "Initiating Main Bot loop"
-    Logger.logInfo hLog $
+    Logger.hLogInfo hLog "Initiating Main Bot loop"
+    Logger.hLogInfo hLog $
       "API Polling period is "
         <> T.tshow (fromIntegral poll_period / 1000 :: Double)
         <> "ms"

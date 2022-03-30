@@ -2,8 +2,11 @@
 
 module Effects.Log where
 
-import qualified Data.Aeson as A (FromJSON(..), withText)
-import qualified Data.Text.Extended as T (Text, toUpper, tshow, unpack)
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import qualified Data.Aeson as A (FromJSON (..), withText)
+import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
+import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
+import qualified Data.Time.LocalTime as Time (getZonedTime)
 
 data Priority
   = Debug
@@ -11,6 +14,8 @@ data Priority
   | Warning
   | Error
   deriving (Eq, Ord, Show)
+
+type Verbosity = Priority
 
 prioToText :: Priority -> T.Text
 prioToText = T.toUpper . T.tshow
@@ -25,16 +30,24 @@ instance A.FromJSON Priority where
         "error" -> pure Error
         _ -> fail $ "Unknown verbosity: " <> T.unpack t
 
-class Monad m =>
-      MonadLog m
+class
+  Monad m =>
+  MonadLog m
   where
   doLog :: Priority -> T.Text -> m ()
 
+timeStamp :: IO T.Text
+timeStamp = do
+  time <- Time.getZonedTime
+  pure . T.pack $ Time.formatTime Time.defaultTimeLocale "%b %d %X %Z" time
+
+composeMessage :: (MonadIO m) => Priority -> T.Text -> m T.Text
+composeMessage p t = do
+  ts <- liftIO timeStamp
+  pure $ ts <> " " <> prioToText p <> " " <> t
+
 logDebug, logInfo, logWarning, logError :: MonadLog m => T.Text -> m ()
 logDebug = doLog Debug
-
 logInfo = doLog Info
-
 logWarning = doLog Warning
-
 logError = doLog Error
