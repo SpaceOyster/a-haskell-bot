@@ -23,7 +23,7 @@ import Control.Applicative ((<|>))
 import Control.Concurrent.MVar (newMVar, withMVar)
 import Control.Exception (bracket)
 import Control.Monad (when, (<=<))
-import Control.Monad.Catch (MonadThrow, SomeException, catch, throwM)
+import Control.Monad.Catch (MonadThrow, catch, throwM)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import qualified Data.Aeson as A (FromJSON (..), withObject, (.!=), (.:?))
 import Data.Has (Has (..))
@@ -84,7 +84,7 @@ withHandle Config {..} io = maybeWith file io `catch` rethrow
     maybeWith :: Maybe IO.FilePath -> (Handle -> IO ()) -> IO ()
     maybeWith (Just f) = withFileLog verbosity f
     maybeWith Nothing = withStdoutLog verbosity
-    rethrow :: MonadThrow m => SomeException -> m a
+    rethrow :: MonadThrow m => IOError -> m a
     rethrow = throwM . App.Error.loggerError . T.tshow
 
 withFileLog :: Verbosity -> IO.FilePath -> (Handle -> IO ()) -> IO ()
