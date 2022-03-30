@@ -3,18 +3,15 @@
 
 module Logger (module Logger.Internal, Config (..), withHandle, withHandlePure) where
 
-import qualified App.Error
 import Control.Applicative ((<|>))
 import Control.Monad (when)
-import Control.Monad.Catch (MonadThrow, catch, throwM)
 import qualified Data.Aeson as Aeson (FromJSON (..), withObject, (.!=), (.:?))
 import Data.IORef (atomicModifyIORef, newIORef, readIORef)
-import qualified Data.Text.Extended as T (Text, tshow)
+import qualified Data.Text.Extended as T (Text)
 import qualified Effects.Log as Log (Priority (..), Verbosity)
 import qualified Logger.File
 import Logger.Internal
 import qualified Logger.StdOut
-import qualified System.IO as IO (FilePath)
 
 data Config = Config
   { file :: Maybe FilePath,
@@ -40,13 +37,9 @@ instance Aeson.FromJSON Config where
       pure $ Config {..}
 
 withHandle :: Config -> (Handle -> IO ()) -> IO ()
-withHandle Config {..} io = maybeWith file io `catch` rethrow
-  where
-    maybeWith :: Maybe IO.FilePath -> (Handle -> IO ()) -> IO ()
-    maybeWith (Just f) = Logger.File.withHandle verbosity f
-    maybeWith Nothing = Logger.StdOut.withHandle verbosity
-    rethrow :: MonadThrow m => IOError -> m a
-    rethrow = throwM . App.Error.loggerError . T.tshow
+withHandle Config {..} = case file of
+  Just f -> Logger.File.withHandle verbosity f
+  Nothing -> Logger.StdOut.withHandle verbosity
 
 withHandlePure :: Config -> (Handle -> IO a) -> IO (a, [(Log.Priority, T.Text)])
 withHandlePure Config {..} io = do
