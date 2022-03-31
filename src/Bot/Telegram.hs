@@ -29,7 +29,6 @@ import qualified API.Telegram as TG
     extractUpdates,
     getAuthorThrow,
     getQDataThrow,
-    getTextThrow,
     initiate,
     runMethod,
   )
