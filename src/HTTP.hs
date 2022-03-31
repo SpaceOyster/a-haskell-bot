@@ -10,8 +10,8 @@ module HTTP
   )
 where
 
-import App.Error as Err
-import Control.Monad.Catch (MonadThrow, catch, throwM)
+import App.Error (AppError, httpError)
+import Control.Monad.Catch (catch, throwM)
 import qualified Data.ByteString.Lazy.Char8 as L8
 import Data.Has (Has (..))
 import qualified Data.Text.Extended as T
@@ -43,19 +43,18 @@ instance Has Handle Handle where
 new :: Config -> IO Handle
 new _cfg = do
   manager <- H.newManager tlsManagerSettings
-  pure $ Handle {sendRequest = \req -> sendWith manager req `catch` rethrow}
+  pure $ Handle {sendRequest = \req -> sendWith manager req `catch` rethrow req}
   where
-    rethrow :: MonadThrow m => H.HttpException -> m a
-    rethrow = throwM . httpToAppError
+    rethrow req ex = throwM $ convertException req ex
+
+convertException :: HTTP.Request -> H.HttpException -> AppError
+convertException req ex = httpError $ "Failed to send request: " <> T.tshow req <> "\n\tWith Error: " <> T.tshow ex
 
 sendWith :: H.Manager -> HTTP.Request -> IO L8.ByteString
 sendWith manager req =
   case req of
     HTTP.GET uri -> get manager uri
     HTTP.POST uri body -> post manager uri body
-
-httpToAppError :: H.HttpException -> Err.AppError
-httpToAppError = HTTPError . T.tshow
 
 get :: H.Manager -> URI.URI -> IO L8.ByteString
 get manager uri = do
