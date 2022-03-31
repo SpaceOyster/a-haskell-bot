@@ -41,7 +41,14 @@ instance Has Handle Handle where
   obtain = id
 
 new :: Config -> IO Handle
-new _cfg = do
+new cfg = new_ cfg `catch` rethrow
+  where
+    rethrow = throwM . convert
+    convert :: IOError -> AppError
+    convert = httpError . ("Failed to initiate HTTP handler: " <>) . T.tshow
+
+new_ :: Config -> IO Handle
+new_ _cfg = do
   manager <- H.newManager tlsManagerSettings
   pure $ Handle {sendRequest = \req -> sendWith manager req `catch` rethrow req}
   where
