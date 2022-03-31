@@ -3,10 +3,10 @@
 
 module Logger.StdOut (module Logger.Internal, withHandle, new, close) where
 
-import qualified App.Error
+import App.Error (AppError, loggerError)
 import Control.Exception (bracket)
 import Control.Monad (when)
-import Control.Monad.Catch (MonadThrow, catch, throwM)
+import Control.Monad.Catch (catch, throwM)
 import Data.Text.Extended as T (Text, tshow)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Effects.Log as Log (Priority, Verbosity, composeMessage)
@@ -19,8 +19,9 @@ withHandle v = bracket (new v) close
 new :: Log.Verbosity -> IO Handle
 new verbosity = new_ verbosity `catch` rethrow
   where
-    rethrow :: MonadThrow m => IOError -> m a
-    rethrow = throwM . App.Error.loggerError . ("Logger Initiation Error: " <>) . T.tshow
+    rethrow = throwM . convert
+    convert :: IOError -> AppError
+    convert = loggerError . ("Logger Initiation Error: " <>) . T.tshow
 
 new_ :: Log.Verbosity -> IO Handle
 new_ v = do
@@ -29,8 +30,9 @@ new_ v = do
       getLog p t = when (p >= v) (doLog_ hStdout p t) `catch` rethrow
   pure $ Handle {getLog}
   where
-    rethrow :: MonadThrow m => IOError -> m a
-    rethrow = throwM . App.Error.loggerError . ("Logger failed to write message to StdOut: " <>) . T.tshow
+    rethrow = throwM . convert
+    convert :: IOError -> AppError
+    convert = loggerError . ("Logger failed to write message to StdOut: " <>) . T.tshow
 
 doLog_ :: IO.Handle -> Log.Priority -> Text -> IO ()
 doLog_ hStdout p t = Log.composeMessage p t >>= T.hPutStrLn hStdout
