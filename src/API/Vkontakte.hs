@@ -32,7 +32,7 @@ module API.Vkontakte
   )
 where
 
-import qualified App.Error as Ex
+import App.Error (apiError)
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, modify')
 import Control.Monad.Trans (MonadTrans (..), lift)
@@ -96,7 +96,7 @@ makeBaseURI Config {..} =
       <> "&group_id="
       <> show group_id
   where
-    ex = throwM $ Ex.apiError "Unable to parse Vkontakte API URL"
+    ex = throwM $ apiError "Unable to parse Vkontakte API URL"
 
 data PollServer = PollServer
   { key :: T.Text,
@@ -162,7 +162,7 @@ makePollURI PollServer {key, server} = do
     T.unpack server <> "?act=a_check&key="
       <> T.unpack key
   where
-    ex = throwM $ Ex.apiError "Unable to parse Vkontakte long poll URL"
+    ex = throwM $ apiError "Unable to parse Vkontakte long poll URL"
 
 getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VKState -> m PollServer
 getLongPollServer st = do
@@ -172,12 +172,12 @@ getLongPollServer st = do
     Just (PollInitServer r) -> pure r
     Just (PollInitError Error {error_code, error_msg}) ->
       throwM $
-        Ex.apiError $
+        apiError $
           "Vkontakte poll server responded with error: "
             <> T.tshow error_code
             <> ": "
             <> error_msg
-    Nothing -> throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
+    Nothing -> throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => Response -> VkontakteT m Response
@@ -199,7 +199,7 @@ runMethod m = do
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) rememberLastUpdate $ A.decode json
   where
-    ex json = throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
+    ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates
@@ -372,8 +372,8 @@ copyMessage st Message {..} =
 
 extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
 extractUpdates (PollResponse poll) = pure $ updates poll
-extractUpdates (PollError c) = throwM $ Ex.apiError $ "Vkontakte Poll Error: " <> T.tshow c
-extractUpdates _ = throwM $ Ex.apiError "Expexted poll response"
+extractUpdates (PollError c) = throwM $ apiError $ "Vkontakte Poll Error: " <> T.tshow c
+extractUpdates _ = throwM $ apiError "Expexted poll response"
 
 data Keyboard = Keyboard
   { one_time :: Bool,
@@ -459,6 +459,5 @@ instance A.FromJSON KeyboardActionType where
       _ -> fail "Unknown Action Type"
 
 sendKeyboard :: VKState -> Integer -> T.Text -> Keyboard -> HTTP.Request
-sendKeyboard st peer_id prompt keyboard =
-  sendMessageWith st peer_id prompt $
-    ["keyboard" URI.:=: L8.unpack $ A.encode keyboard]
+sendKeyboard st peer_id prompt kbd =
+  sendMessageWith st peer_id prompt ["keyboard" URI.:=: L8.unpack $ A.encode kbd]

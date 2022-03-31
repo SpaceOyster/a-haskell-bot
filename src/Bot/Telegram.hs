@@ -33,7 +33,7 @@ import qualified API.Telegram as TG
     initiate,
     runMethod,
   )
-import qualified App.Error as Ex
+import App.Error (botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
@@ -93,7 +93,7 @@ instance
     | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
     | otherwise =
         throwM $
-          Ex.botError $
+          botError $
             "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
   execCommand ::
@@ -149,7 +149,7 @@ instance
         lift $ DB.setUserMultiplier user n
         pure <$> TG.runMethod (TG.AnswerCallbackQuery cq_id)
       QDOther s ->
-        throwM $ Ex.botError $ "Unknown CallbackQuery type: " <> T.tshow s
+        throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow s
 
   getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do

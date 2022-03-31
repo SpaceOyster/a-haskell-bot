@@ -22,7 +22,7 @@ module API.Telegram.Types
   )
 where
 
-import qualified App.Error as Ex
+import App.Error (apiError)
 import Control.Monad (msum)
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Aeson
@@ -56,7 +56,7 @@ getMessageThrow Update {update_id, message} =
   case message of
     Just t -> pure t
     Nothing ->
-      throwM $ Ex.apiError $ "Update " <> T.tshow update_id <> " has no message"
+      throwM $ apiError $ "Update " <> T.tshow update_id <> " has no message"
 
 data Message = Message
   { message_id :: Integer,
@@ -72,14 +72,14 @@ getAuthorThrow Message {message_id, from} =
   case from of
     Just t -> pure t
     Nothing ->
-      throwM $ Ex.apiError $ "Message " <> T.tshow message_id <> " has no author"
+      throwM $ apiError $ "Message " <> T.tshow message_id <> " has no author"
 
 getTextThrow :: (MonadThrow m) => Message -> m T.Text
 getTextThrow Message {message_id, text} =
   case text of
     Just t -> pure t
     Nothing ->
-      throwM $ Ex.apiError $ "Message " <> T.tshow message_id <> " has no text"
+      throwM $ apiError $ "Message " <> T.tshow message_id <> " has no text"
 
 data BotCommand = BotCommand
   { command :: T.Text,
@@ -102,7 +102,7 @@ getQDataThrow CallbackQuery {cq_id, query_data} =
     Just d -> pure d
     Nothing ->
       throwM $
-        Ex.apiError $ "CallbackQuery " <> T.tshow cq_id <> " has no query data"
+        apiError $ "CallbackQuery " <> T.tshow cq_id <> " has no query data"
 
 instance FromJSON CallbackQuery where
   parseJSON =
@@ -183,6 +183,6 @@ extractUpdates :: (MonadThrow m) => Response -> m [Update]
 extractUpdates res =
   case res of
     ErrorResponse Error {error_code, description} ->
-      throwM $ Ex.apiError $ T.tshow error_code <> ": " <> description
+      throwM $ apiError $ T.tshow error_code <> ": " <> description
     UpdatesResponse us -> pure us
     _ -> pure []

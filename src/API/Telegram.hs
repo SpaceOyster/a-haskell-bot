@@ -45,7 +45,7 @@ import API.Telegram.Types as Types
     getQDataThrow,
     getTextThrow,
   )
-import qualified App.Error as Ex
+import App.Error (apiError)
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, put)
 import Control.Monad.Trans (MonadTrans (..), lift)
@@ -87,7 +87,7 @@ makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
   maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
   where
-    ex = throwM $ Ex.apiError "Unable to parse Telegram API URL"
+    ex = throwM $ apiError "Unable to parse Telegram API URL"
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
@@ -122,7 +122,7 @@ runMethod m = do
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) rememberLastUpdate $ decode json
   where
-    ex json = throwM $ Ex.apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
+    ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates

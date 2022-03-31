@@ -14,8 +14,7 @@ module UsersDB
   )
 where
 
-import App.Error (AppError)
-import qualified App.Error
+import App.Error (AppError, dbError)
 import Control.Monad.Catch
   ( MonadCatch,
     MonadThrow,
@@ -51,8 +50,8 @@ hModifyUsersMap hDB f = liftIO $ state hDB `modifyIORef` f
 rethrow :: (MonadThrow m) => IOError -> m a
 rethrow = throwM . toDbError
 
-toDbError :: IOError -> App.Error.AppError
-toDbError = App.Error.dbError . T.tshow
+toDbError :: IOError -> AppError
+toDbError = dbError . T.tshow
 
 catchToRethrow :: (MonadCatch m) => m a -> m a
 catchToRethrow = flip catch rethrow
