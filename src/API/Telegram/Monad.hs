@@ -6,7 +6,7 @@
 
 module API.Telegram.Monad where
 
-import API.Telegram.Types (Response (..), Update (..))
+import API.Telegram.Types (Response (..), Update (update_id))
 import App.Error (apiError)
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, put)
@@ -42,17 +42,16 @@ instance Semigroup TGState where
 instance Monoid TGState where
   mempty = TGState {lastUpdate = 0, apiURI = URI.nullURI}
 
-newStateFromM :: Response -> TGState -> Maybe TGState
-newStateFromM (UpdatesResponse us@(_x : _xs)) st =
-  let uid = (1 +) . update_id . last $ us
-   in Just $ st {lastUpdate = uid}
+newStateFromM :: [Update] -> TGState -> Maybe TGState
+newStateFromM us@(_ : _) st = Just $ st {lastUpdate = 1 + update_id (last us)}
 newStateFromM _ _ = Nothing
 
 rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => Response -> TelegramT m Response
-rememberLastUpdate res = do
+rememberLastUpdate res@(UpdatesResponse us) = do
   st <- get
-  mapM_ put (newStateFromM res st) >> pure res
+  mapM_ put (newStateFromM us st) >> pure res
+rememberLastUpdate res = pure res
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
