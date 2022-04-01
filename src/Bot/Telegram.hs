@@ -95,26 +95,6 @@ instance
           botError $
             "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
-  execCommand ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    Bot.BotCommand ->
-    (TG.Message -> TG.TelegramT m TG.Response)
-  execCommand cmd TG.Message {..} = do
-    let address = TG.chat_id chat
-    prompt <- lift $ Bot.repeatPrompt from
-    replies <- lift BR.getReplies
-    TG.runMethod $
-      case cmd of
-        Bot.Start -> TG.SendMessage address (Bot.greeting replies)
-        Bot.Help -> TG.SendMessage address (Bot.help replies)
-        Bot.Repeat -> TG.SendInlineKeyboard address prompt repeatKeyboard
-        Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown replies)
-
   reactToCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -129,7 +109,7 @@ instance
     lift $
       Log.logDebug $
         "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
-    pure <$> Bot.execCommand cmd msg
+    pure <$> execCommand cmd msg
 
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
@@ -163,6 +143,26 @@ instance
           <> " echoes for Message: "
           <> T.tshow (TG.message_id msg)
     n `replicateM` TG.runMethod (TG.CopyMessage msg)
+
+execCommand ::
+  ( MonadThrow m,
+    Log.MonadLog m,
+    HTTP.MonadHTTP m,
+    DB.MonadUsersDB m,
+    BR.MonadBotReplies m
+  ) =>
+  Bot.BotCommand ->
+  (TG.Message -> TG.TelegramT m TG.Response)
+execCommand cmd TG.Message {..} = do
+  let address = TG.chat_id chat
+  prompt <- lift $ Bot.repeatPrompt from
+  replies <- lift BR.getReplies
+  TG.runMethod $
+    case cmd of
+      Bot.Start -> TG.SendMessage address (Bot.greeting replies)
+      Bot.Help -> TG.SendMessage address (Bot.help replies)
+      Bot.Repeat -> TG.SendInlineKeyboard address prompt repeatKeyboard
+      Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown replies)
 
 data QueryData
   = QDRepeat Int

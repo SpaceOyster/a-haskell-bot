@@ -100,7 +100,6 @@ class (Monad m) => EchoBotMonad m where
   qualifyUpdate :: Update m -> m (Entity m)
   reactToCommand :: Command m -> m [Response m]
   reactToCallback :: CallbackQuery m -> m [Response m]
-  execCommand :: BotCommand -> (Message m -> m (Response m))
   getAuthorsSettings :: Message m -> m DB.UserData
   echoMessageNTimes :: Message m -> Int -> m [Response m]
 
