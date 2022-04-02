@@ -21,16 +21,20 @@ import qualified API.Telegram as TG
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
     Message (..),
-    Method (..),
     Response (..),
     TGState (..),
     TelegramT (..),
     Update (..),
-    extractUpdates,
     getAuthorThrow,
     getQDataThrow,
     initiate,
-    runMethod,
+  )
+import qualified API.Telegram.Methods as TG.Methods
+  ( answerCallbackQuery,
+    copyMessage,
+    getUpdates,
+    sendInlineKeyboard,
+    sendMessage,
   )
 import App.Error (botError)
 import qualified Bot
@@ -83,7 +87,7 @@ instance
     TG.TelegramT m [TG.Update]
   fetchUpdates = do
     lift $ Log.logInfo "fetching Updates"
-    TG.runMethod TG.GetUpdates >>= TG.extractUpdates
+    TG.Methods.getUpdates
 
   qualifyUpdate :: (MonadThrow m) => TG.Update -> TG.TelegramT m (Bot.Entity (TG.TelegramT m))
   qualifyUpdate u@TG.Update {message, callback_query}
@@ -126,7 +130,7 @@ instance
           Log.logInfo $
             "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         lift $ DB.setUserMultiplier user n
-        pure <$> TG.runMethod (TG.AnswerCallbackQuery cq_id)
+        pure <$> TG.Methods.answerCallbackQuery cq_id
       QDOther s ->
         throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow s
 
@@ -142,7 +146,7 @@ instance
         "generating " <> T.tshow n
           <> " echoes for Message: "
           <> T.tshow (TG.message_id msg)
-    n `replicateM` TG.runMethod (TG.CopyMessage msg)
+    n `replicateM` TG.Methods.copyMessage msg
 
 execCommand ::
   ( MonadThrow m,
@@ -157,12 +161,11 @@ execCommand cmd TG.Message {..} = do
   let address = TG.chat_id chat
   prompt <- lift $ Bot.repeatPrompt from
   replies <- lift BR.getReplies
-  TG.runMethod $
-    case cmd of
-      Bot.Start -> TG.SendMessage address (Bot.greeting replies)
-      Bot.Help -> TG.SendMessage address (Bot.help replies)
-      Bot.Repeat -> TG.SendInlineKeyboard address prompt repeatKeyboard
-      Bot.UnknownCommand -> TG.SendMessage address (Bot.unknown replies)
+  case cmd of
+    Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
+    Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
+    Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
+    Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
 
 data QueryData
   = QDRepeat Int
