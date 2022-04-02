@@ -22,8 +22,10 @@ import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Network.URI.Extended as URI
 
-apiMethod :: TGState -> String -> URI.URI
-apiMethod st method = apiURI st `URI.addPath` method
+apiMethod :: Monad m => String -> TelegramT m URI.URI
+apiMethod method = do
+  st <- get
+  pure $ apiURI st `URI.addPath` method
 
 runMethod ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
@@ -32,7 +34,7 @@ runMethod ::
 runMethod m = do
   st <- get
   lift $ Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
-  let req = mkRequest st m
+  req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) rememberLastUpdate $ decode json
@@ -47,15 +49,15 @@ data Method
   | SendInlineKeyboard Integer T.Text InlineKeyboardMarkup
   deriving (Show)
 
-mkRequest :: TGState -> Method -> HTTP.Request
-mkRequest st m =
+mkRequest :: Monad m => Method -> TelegramT m HTTP.Request
+mkRequest m =
   case m of
-    GetUpdates -> getUpdates_ st
-    AnswerCallbackQuery cqid -> answerCallbackQuery_ st cqid
-    CopyMessage msg -> copyMessage_ st msg
-    SendMessage chatId msg -> sendMessage_ st chatId msg
+    GetUpdates -> getUpdates_
+    AnswerCallbackQuery cqid -> answerCallbackQuery_ cqid
+    CopyMessage msg -> copyMessage_ msg
+    SendMessage chatId msg -> sendMessage_ chatId msg
     SendInlineKeyboard chatId prompt keyboard ->
-      sendInlineKeyboard_ st chatId prompt keyboard
+      sendInlineKeyboard_ chatId prompt keyboard
 
 getUpdates ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
@@ -89,36 +91,42 @@ sendInlineKeyboard ::
   TelegramT m Response
 sendInlineKeyboard chatId prompt keyboard = runMethod $ SendInlineKeyboard chatId prompt keyboard
 
-getUpdates_ :: TGState -> HTTP.Request
-getUpdates_ st =
+getUpdates_ :: Monad m => TelegramT m HTTP.Request
+getUpdates_ = do
+  st <- get
   let json =
         encode . object $ ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
-   in HTTP.POST (apiMethod st "getUpdates") json
+  uri <- apiMethod "getUpdates"
+  pure $ HTTP.POST uri json
 
-answerCallbackQuery_ :: TGState -> T.Text -> HTTP.Request
-answerCallbackQuery_ st cqid =
+answerCallbackQuery_ :: Monad m => T.Text -> TelegramT m HTTP.Request
+answerCallbackQuery_ cqid = do
   let json = encode . object $ ["callback_query_id" .= cqid]
-   in HTTP.POST (apiMethod st "answerCallbackQuery") json
+  uri <- apiMethod "answerCallbackQuery"
+  pure $ HTTP.POST uri json
 
-copyMessage_ :: TGState -> Message -> HTTP.Request
-copyMessage_ st Message {message_id, chat} =
+copyMessage_ :: Monad m => Message -> TelegramT m HTTP.Request
+copyMessage_ Message {message_id, chat} = do
   let json =
         encode . object $
           [ "chat_id" .= chat_id (chat :: Chat),
             "from_chat_id" .= chat_id (chat :: Chat),
             "message_id" .= message_id
           ]
-   in HTTP.POST (apiMethod st "copyMessage") json
+  uri <- apiMethod "copyMessage"
+  pure $ HTTP.POST uri json
 
-sendMessage_ :: TGState -> Integer -> T.Text -> HTTP.Request
-sendMessage_ st chatId msg =
+sendMessage_ :: Monad m => Integer -> T.Text -> TelegramT m HTTP.Request
+sendMessage_ chatId msg = do
   let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
-   in HTTP.POST (apiMethod st "sendMessage") json
+  uri <- apiMethod "sendMessage"
+  pure $ HTTP.POST uri json
 
 sendInlineKeyboard_ ::
-  TGState -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
-sendInlineKeyboard_ st chatId prompt keyboard =
+  Monad m => Integer -> T.Text -> InlineKeyboardMarkup -> TelegramT m HTTP.Request
+sendInlineKeyboard_ chatId prompt keyboard = do
   let json =
         encode . object $
           ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
-   in HTTP.POST (apiMethod st "sendMessage") json
+  uri <- apiMethod "sendMessage"
+  pure $ HTTP.POST uri json
