@@ -43,29 +43,58 @@ data Method
 mkRequest :: TGState -> Method -> HTTP.Request
 mkRequest st m =
   case m of
-    GetUpdates -> getUpdates st
-    AnswerCallbackQuery cqid -> answerCallbackQuery st cqid
-    CopyMessage msg -> copyMessage st msg
-    SendMessage chatId msg -> sendMessage st chatId msg
+    GetUpdates -> getUpdates_ st
+    AnswerCallbackQuery cqid -> answerCallbackQuery_ st cqid
+    CopyMessage msg -> copyMessage_ st msg
+    SendMessage chatId msg -> sendMessage_ st chatId msg
     SendInlineKeyboard chatId prompt keyboard ->
-      sendInlineKeyboard st chatId prompt keyboard
+      sendInlineKeyboard_ st chatId prompt keyboard
 
--- API method
-getUpdates :: TGState -> HTTP.Request
-getUpdates st =
+getUpdates ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  TelegramT m [Update]
+getUpdates = runMethod GetUpdates >>= extractUpdates
+
+answerCallbackQuery ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  T.Text ->
+  TelegramT m Response
+answerCallbackQuery = runMethod . AnswerCallbackQuery
+
+copyMessage ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  Message ->
+  TelegramT m Response
+copyMessage = runMethod . CopyMessage
+
+sendMessage ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  Integer ->
+  T.Text ->
+  TelegramT m Response
+sendMessage chatId = runMethod . SendMessage chatId
+
+sendInlineKeyboard ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  Integer ->
+  T.Text ->
+  InlineKeyboardMarkup ->
+  TelegramT m Response
+sendInlineKeyboard chatId prompt keyboard = runMethod $ SendInlineKeyboard chatId prompt keyboard
+
+getUpdates_ :: TGState -> HTTP.Request
+getUpdates_ st =
   let json =
         encode . object $ ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
    in HTTP.POST (apiMethod st "getUpdates") json
 
--- API method
-answerCallbackQuery :: TGState -> T.Text -> HTTP.Request
-answerCallbackQuery st cqid =
+answerCallbackQuery_ :: TGState -> T.Text -> HTTP.Request
+answerCallbackQuery_ st cqid =
   let json = encode . object $ ["callback_query_id" .= cqid]
    in HTTP.POST (apiMethod st "answerCallbackQuery") json
 
--- API method
-copyMessage :: TGState -> Message -> HTTP.Request
-copyMessage st Message {message_id, chat} =
+copyMessage_ :: TGState -> Message -> HTTP.Request
+copyMessage_ st Message {message_id, chat} =
   let json =
         encode . object $
           [ "chat_id" .= chat_id (chat :: Chat),
@@ -74,16 +103,14 @@ copyMessage st Message {message_id, chat} =
           ]
    in HTTP.POST (apiMethod st "copyMessage") json
 
--- API method
-sendMessage :: TGState -> Integer -> T.Text -> HTTP.Request
-sendMessage st chatId msg =
+sendMessage_ :: TGState -> Integer -> T.Text -> HTTP.Request
+sendMessage_ st chatId msg =
   let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
    in HTTP.POST (apiMethod st "sendMessage") json
 
--- API method
-sendInlineKeyboard ::
+sendInlineKeyboard_ ::
   TGState -> Integer -> T.Text -> InlineKeyboardMarkup -> HTTP.Request
-sendInlineKeyboard st chatId prompt keyboard =
+sendInlineKeyboard_ st chatId prompt keyboard =
   let json =
         encode . object $
           ["chat_id" .= chatId, "text" .= prompt, "reply_markup" .= keyboard]
