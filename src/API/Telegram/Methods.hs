@@ -1,7 +1,14 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module API.Telegram.Methods where
+module API.Telegram.Methods
+  ( answerCallbackQuery,
+    copyMessage,
+    getUpdates,
+    sendInlineKeyboard,
+    sendMessage,
+  )
+where
 
 import API.Telegram.Monad
 import API.Telegram.Types as Types
