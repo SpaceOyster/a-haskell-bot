@@ -32,8 +32,6 @@ runMethod ::
   Method ->
   TelegramT m Response
 runMethod m = do
-  st <- get
-  lift $ Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
@@ -49,7 +47,7 @@ data Method
   | SendInlineKeyboard Integer T.Text InlineKeyboardMarkup
   deriving (Show)
 
-mkRequest :: Monad m => Method -> TelegramT m HTTP.Request
+mkRequest :: Log.MonadLog m => Method -> TelegramT m HTTP.Request
 mkRequest m =
   case m of
     GetUpdates -> getUpdates_
@@ -91,9 +89,10 @@ sendInlineKeyboard ::
   TelegramT m Response
 sendInlineKeyboard chatId prompt keyboard = runMethod $ SendInlineKeyboard chatId prompt keyboard
 
-getUpdates_ :: Monad m => TelegramT m HTTP.Request
+getUpdates_ :: Log.MonadLog m => TelegramT m HTTP.Request
 getUpdates_ = do
   st <- get
+  lift $ Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
   let json =
         encode . object $ ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
   uri <- apiMethod "getUpdates"
