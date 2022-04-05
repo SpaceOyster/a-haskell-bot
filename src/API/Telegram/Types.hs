@@ -18,7 +18,6 @@ module API.Telegram.Types
     extractUpdates,
     getAuthorThrow,
     getQDataThrow,
-    getTextThrow,
   )
 where
 
