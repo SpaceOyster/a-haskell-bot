@@ -6,7 +6,7 @@
 
 module API.Telegram.Monad where
 
-import API.Telegram.Types (Response (..), Update (update_id))
+import API.Telegram.Types (Response (..), Response' (..), Update (update_id), fromResponse')
 import App.Error (apiError)
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, put)
@@ -52,6 +52,13 @@ rememberLastUpdate res@(UpdatesResponse us) = do
   st <- get
   mapM_ put (newStateFromM us st) >> pure res
 rememberLastUpdate res = pure res
+
+rememberLastUpdate' ::
+  (MonadThrow m, Log.MonadLog m) => Response' -> TelegramT m Response'
+rememberLastUpdate' res = do
+  us <- fromResponse' res
+  st <- get
+  mapM_ put (newStateFromM us st) >> pure res
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
