@@ -60,34 +60,35 @@ mkRequest m =
 getUpdates ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   TelegramT m [Update]
-getUpdates = runMethod GetUpdates >>= fromResponse'
+getUpdates = runMethod GetUpdates >>= fromResponse' >>= rememberLastUpdate'
 
 answerCallbackQuery ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   T.Text ->
-  TelegramT m Response'
-answerCallbackQuery = runMethod . AnswerCallbackQuery
+  TelegramT m Bool
+answerCallbackQuery c = runMethod (AnswerCallbackQuery c) >>= fromResponse'
 
 copyMessage ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Message ->
-  TelegramT m Response'
-copyMessage = runMethod . CopyMessage
+  TelegramT m Value
+copyMessage msg = runMethod (CopyMessage msg) >>= fromResponse'
 
 sendMessage ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Integer ->
   T.Text ->
-  TelegramT m Response'
-sendMessage chatId = runMethod . SendMessage chatId
+  TelegramT m Message
+sendMessage chatId text = runMethod (SendMessage chatId text) >>= fromResponse'
 
 sendInlineKeyboard ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Integer ->
   T.Text ->
   InlineKeyboardMarkup ->
-  TelegramT m Response'
-sendInlineKeyboard chatId prompt keyboard = runMethod $ SendInlineKeyboard chatId prompt keyboard
+  TelegramT m Message
+sendInlineKeyboard chatId prompt keyboard =
+  runMethod (SendInlineKeyboard chatId prompt keyboard) >>= fromResponse'
 
 getUpdates_ :: Log.MonadLog m => TelegramT m HTTP.Request
 getUpdates_ = do

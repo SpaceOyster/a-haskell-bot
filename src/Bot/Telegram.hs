@@ -113,8 +113,9 @@ instance
     let cmd = getCommand msg
     lift $
       Log.logDebug $
-        "got command" <> T.tshow cmd <> " in message id " <> T.tshow message_id
-    pure <$> execCommand cmd msg
+        "got command " <> T.tshow cmd <> " in message id " <> T.tshow message_id
+    execCommand cmd msg
+    pure []
 
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
@@ -131,7 +132,8 @@ instance
           Log.logInfo $
             "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         lift $ DB.setUserMultiplier user n
-        pure <$> TG.Methods.answerCallbackQuery cq_id
+        _ <- TG.Methods.answerCallbackQuery cq_id
+        pure []
       QDOther s ->
         throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow s
 
@@ -147,7 +149,8 @@ instance
         "generating " <> T.tshow n
           <> " echoes for Message: "
           <> T.tshow (TG.message_id msg)
-    n `replicateM` TG.Methods.copyMessage msg
+    _ <- n `replicateM` TG.Methods.copyMessage msg
+    pure []
 
 execCommand ::
   ( MonadThrow m,
@@ -157,16 +160,17 @@ execCommand ::
     BR.MonadBotReplies m
   ) =>
   Bot.BotCommand ->
-  (TG.Message -> TG.TelegramT m TG.Response')
+  (TG.Message -> TG.TelegramT m ())
 execCommand cmd TG.Message {..} = do
   let address = TG.chat_id chat
   prompt <- lift $ Bot.repeatPrompt from
   replies <- lift BR.getReplies
-  case cmd of
+  _ <- case cmd of
     Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
     Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
     Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
     Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
+  pure ()
 
 data QueryData
   = QDRepeat Int
