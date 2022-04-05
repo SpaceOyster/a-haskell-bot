@@ -30,12 +30,12 @@ apiMethod method = do
 runMethod ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   Method ->
-  TelegramT m Response
+  TelegramT m Response'
 runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
-  maybe (ex json) rememberLastUpdate $ decode json
+  maybe (ex json) rememberLastUpdate' $ decode json
   where
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
@@ -60,25 +60,25 @@ mkRequest m =
 getUpdates ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   TelegramT m [Update]
-getUpdates = runMethod GetUpdates >>= extractUpdates
+getUpdates = runMethod GetUpdates >>= fromResponse'
 
 answerCallbackQuery ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   T.Text ->
-  TelegramT m Response
+  TelegramT m Response'
 answerCallbackQuery = runMethod . AnswerCallbackQuery
 
 copyMessage ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Message ->
-  TelegramT m Response
+  TelegramT m Response'
 copyMessage = runMethod . CopyMessage
 
 sendMessage ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Integer ->
   T.Text ->
-  TelegramT m Response
+  TelegramT m Response'
 sendMessage chatId = runMethod . SendMessage chatId
 
 sendInlineKeyboard ::
@@ -86,7 +86,7 @@ sendInlineKeyboard ::
   Integer ->
   T.Text ->
   InlineKeyboardMarkup ->
-  TelegramT m Response
+  TelegramT m Response'
 sendInlineKeyboard chatId prompt keyboard = runMethod $ SendInlineKeyboard chatId prompt keyboard
 
 getUpdates_ :: Log.MonadLog m => TelegramT m HTTP.Request
