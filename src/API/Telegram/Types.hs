@@ -191,3 +191,15 @@ data Response'
   | ResponseWith' A.Value
   | UnknownResponse' A.Value
   deriving (Show)
+
+instance FromJSON Response' where
+  parseJSON =
+    withObject "Response" $ \o -> do
+      ok <- o .: "ok"
+      if not ok
+        then ErrorResponse' <$> parseJSON (A.Object o)
+        else
+          msum
+            [ ResponseWith' <$> o .: "result",
+              UnknownResponse' <$> parseJSON (A.Object o)
+            ]
