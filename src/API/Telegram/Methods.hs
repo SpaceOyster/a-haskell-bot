@@ -16,7 +16,7 @@ import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), get)
 import Control.Monad.Trans (MonadTrans (..), lift)
-import Data.Aeson (decode, encode, object, (.=))
+import Data.Aeson as A (Value (..), decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
@@ -35,7 +35,7 @@ runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
-  maybe (ex json) rememberLastUpdate' $ decode json
+  maybe (ex json) pure $ A.decode json
   where
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 

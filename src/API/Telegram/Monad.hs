@@ -54,11 +54,10 @@ rememberLastUpdate res@(UpdatesResponse us) = do
 rememberLastUpdate res = pure res
 
 rememberLastUpdate' ::
-  (MonadThrow m, Log.MonadLog m) => Response' -> TelegramT m Response'
-rememberLastUpdate' res = do
-  us <- fromResponse' res
+  (MonadThrow m, Log.MonadLog m) => [Update] -> TelegramT m [Update]
+rememberLastUpdate' us = do
   st <- get
-  mapM_ put (newStateFromM us st) >> pure res
+  mapM_ put (newStateFromM us st) >> pure us
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
