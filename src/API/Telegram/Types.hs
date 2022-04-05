@@ -33,7 +33,7 @@ import Data.Aeson
     (.:),
     (.:?),
   )
-import Data.Aeson.Types
+import qualified Data.Aeson.Types as A
   ( Options (fieldLabelModifier),
     Value (Object),
     defaultOptions,
@@ -42,20 +42,6 @@ import qualified Data.Hashable as H
 import qualified Data.Text as T
 import qualified Data.Text.Extended as T
 import GHC.Generics (Generic)
-
-data Update = Update
-  { update_id :: Integer,
-    message :: Maybe Message,
-    callback_query :: Maybe CallbackQuery
-  }
-  deriving (Show, Generic, FromJSON)
-
-getMessageThrow :: (MonadThrow m) => Update -> m Message
-getMessageThrow Update {update_id, message} =
-  case message of
-    Just t -> pure t
-    Nothing ->
-      throwM $ apiError $ "Update " <> T.tshow update_id <> " has no message"
 
 data Message = Message
   { message_id :: Integer,
@@ -119,10 +105,10 @@ newtype User = User
   deriving (Show, Generic)
 
 instance ToJSON User where
-  toJSON = genericToJSON defaultOptions {fieldLabelModifier = drop 5}
+  toJSON = genericToJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
 
 instance FromJSON User where
-  parseJSON = genericParseJSON defaultOptions {fieldLabelModifier = drop 5}
+  parseJSON = genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
 
 instance H.Hashable User where
   hash = user_id
@@ -146,6 +132,20 @@ data InlineKeyboardButton = InlineKeyboardButton
   }
   deriving (Show, Generic, ToJSON)
 
+data Update = Update
+  { update_id :: Integer,
+    message :: Maybe Message,
+    callback_query :: Maybe CallbackQuery
+  }
+  deriving (Show, Generic, FromJSON)
+
+getMessageThrow :: (MonadThrow m) => Update -> m Message
+getMessageThrow Update {update_id, message} =
+  case message of
+    Just t -> pure t
+    Nothing ->
+      throwM $ apiError $ "Update " <> T.tshow update_id <> " has no message"
+
 data Error = Error
   { error_code :: Int,
     description :: T.Text
@@ -158,7 +158,7 @@ data Response
   | AnswerCallbackResponse Bool
   | SendMessageResponse Message
   | CopyMessageResponse Integer
-  | UnknownResponse Value
+  | UnknownResponse A.Value
   deriving (Show)
 
 instance FromJSON Response where
@@ -166,7 +166,7 @@ instance FromJSON Response where
     withObject "Response" $ \o -> do
       ok <- o .: "ok"
       if not ok
-        then ErrorResponse <$> parseJSON (Object o)
+        then ErrorResponse <$> parseJSON (A.Object o)
         else
           msum
             [ UpdatesResponse <$> o .: "result",
@@ -185,3 +185,9 @@ extractUpdates res =
       throwM $ apiError $ T.tshow error_code <> ": " <> description
     UpdatesResponse us -> pure us
     _ -> pure []
+
+data Response'
+  = ErrorResponse' Error
+  | ResponseWith' A.Value
+  | UnknownResponse' A.Value
+  deriving (Show)
