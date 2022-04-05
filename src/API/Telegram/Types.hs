@@ -9,6 +9,7 @@ module API.Telegram.Types
   ( CallbackQuery (..),
     Error (..),
     Response (..),
+    Response' (..),
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
     Chat (..),
@@ -18,6 +19,7 @@ module API.Telegram.Types
     extractUpdates,
     getAuthorThrow,
     getQDataThrow,
+    fromResponse',
   )
 where
 
