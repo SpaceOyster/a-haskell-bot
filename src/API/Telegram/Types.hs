@@ -195,7 +195,6 @@ extractUpdates res =
 data Response'
   = ErrorResponse' Error
   | ResponseWith' A.Value
-  | UnknownResponse' A.Value
   deriving (Show)
 
 instance FromJSON Response' where
@@ -204,16 +203,11 @@ instance FromJSON Response' where
       ok <- o .: "ok"
       if not ok
         then ErrorResponse' <$> parseJSON (A.Object o)
-        else
-          msum
-            [ ResponseWith' <$> o .: "result",
-              UnknownResponse' <$> parseJSON (A.Object o)
-            ]
+        else ResponseWith' <$> o .: "result"
 
 fromResponse' :: (FromJSON a, MonadThrow m) => Response' -> m a
 fromResponse' (ErrorResponse' err) =
   throwM $ apiError $ T.tshow (error_code err) <> ": " <> description (err :: Error)
-fromResponse' (UnknownResponse' v) = throwM $ apiError $ "Got Unknown response: " <> T.lazyDecodeUtf8 (encode v)
 fromResponse' (ResponseWith' v) =
   case fromJSON v of
     A.Error e -> throwM $ apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
