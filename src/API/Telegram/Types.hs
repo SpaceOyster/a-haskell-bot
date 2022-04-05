@@ -27,6 +27,8 @@ import Control.Monad.Catch (MonadThrow (..))
 import Data.Aeson
   ( FromJSON (..),
     ToJSON (..),
+    encode,
+    fromJSON,
     genericParseJSON,
     genericToJSON,
     withObject,
@@ -35,8 +37,10 @@ import Data.Aeson
   )
 import qualified Data.Aeson.Types as A
   ( Options (fieldLabelModifier),
+    Result (..),
     Value (Object),
     defaultOptions,
+    parseMaybe,
   )
 import qualified Data.Hashable as H
 import qualified Data.Text as T
@@ -203,3 +207,12 @@ instance FromJSON Response' where
             [ ResponseWith' <$> o .: "result",
               UnknownResponse' <$> parseJSON (A.Object o)
             ]
+
+fromResponse' :: (FromJSON a, MonadThrow m) => Response' -> m a
+fromResponse' (ErrorResponse' err) =
+  throwM $ apiError $ T.tshow (error_code err) <> ": " <> description (err :: Error)
+fromResponse' (UnknownResponse' v) = throwM $ apiError $ "Got Unknown response: " <> T.lazyDecodeUtf8 (encode v)
+fromResponse' (ResponseWith' v) =
+  case fromJSON v of
+    A.Error e -> throwM $ apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
+    A.Success a -> pure a
