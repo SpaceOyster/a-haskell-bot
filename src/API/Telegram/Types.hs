@@ -8,7 +8,6 @@
 module API.Telegram.Types
   ( CallbackQuery (..),
     Error (..),
-    Response (..),
     Response' (..),
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
@@ -16,7 +15,6 @@ module API.Telegram.Types
     User (..),
     Message (..),
     Update (..),
-    extractUpdates,
     getAuthorThrow,
     getQDataThrow,
     fromResponse',
@@ -24,7 +22,6 @@ module API.Telegram.Types
 where
 
 import App.Error (apiError)
-import Control.Monad (msum)
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Aeson
   ( FromJSON (..),
@@ -42,7 +39,6 @@ import qualified Data.Aeson.Types as A
     Result (..),
     Value (Object),
     defaultOptions,
-    parseMaybe,
   )
 import qualified Data.Hashable as H
 import qualified Data.Text as T
@@ -158,40 +154,6 @@ data Error = Error
   }
   deriving (Show, Generic, FromJSON)
 
-data Response
-  = ErrorResponse Error
-  | UpdatesResponse [Update]
-  | AnswerCallbackResponse Bool
-  | SendMessageResponse Message
-  | CopyMessageResponse Integer
-  | UnknownResponse A.Value
-  deriving (Show)
-
-instance FromJSON Response where
-  parseJSON =
-    withObject "Response" $ \o -> do
-      ok <- o .: "ok"
-      if not ok
-        then ErrorResponse <$> parseJSON (A.Object o)
-        else
-          msum
-            [ UpdatesResponse <$> o .: "result",
-              AnswerCallbackResponse <$> o .: "result",
-              SendMessageResponse <$> o .: "result",
-              CopyMessageResponse <$> (o .: "result" >>= (.: "message_id")),
-              UnknownResponse <$> o .: "result"
-            ]
-
--- | Gets @[Updates]@ from @Respose@ if it was successful or throws error
--- otherwise
-extractUpdates :: (MonadThrow m) => Response -> m [Update]
-extractUpdates res =
-  case res of
-    ErrorResponse Error {error_code, description} ->
-      throwM $ apiError $ T.tshow error_code <> ": " <> description
-    UpdatesResponse us -> pure us
-    _ -> pure []
-
 data Response'
   = ErrorResponse' Error
   | ResponseWith' A.Value
@@ -210,5 +172,5 @@ fromResponse' (ErrorResponse' err) =
   throwM $ apiError $ T.tshow (error_code err) <> ": " <> description (err :: Error)
 fromResponse' (ResponseWith' v) =
   case fromJSON v of
-    A.Error e -> throwM $ apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
+    A.Error _ -> throwM $ apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
     A.Success a -> pure a

@@ -21,7 +21,6 @@ import qualified API.Telegram as TG
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
     Message (..),
-    Response (..),
     Response' (..),
     TGState (..),
     TelegramT (..),
