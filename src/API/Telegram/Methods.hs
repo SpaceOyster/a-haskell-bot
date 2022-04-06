@@ -78,7 +78,7 @@ runMethod m = do
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) fromResponse $ A.decode json
   where
-    ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
+    ex json = throwM . apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 mkRequest :: Log.MonadLog m => Method -> TelegramT m HTTP.Request
 mkRequest m =

@@ -95,9 +95,8 @@ instance
     | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
     | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
     | otherwise =
-        throwM $
-          botError $
-            "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
+        throwM . botError $
+          "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
   reactToCommand ::
     ( MonadThrow m,
@@ -134,7 +133,7 @@ instance
         _ <- TG.Methods.answerCallbackQuery cq_id
         pure []
       QDOther s ->
-        throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow s
+        throwM . botError $ "Unknown CallbackQuery type: " <> T.tshow s
 
   getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do

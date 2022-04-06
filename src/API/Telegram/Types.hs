@@ -59,14 +59,14 @@ getAuthorThrow Message {message_id, from} =
   case from of
     Just t -> pure t
     Nothing ->
-      throwM $ apiError $ "Message " <> T.tshow message_id <> " has no author"
+      throwM . apiError $ "Message " <> T.tshow message_id <> " has no author"
 
 getTextThrow :: (MonadThrow m) => Message -> m T.Text
 getTextThrow Message {message_id, text} =
   case text of
     Just t -> pure t
     Nothing ->
-      throwM $ apiError $ "Message " <> T.tshow message_id <> " has no text"
+      throwM . apiError $ "Message " <> T.tshow message_id <> " has no text"
 
 data BotCommand = BotCommand
   { command :: T.Text,
@@ -88,8 +88,8 @@ getQDataThrow CallbackQuery {cq_id, query_data} =
   case query_data of
     Just d -> pure d
     Nothing ->
-      throwM $
-        apiError $ "CallbackQuery " <> T.tshow cq_id <> " has no query data"
+      throwM . apiError $
+        "CallbackQuery " <> T.tshow cq_id <> " has no query data"
 
 instance FromJSON CallbackQuery where
   parseJSON =
@@ -146,7 +146,7 @@ getMessageThrow Update {update_id, message} =
   case message of
     Just t -> pure t
     Nothing ->
-      throwM $ apiError $ "Update " <> T.tshow update_id <> " has no message"
+      throwM . apiError $ "Update " <> T.tshow update_id <> " has no message"
 
 data Error = Error
   { error_code :: Int,
@@ -169,8 +169,13 @@ instance FromJSON Response where
 
 fromResponse :: (FromJSON a, MonadThrow m) => Response -> m a
 fromResponse (ErrorResponse err) =
-  throwM $ apiError $ T.tshow (error_code err) <> ": " <> description (err :: Error)
+  throwM . apiError $
+    "Responded with Error: " <> T.tshow (error_code err) <> ": "
+      <> description (err :: Error)
 fromResponse (ResponseWith v) =
   case fromJSON v of
-    A.Error _ -> throwM $ apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
     A.Success a -> pure a
+    A.Error _ ->
+      throwM . apiError $
+        "Responded with unexpected result: "
+          <> T.lazyDecodeUtf8 (encode v)
