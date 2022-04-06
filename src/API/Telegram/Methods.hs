@@ -16,28 +16,11 @@ import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), get)
 import Control.Monad.Trans (MonadTrans (..), lift)
-import Data.Aeson as A (Value (..), decode, encode, object, (.=))
+import Data.Aeson as A (FromJSON, Value (..), decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Network.URI.Extended as URI
-
-apiMethod :: Monad m => String -> TelegramT m URI.URI
-apiMethod method = do
-  st <- get
-  pure $ apiURI st `URI.addPath` method
-
-runMethod ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-  Method ->
-  TelegramT m Response'
-runMethod m = do
-  req <- mkRequest m
-  json <- lift $ HTTP.sendRequest req
-  lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
-  maybe (ex json) pure $ A.decode json
-  where
-    ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 data Method
   = GetUpdates
@@ -46,6 +29,56 @@ data Method
   | SendMessage Integer T.Text
   | SendInlineKeyboard Integer T.Text InlineKeyboardMarkup
   deriving (Show)
+
+getUpdates ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  TelegramT m [Update]
+getUpdates = runMethod GetUpdates >>= rememberLastUpdate'
+
+answerCallbackQuery ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  T.Text ->
+  TelegramT m Bool
+answerCallbackQuery c = runMethod (AnswerCallbackQuery c)
+
+copyMessage ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  Message ->
+  TelegramT m Value
+copyMessage msg = runMethod (CopyMessage msg)
+
+sendMessage ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  Integer ->
+  T.Text ->
+  TelegramT m Message
+sendMessage chatId text = runMethod (SendMessage chatId text)
+
+sendInlineKeyboard ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  Integer ->
+  T.Text ->
+  InlineKeyboardMarkup ->
+  TelegramT m Message
+sendInlineKeyboard chatId prompt keyboard =
+  runMethod (SendInlineKeyboard chatId prompt keyboard)
+
+apiMethod :: Monad m => String -> TelegramT m URI.URI
+apiMethod method = do
+  st <- get
+  pure $ apiURI st `URI.addPath` method
+
+runMethod ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, A.FromJSON a) =>
+  Method ->
+  TelegramT m a
+runMethod m = do
+  req <- mkRequest m
+  json <- lift $ HTTP.sendRequest req
+  lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
+  maybe (ex json) fromResponse' $ A.decode json
+  where
+    ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 mkRequest :: Log.MonadLog m => Method -> TelegramT m HTTP.Request
 mkRequest m =
@@ -56,39 +89,6 @@ mkRequest m =
     SendMessage chatId msg -> sendMessage_ chatId msg
     SendInlineKeyboard chatId prompt keyboard ->
       sendInlineKeyboard_ chatId prompt keyboard
-
-getUpdates ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-  TelegramT m [Update]
-getUpdates = runMethod GetUpdates >>= fromResponse' >>= rememberLastUpdate'
-
-answerCallbackQuery ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
-  T.Text ->
-  TelegramT m Bool
-answerCallbackQuery c = runMethod (AnswerCallbackQuery c) >>= fromResponse'
-
-copyMessage ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
-  Message ->
-  TelegramT m Value
-copyMessage msg = runMethod (CopyMessage msg) >>= fromResponse'
-
-sendMessage ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
-  Integer ->
-  T.Text ->
-  TelegramT m Message
-sendMessage chatId text = runMethod (SendMessage chatId text) >>= fromResponse'
-
-sendInlineKeyboard ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
-  Integer ->
-  T.Text ->
-  InlineKeyboardMarkup ->
-  TelegramT m Message
-sendInlineKeyboard chatId prompt keyboard =
-  runMethod (SendInlineKeyboard chatId prompt keyboard) >>= fromResponse'
 
 getUpdates_ :: Log.MonadLog m => TelegramT m HTTP.Request
 getUpdates_ = do
