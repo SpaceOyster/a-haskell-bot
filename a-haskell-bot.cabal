@@ -30,6 +30,9 @@ library
       API.Telegram.Monad
       API.Telegram.Types
       API.Vkontakte
+      API.Vkontakte.Methods
+      API.Vkontakte.Monad
+      API.Vkontakte.Types
       App.Config
       App.Env
       App.Error
@@ -79,6 +82,9 @@ executable a-haskell-bot-exe
       API.Telegram.Monad
       API.Telegram.Types
       API.Vkontakte
+      API.Vkontakte.Methods
+      API.Vkontakte.Monad
+      API.Vkontakte.Types
       App.Config
       App.Env
       App.Error
