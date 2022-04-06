@@ -8,7 +8,7 @@
 module API.Telegram.Types
   ( CallbackQuery (..),
     Error (..),
-    Response' (..),
+    Response (..),
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
     Chat (..),
@@ -17,7 +17,7 @@ module API.Telegram.Types
     Update (..),
     getAuthorThrow,
     getQDataThrow,
-    fromResponse',
+    fromResponse,
   )
 where
 
@@ -154,23 +154,23 @@ data Error = Error
   }
   deriving (Show, Generic, FromJSON)
 
-data Response'
-  = ErrorResponse' Error
-  | ResponseWith' A.Value
+data Response
+  = ErrorResponse Error
+  | ResponseWith A.Value
   deriving (Show)
 
-instance FromJSON Response' where
+instance FromJSON Response where
   parseJSON =
     withObject "Response" $ \o -> do
       ok <- o .: "ok"
       if not ok
-        then ErrorResponse' <$> parseJSON (A.Object o)
-        else ResponseWith' <$> o .: "result"
+        then ErrorResponse <$> parseJSON (A.Object o)
+        else ResponseWith <$> o .: "result"
 
-fromResponse' :: (FromJSON a, MonadThrow m) => Response' -> m a
-fromResponse' (ErrorResponse' err) =
+fromResponse :: (FromJSON a, MonadThrow m) => Response -> m a
+fromResponse (ErrorResponse err) =
   throwM $ apiError $ T.tshow (error_code err) <> ": " <> description (err :: Error)
-fromResponse' (ResponseWith' v) =
+fromResponse (ResponseWith v) =
   case fromJSON v of
     A.Error _ -> throwM $ apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
     A.Success a -> pure a

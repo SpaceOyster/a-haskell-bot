@@ -46,9 +46,9 @@ newStateFromM :: [Update] -> TGState -> Maybe TGState
 newStateFromM us@(_ : _) st = Just $ st {lastUpdate = 1 + update_id (last us)}
 newStateFromM _ _ = Nothing
 
-rememberLastUpdate' ::
+rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => [Update] -> TelegramT m [Update]
-rememberLastUpdate' us = do
+rememberLastUpdate us = do
   st <- get
   mapM_ put (newStateFromM us st) >> pure us
 

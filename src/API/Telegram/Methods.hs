@@ -33,7 +33,7 @@ data Method
 getUpdates ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   TelegramT m [Update]
-getUpdates = runMethod GetUpdates >>= rememberLastUpdate'
+getUpdates = runMethod GetUpdates >>= rememberLastUpdate
 
 answerCallbackQuery ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
@@ -76,7 +76,7 @@ runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
-  maybe (ex json) fromResponse' $ A.decode json
+  maybe (ex json) fromResponse $ A.decode json
   where
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 

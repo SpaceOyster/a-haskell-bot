@@ -21,7 +21,7 @@ import qualified API.Telegram as TG
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
     Message (..),
-    Response' (..),
+    Response (..),
     TGState (..),
     TelegramT (..),
     Update (..),
@@ -77,7 +77,7 @@ instance
   Bot.EchoBotMonad (TG.TelegramT m)
   where
   type Update (TG.TelegramT m) = TG.Update
-  type Response (TG.TelegramT m) = TG.Response'
+  type Response (TG.TelegramT m) = TG.Response
   type Message (TG.TelegramT m) = TG.Message
   type Command (TG.TelegramT m) = TG.Message
   type CallbackQuery (TG.TelegramT m) = TG.CallbackQuery
@@ -107,7 +107,7 @@ instance
       BR.MonadBotReplies m
     ) =>
     TG.Message ->
-    TG.TelegramT m [TG.Response']
+    TG.TelegramT m [TG.Response]
   reactToCommand msg@TG.Message {message_id} = do
     let cmd = getCommand msg
     lift $
@@ -119,7 +119,7 @@ instance
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
-    TG.TelegramT m [TG.Response']
+    TG.TelegramT m [TG.Response]
   reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
     lift $
       Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
@@ -141,7 +141,7 @@ instance
     author <- TG.getAuthorThrow msg
     lift $ author & DB.getUserData & DB.orDefaultData
 
-  echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m [TG.Response']
+  echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m [TG.Response]
   echoMessageNTimes msg n = do
     lift $
       Log.logDebug $
