@@ -37,7 +37,7 @@ import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (evalStateT, lift)
+import Control.Monad.State (evalStateT, lift, put)
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
@@ -57,15 +57,16 @@ data Config = Config
   deriving (Show)
 
 evalVkontakteT :: (Monad m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VK.VkontakteT m a -> m a
-evalVkontakteT cfg t = do
-  st <- initiate cfg
-  evalStateT (VK.unVkontakteT t) st
+evalVkontakteT cfg t = flip evalStateT mempty $
+  VK.unVkontakteT $ do
+    st <- initiate cfg
+    put st >> t
 
 initiate ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> m VK.VKState
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VK.VkontakteT m VK.VKState
 initiate cfg@Config {..} = do
-  Log.logInfo "Initiating Vkontakte Bot"
-  Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
+  lift $ Log.logInfo "Initiating Vkontakte Bot"
+  lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.initiate VK.Config {..}
 
 instance
