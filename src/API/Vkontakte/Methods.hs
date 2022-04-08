@@ -39,8 +39,7 @@ runMethod m = do
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 data Method
-  = GetUpdates
-  | SendMessageEventAnswer CallbackEvent T.Text
+  = SendMessageEventAnswer CallbackEvent T.Text
   | SendTextMessage Integer T.Text
   | CopyMessage Message
   | SendKeyboard Integer T.Text Keyboard
@@ -49,7 +48,6 @@ data Method
 mkRequest :: (Monad m) => VKState -> Method -> VkontakteT m HTTP.Request
 mkRequest st m =
   case m of
-    GetUpdates -> getUpdates_ st
     SendMessageEventAnswer ce prompt -> sendMessageEventAnswer_ st ce prompt
     SendTextMessage peer_id text -> sendTextMessage_ st peer_id text
     CopyMessage msg -> copyMessage_ st msg
