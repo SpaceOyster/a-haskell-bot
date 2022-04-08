@@ -3,7 +3,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module API.Vkontakte.Methods where
+module API.Vkontakte.Methods
+  ( getUpdates,
+    sendMessageEventAnswer,
+    sendTextMessage,
+    copyMessage,
+    sendKeyboard,
+  )
+where
 
 import API.Vkontakte.Monad
 import API.Vkontakte.Types

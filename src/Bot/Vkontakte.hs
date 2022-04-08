@@ -23,15 +23,13 @@ import qualified API.Vkontakte as VK
     KeyboardActionType (..),
     KeyboardButton (..),
     Message (..),
-    Method (..),
     Response (..),
     User (..),
     VKState (..),
     VkontakteT (..),
-    extractUpdates,
     initiate,
-    runMethod,
   )
+import API.Vkontakte.Methods as VK.Methods
 import App.Error (botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
@@ -89,7 +87,7 @@ instance
     VK.VkontakteT m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
-    VK.runMethod VK.GetUpdates >>= VK.extractUpdates
+    VK.Methods.getUpdates
 
   qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> VK.VkontakteT m (Bot.Entity (VK.VkontakteT m))
   qualifyUpdate (VK.MessageNew m)
@@ -137,7 +135,7 @@ instance
             "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         prompt <- lift $ BR.getReply Bot.settingsSaved
         lift $ DB.setUserMultiplier user n
-        fmap (: []) . VK.runMethod $ VK.SendMessageEventAnswer cq prompt
+        (: []) <$> VK.Methods.sendMessageEventAnswer cq prompt
       Nothing ->
         throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow payload
 
@@ -153,7 +151,7 @@ instance
         "generating " <> T.tshow n
           <> " echoes for Message: "
           <> T.tshow (VK.msg_id msg)
-    n `replicateM` VK.runMethod (VK.CopyMessage msg)
+    n `replicateM` VK.Methods.copyMessage msg
 
 execCommand ::
   ( MonadThrow m,
@@ -168,12 +166,11 @@ execCommand cmd VK.Message {..} = do
   let address = peer_id
   prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User from_id
   replies <- lift BR.getReplies
-  VK.runMethod $
-    case cmd of
-      Bot.Start -> VK.SendTextMessage address (Bot.greeting replies)
-      Bot.Help -> VK.SendTextMessage address (Bot.help replies)
-      Bot.Repeat -> VK.SendKeyboard address prompt repeatKeyboard
-      Bot.UnknownCommand -> VK.SendTextMessage address (Bot.unknown replies)
+  case cmd of
+    Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
+    Bot.Help -> VK.Methods.sendTextMessage address (Bot.help replies)
+    Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
+    Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
 
 newtype Payload
   = RepeatPayload Int
