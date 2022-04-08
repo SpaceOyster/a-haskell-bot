@@ -56,18 +56,13 @@ instance A.FromJSON Message where
 
 data MediaDoc = MediaDoc
   { mdoc_id :: Integer,
-    owner_id :: Integer,
-    access_key :: Maybe T.Text
+    mdoc_owner_id :: Integer,
+    mdoc_access_key :: Maybe T.Text
   }
-  deriving (Show)
+  deriving (Show, Generic)
 
 instance A.FromJSON MediaDoc where
-  parseJSON =
-    A.withObject "MediaDoc" $ \o -> do
-      mdoc_id <- o A..: "id"
-      owner_id <- o A..: "owner_id"
-      access_key <- o A..: "access_key"
-      pure $ MediaDoc {..}
+  parseJSON = A.genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
 
 data Sticker = Sticker
   { product_id :: Integer,
@@ -108,8 +103,8 @@ attachmentToQuery a =
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
-      show owner_id <> "_" <> show mdoc_id
-        <> maybe "" ('_' :) (T.unpack <$> access_key)
+      show mdoc_owner_id <> "_" <> show mdoc_id
+        <> maybe "" ('_' :) (T.unpack <$> mdoc_access_key)
 
 data CallbackEvent = CallbackEvent
   { user_id :: Integer,
