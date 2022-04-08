@@ -31,7 +31,6 @@ runMethod ::
   VkontakteT m Response
 runMethod m = do
   st <- get
-  lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
   req <- mkRequest st m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
@@ -58,7 +57,16 @@ mkRequest st m =
       sendKeyboard_ st peer_id prompt keyboard
 
 getUpdates :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => VkontakteT m [GroupEvent]
-getUpdates = runMethod GetUpdates >>= extractUpdates
+getUpdates = do
+  st <- get
+  lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
+  req <- getUpdates_ st
+  json <- lift $ HTTP.sendRequest req
+  lift $ Log.logDebug $ "Got response from Poll server: " <> T.lazyDecodeUtf8 json
+  res <- maybe (ex json) rememberLastUpdate $ A.decode json
+  extractUpdates res
+  where
+    ex json = throwM $ apiError $ "Unexpected Poll response: " <> T.lazyDecodeUtf8 json
 
 sendMessageEventAnswer :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => CallbackEvent -> T.Text -> VkontakteT m Response
 sendMessageEventAnswer cbE prompt = runMethod $ SendMessageEventAnswer cbE prompt
