@@ -33,7 +33,7 @@ runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
-  maybe (ex json) rememberLastUpdate $ A.decode json
+  maybe (ex json) pure $ A.decode json
   where
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
