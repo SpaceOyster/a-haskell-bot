@@ -157,7 +157,7 @@ data ButtonColor
 instance A.ToJSON ButtonColor where
   toJSON = A.genericToJSON options
     where
-      options = A.defaultOptions {A.constructorTagModifier = fmap toLower} -- TODO do better
+      options = A.defaultOptions {A.constructorTagModifier = fmap toLower}
 
 instance A.FromJSON ButtonColor where
   parseJSON =
@@ -170,31 +170,19 @@ instance A.FromJSON ButtonColor where
 
 data KeyboardAction = KeyboardAction
   { action_type :: KeyboardActionType,
-    label :: Maybe T.Text,
-    payload :: Maybe A.Value,
-    link :: Maybe T.Text
+    action_label :: Maybe T.Text,
+    action_payload :: Maybe A.Value,
+    action_link :: Maybe T.Text
   }
   deriving (Show, Generic)
 
 instance A.ToJSON KeyboardAction where
-  toJSON KeyboardAction {..} =
-    A.object $
-      filter
-        ((/= A.Null) . snd) -- TODO do better
-        [ "type" A..= action_type,
-          "label" A..= label,
-          "payload" A..= payload,
-          "link" A..= link
-        ]
+  toJSON = A.genericToJSON options
+    where
+      options = A.defaultOptions {A.fieldLabelModifier = drop 7, A.omitNothingFields = True}
 
 instance A.FromJSON KeyboardAction where
-  parseJSON =
-    A.withObject "FromJSON API.Vkontakte.KeyboardAction" $ \o -> do
-      action_type <- o A..: "type"
-      label <- o A..:? "label"
-      payload <- o A..:? "payload"
-      link <- o A..:? "link"
-      pure KeyboardAction {..}
+  parseJSON = A.genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 7}
 
 data KeyboardActionType
   = Text
