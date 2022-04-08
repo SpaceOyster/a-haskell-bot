@@ -7,6 +7,8 @@
 
 module API.Vkontakte.Types where
 
+import App.Error (apiError)
+import Control.Monad.Catch (MonadThrow (..))
 import qualified Data.Aeson as A
 import Data.Char (toLower)
 import Data.Foldable (asum)
@@ -14,57 +16,6 @@ import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
 import GHC.Generics (Generic)
 import qualified Network.URI.Extended as URI
-
-data PollServer = PollServer
-  { key :: T.Text,
-    server :: T.Text,
-    ts :: T.Text
-  }
-  deriving (Show, Generic, A.FromJSON)
-
-data Error = Error
-  { error_code :: Integer,
-    error_msg :: T.Text
-  }
-  deriving (Show, Generic, A.FromJSON)
-
-data Poll = Poll
-  { ts :: T.Text,
-    updates :: [GroupEvent]
-  }
-  deriving (Show, Generic, A.FromJSON)
-
-data Response
-  = ErrorResponse Error
-  | PollResponse Poll
-  | PollError Integer
-  | OtherResponse A.Value
-  deriving (Show)
-
-instance A.FromJSON Response where
-  parseJSON =
-    A.withObject "FromJSON API.Vkontakte.Response" $ \o -> do
-      errO <- o A..:? "error" A..!= mempty
-      asum
-        [ ErrorResponse <$> A.parseJSON (A.Object errO),
-          PollError <$> o A..: "failed",
-          PollResponse <$> A.parseJSON (A.Object o),
-          OtherResponse <$> o A..: "response"
-        ]
-
-data PollInitResponse
-  = PollInitServer PollServer
-  | PollInitError Error
-  deriving (Show)
-
-instance A.FromJSON PollInitResponse where
-  parseJSON =
-    A.withObject "FromJSON API.Vkontakte.PollInitResponse" $ \o -> do
-      errO <- o A..:? "error" A..!= mempty
-      asum
-        [ PollInitError <$> A.parseJSON (A.Object errO),
-          PollInitServer <$> o A..: "response"
-        ]
 
 newtype User = User
   { unUser :: Integer
@@ -265,3 +216,59 @@ instance A.FromJSON KeyboardActionType where
       "location" -> pure Location
       "callback" -> pure Callback
       _ -> fail "Unknown Action Type"
+
+data PollServer = PollServer
+  { key :: T.Text,
+    server :: T.Text,
+    ts :: T.Text
+  }
+  deriving (Show, Generic, A.FromJSON)
+
+data Error = Error
+  { error_code :: Integer,
+    error_msg :: T.Text
+  }
+  deriving (Show, Generic, A.FromJSON)
+
+data Poll = Poll
+  { ts :: T.Text,
+    updates :: [GroupEvent]
+  }
+  deriving (Show, Generic, A.FromJSON)
+
+data Response
+  = ErrorResponse Error
+  | PollResponse Poll
+  | PollError Integer
+  | OtherResponse A.Value
+  deriving (Show)
+
+instance A.FromJSON Response where
+  parseJSON =
+    A.withObject "FromJSON API.Vkontakte.Response" $ \o -> do
+      errO <- o A..:? "error" A..!= mempty
+      asum
+        [ ErrorResponse <$> A.parseJSON (A.Object errO),
+          PollError <$> o A..: "failed",
+          PollResponse <$> A.parseJSON (A.Object o),
+          OtherResponse <$> o A..: "response"
+        ]
+
+data PollInitResponse
+  = PollInitServer PollServer
+  | PollInitError Error
+  deriving (Show)
+
+instance A.FromJSON PollInitResponse where
+  parseJSON =
+    A.withObject "FromJSON API.Vkontakte.PollInitResponse" $ \o -> do
+      errO <- o A..:? "error" A..!= mempty
+      asum
+        [ PollInitError <$> A.parseJSON (A.Object errO),
+          PollInitServer <$> o A..: "response"
+        ]
+
+extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
+extractUpdates (PollResponse poll) = pure $ updates poll
+extractUpdates (PollError c) = throwM $ apiError $ "Vkontakte Poll Error: " <> T.tshow c
+extractUpdates _ = throwM $ apiError "Expexted poll response"

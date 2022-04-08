@@ -81,11 +81,6 @@ copyMessage :: (Monad m) => VKState -> Message -> VkontakteT m HTTP.Request
 copyMessage st Message {..} =
   sendMessageWith st peer_id text $ fmap attachmentToQuery attachments
 
-extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
-extractUpdates (PollResponse poll) = pure $ updates poll
-extractUpdates (PollError c) = throwM $ apiError $ "Vkontakte Poll Error: " <> T.tshow c
-extractUpdates _ = throwM $ apiError "Expexted poll response"
-
 sendKeyboard :: Monad m => VKState -> Integer -> T.Text -> Keyboard -> VkontakteT m HTTP.Request
 sendKeyboard st peer_id prompt kbd =
   sendMessageWith st peer_id prompt ["keyboard" URI.:=: L8.unpack $ A.encode kbd]
