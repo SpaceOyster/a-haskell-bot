@@ -101,7 +101,7 @@ sendTextMessage_ st peer_id text = sendMessageWith st peer_id text mempty
 
 copyMessage_ :: (Monad m) => VKState -> Message -> VkontakteT m HTTP.Request
 copyMessage_ st Message {..} =
-  sendMessageWith st peer_id text $ fmap attachmentToQuery attachments
+  sendMessageWith st msg_peer_id msg_text $ fmap attachmentToQuery msg_attachments
 
 sendKeyboard_ :: Monad m => VKState -> Integer -> T.Text -> Keyboard -> VkontakteT m HTTP.Request
 sendKeyboard_ st peer_id prompt kbd =

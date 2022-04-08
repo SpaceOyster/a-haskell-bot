@@ -27,32 +27,20 @@ instance H.Hashable User where
 
 data Message = Message
   { msg_id :: Integer,
-    date :: Integer,
-    peer_id :: Integer,
-    from_id :: Integer,
-    text :: T.Text,
-    random_id :: Maybe Integer,
-    attachments :: [Attachment],
-    payload :: Maybe A.Value,
-    keyboard :: Maybe Keyboard,
-    is_cropped :: Maybe Bool
+    msg_date :: Integer,
+    msg_peer_id :: Integer,
+    msg_from_id :: Integer,
+    msg_text :: T.Text,
+    msg_random_id :: Maybe Integer,
+    msg_attachments :: [Attachment],
+    msg_payload :: Maybe A.Value,
+    msg_keyboard :: Maybe Keyboard,
+    msg_is_cropped :: Maybe Bool
   }
-  deriving (Show)
+  deriving (Show, Generic)
 
 instance A.FromJSON Message where
-  parseJSON =
-    A.withObject "Message" $ \o -> do
-      msg_id <- o A..: "id"
-      date <- o A..: "date"
-      peer_id <- o A..: "peer_id"
-      from_id <- o A..: "from_id"
-      text <- o A..: "text"
-      random_id <- o A..:? "random_id"
-      attachments <- o A..: "attachments"
-      payload <- o A..:? "payload"
-      keyboard <- o A..:? "keyboard"
-      is_cropped <- o A..:? "is_cropped"
-      pure $ Message {..}
+  parseJSON = A.genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 4}
 
 data MediaDoc = MediaDoc
   { mdoc_id :: Integer,

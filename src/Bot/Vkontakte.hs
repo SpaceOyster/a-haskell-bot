@@ -104,7 +104,7 @@ instance
     ) =>
     VK.Message ->
     VK.VkontakteT m [VK.Response]
-  reactToCommand msg@VK.Message {msg_id, peer_id} = do
+  reactToCommand msg@VK.Message {msg_id, msg_peer_id} = do
     let cmd = getCommand msg
     lift $
       Log.logDebug $
@@ -113,7 +113,7 @@ instance
           <> " in message id "
           <> T.tshow msg_id
           <> " , peer_id: "
-          <> T.tshow peer_id
+          <> T.tshow msg_peer_id
     pure <$> execCommand cmd msg
 
   reactToCallback ::
@@ -140,8 +140,8 @@ instance
         throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow payload
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
-  getAuthorsSettings VK.Message {from_id} = do
-    let author = VK.User from_id
+  getAuthorsSettings VK.Message {msg_from_id} = do
+    let author = VK.User msg_from_id
     lift $ author & DB.getUserData & DB.orDefaultData
 
   echoMessageNTimes :: VK.Message -> Int -> VK.VkontakteT m [VK.Response]
@@ -163,8 +163,8 @@ execCommand ::
   Bot.BotCommand ->
   (VK.Message -> VK.VkontakteT m VK.Response)
 execCommand cmd VK.Message {..} = do
-  let address = peer_id
-  prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User from_id
+  let address = msg_peer_id
+  prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
   replies <- lift BR.getReplies
   case cmd of
     Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
@@ -184,7 +184,7 @@ instance A.FromJSON Payload where
       RepeatPayload <$> o A..: "repeat"
 
 getCommand :: VK.Message -> Bot.BotCommand
-getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.text
+getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
@@ -199,10 +199,10 @@ repeatKeyboard =
     repeatAction i =
       VK.KeyboardAction
         { action_type = VK.Callback,
-          label = Just $ T.tshow i,
-          payload = Just $ A.toJSON $ RepeatPayload i,
-          link = Nothing
+          action_label = Just $ T.tshow i,
+          action_payload = Just $ A.toJSON $ RepeatPayload i,
+          action_link = Nothing
         }
 
 isCommandE :: VK.Message -> Bool
-isCommandE VK.Message {text} = Bot.isCommand text
+isCommandE VK.Message {msg_text} = Bot.isCommand msg_text
