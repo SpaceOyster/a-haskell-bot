@@ -43,19 +43,34 @@ data Method
 mkRequest :: (Monad m) => VKState -> Method -> VkontakteT m HTTP.Request
 mkRequest st m =
   case m of
-    GetUpdates -> getUpdates st
-    SendMessageEventAnswer ce prompt -> sendMessageEventAnswer st ce prompt
-    SendTextMessage peer_id text -> sendTextMessage st peer_id text
-    CopyMessage msg -> copyMessage st msg
+    GetUpdates -> getUpdates_ st
+    SendMessageEventAnswer ce prompt -> sendMessageEventAnswer_ st ce prompt
+    SendTextMessage peer_id text -> sendTextMessage_ st peer_id text
+    CopyMessage msg -> copyMessage_ st msg
     SendKeyboard peer_id prompt keyboard ->
-      sendKeyboard st peer_id prompt keyboard
+      sendKeyboard_ st peer_id prompt keyboard
 
-getUpdates :: (Monad m) => VKState -> VkontakteT m HTTP.Request
-getUpdates VKState {..} =
+getUpdates :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => VkontakteT m [GroupEvent]
+getUpdates = runMethod GetUpdates >>= extractUpdates
+
+sendMessageEventAnswer :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => CallbackEvent -> T.Text -> VkontakteT m Response
+sendMessageEventAnswer cbE prompt = runMethod $ SendMessageEventAnswer cbE prompt
+
+sendTextMessage :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Integer -> T.Text -> VkontakteT m Response
+sendTextMessage peer_id text = runMethod $ SendTextMessage peer_id text
+
+copyMessage :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Message -> VkontakteT m Response
+copyMessage msg = runMethod $ CopyMessage msg
+
+sendKeyboard :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Integer -> T.Text -> Keyboard -> VkontakteT m Response
+sendKeyboard peer_id prompt kbd = runMethod $ SendKeyboard peer_id prompt kbd
+
+getUpdates_ :: (Monad m) => VKState -> VkontakteT m HTTP.Request
+getUpdates_ VKState {..} =
   pure . HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS, "wait" URI.:=: "25"]
 
-sendMessageEventAnswer :: (Monad m) => VKState -> CallbackEvent -> T.Text -> VkontakteT m HTTP.Request
-sendMessageEventAnswer st CallbackEvent {..} prompt =
+sendMessageEventAnswer_ :: (Monad m) => VKState -> CallbackEvent -> T.Text -> VkontakteT m HTTP.Request
+sendMessageEventAnswer_ st CallbackEvent {..} prompt =
   fmap HTTP.GET $
     apiMethod st "messages.sendMessageEventAnswer" $
       [ "event_id" URI.:=: T.unpack event_id,
@@ -74,13 +89,13 @@ sendMessageWith st peer_id text qps =
     apiMethod st "messages.send" $
       ["peer_id" URI.:=: show peer_id, "message" URI.:=: T.unpack text] <> qps
 
-sendTextMessage :: (Monad m) => VKState -> Integer -> T.Text -> VkontakteT m HTTP.Request
-sendTextMessage st peer_id text = sendMessageWith st peer_id text mempty
+sendTextMessage_ :: (Monad m) => VKState -> Integer -> T.Text -> VkontakteT m HTTP.Request
+sendTextMessage_ st peer_id text = sendMessageWith st peer_id text mempty
 
-copyMessage :: (Monad m) => VKState -> Message -> VkontakteT m HTTP.Request
-copyMessage st Message {..} =
+copyMessage_ :: (Monad m) => VKState -> Message -> VkontakteT m HTTP.Request
+copyMessage_ st Message {..} =
   sendMessageWith st peer_id text $ fmap attachmentToQuery attachments
 
-sendKeyboard :: Monad m => VKState -> Integer -> T.Text -> Keyboard -> VkontakteT m HTTP.Request
-sendKeyboard st peer_id prompt kbd =
+sendKeyboard_ :: Monad m => VKState -> Integer -> T.Text -> Keyboard -> VkontakteT m HTTP.Request
+sendKeyboard_ st peer_id prompt kbd =
   sendMessageWith st peer_id prompt ["keyboard" URI.:=: L8.unpack $ A.encode kbd]
