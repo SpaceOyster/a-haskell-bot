@@ -52,10 +52,10 @@ instance Monoid VKState where
     VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
 rememberLastUpdate ::
-  (MonadThrow m, Log.MonadLog m) => Response -> VkontakteT m Response
+  (MonadThrow m, Log.MonadLog m) => PollResponse -> VkontakteT m PollResponse
 rememberLastUpdate res = modify' (updateStateWith res) >> pure res
 
-updateStateWith :: Response -> (VKState -> VKState)
+updateStateWith :: PollResponse -> (VKState -> VKState)
 updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 

@@ -207,10 +207,19 @@ data Poll = Poll
   }
   deriving (Show, Generic, A.FromJSON)
 
+data PollResponse = PollResponse Poll | PollError Error
+  deriving (Show)
+
+instance A.FromJSON PollResponse where
+  parseJSON =
+    A.withObject "FromJSON API.Vkontakte.PollResponse'" $ \o -> do
+      asum
+        [ PollError <$> o A..: "failed",
+          PollResponse <$> A.parseJSON (A.Object o)
+        ]
+
 data Response
   = ErrorResponse Error
-  | PollResponse Poll
-  | PollError Integer
   | OtherResponse A.Value
   deriving (Show)
 
@@ -220,8 +229,6 @@ instance A.FromJSON Response where
       errO <- o A..:? "error" A..!= mempty
       asum
         [ ErrorResponse <$> A.parseJSON (A.Object errO),
-          PollError <$> o A..: "failed",
-          PollResponse <$> A.parseJSON (A.Object o),
           OtherResponse <$> o A..: "response"
         ]
 
@@ -239,7 +246,6 @@ instance A.FromJSON PollInitResponse where
           PollInitServer <$> o A..: "response"
         ]
 
-extractUpdates :: (MonadThrow m) => Response -> m [GroupEvent]
+extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates (PollResponse poll) = pure $ updates poll
 extractUpdates (PollError c) = throwM $ apiError $ "Vkontakte Poll Error: " <> T.tshow c
-extractUpdates _ = throwM $ apiError "Expexted poll response"
