@@ -220,7 +220,7 @@ instance A.FromJSON PollResponse where
 
 data Response
   = ErrorResponse Error
-  | OtherResponse A.Value
+  | ResponseWith A.Value
   deriving (Show)
 
 instance A.FromJSON Response where
@@ -229,7 +229,7 @@ instance A.FromJSON Response where
       errO <- o A..:? "error" A..!= mempty
       asum
         [ ErrorResponse <$> A.parseJSON (A.Object errO),
-          OtherResponse <$> o A..: "response"
+          ResponseWith <$> o A..: "response"
         ]
 
 data PollInitResponse
