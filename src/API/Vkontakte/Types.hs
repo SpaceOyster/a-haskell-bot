@@ -249,3 +249,13 @@ instance A.FromJSON PollInitResponse where
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates (PollResponse poll) = pure $ updates poll
 extractUpdates (PollError c) = throwM $ apiError $ "Vkontakte Poll Error: " <> T.tshow c
+
+fromResponse :: (A.FromJSON a, MonadThrow m) => Response -> m a
+fromResponse (ErrorResponse err) =
+  throwM . apiError $
+    "Responded with Error: " <> T.tshow (error_code err) <> ": "
+      <> error_msg (err :: Error)
+fromResponse (ResponseWith v) =
+  case A.fromJSON v of
+    A.Success a -> pure a
+    A.Error _ -> throwM . apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (A.encode v)
