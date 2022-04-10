@@ -114,7 +114,8 @@ instance
           <> T.tshow msg_id
           <> " , peer_id: "
           <> T.tshow msg_peer_id
-    pure <$> execCommand cmd msg
+    execCommand cmd msg
+    pure []
 
   reactToCallback ::
     ( MonadThrow m,
@@ -135,7 +136,8 @@ instance
             "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         prompt <- lift $ BR.getReply Bot.settingsSaved
         lift $ DB.setUserMultiplier user n
-        (: []) <$> VK.Methods.sendMessageEventAnswer cq prompt
+        _ <- VK.Methods.sendMessageEventAnswer cq prompt
+        pure []
       Nothing ->
         throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow payload
 
@@ -151,7 +153,8 @@ instance
         "generating " <> T.tshow n
           <> " echoes for Message: "
           <> T.tshow (VK.msg_id msg)
-    n `replicateM` VK.Methods.copyMessage msg
+    _ <- n `replicateM` VK.Methods.copyMessage msg
+    pure []
 
 execCommand ::
   ( MonadThrow m,
@@ -161,16 +164,17 @@ execCommand ::
     BR.MonadBotReplies m
   ) =>
   Bot.BotCommand ->
-  (VK.Message -> VK.VkontakteT m VK.Response)
+  (VK.Message -> VK.VkontakteT m ())
 execCommand cmd VK.Message {..} = do
   let address = msg_peer_id
   prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
   replies <- lift BR.getReplies
-  case cmd of
+  _ <- case cmd of
     Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
     Bot.Help -> VK.Methods.sendTextMessage address (Bot.help replies)
     Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
     Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
+  pure ()
 
 newtype Payload
   = RepeatPayload Int

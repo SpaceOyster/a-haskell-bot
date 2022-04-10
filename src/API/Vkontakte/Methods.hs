@@ -26,14 +26,14 @@ import qualified Effects.Log as Log
 import qualified Network.URI.Extended as URI
 
 runMethod ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, A.FromJSON a) =>
   Method ->
-  VkontakteT m Response
+  VkontakteT m a
 runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
   lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
-  maybe (ex json) pure $ A.decode json
+  maybe (ex json) fromResponse $ A.decode json
   where
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
@@ -65,17 +65,33 @@ getUpdates = do
   where
     ex json = throwM $ apiError $ "Unexpected Poll response: " <> T.lazyDecodeUtf8 json
 
-sendMessageEventAnswer :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => CallbackEvent -> T.Text -> VkontakteT m Response
-sendMessageEventAnswer cbE prompt = runMethod $ SendMessageEventAnswer cbE prompt
+sendMessageEventAnswer ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  CallbackEvent ->
+  T.Text ->
+  VkontakteT m A.Value
+sendMessageEventAnswer cbE prompt = runMethod (SendMessageEventAnswer cbE prompt)
 
-sendTextMessage :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Integer -> T.Text -> VkontakteT m Response
-sendTextMessage peer_id text = runMethod $ SendTextMessage peer_id text
+sendTextMessage ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Integer ->
+  T.Text ->
+  VkontakteT m A.Value
+sendTextMessage peer_id text = runMethod (SendTextMessage peer_id text)
 
-copyMessage :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Message -> VkontakteT m Response
-copyMessage msg = runMethod $ CopyMessage msg
+copyMessage ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Message ->
+  VkontakteT m A.Value
+copyMessage msg = runMethod (CopyMessage msg)
 
-sendKeyboard :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Integer -> T.Text -> Keyboard -> VkontakteT m Response
-sendKeyboard peer_id prompt kbd = runMethod $ SendKeyboard peer_id prompt kbd
+sendKeyboard ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Integer ->
+  T.Text ->
+  Keyboard ->
+  VkontakteT m A.Value
+sendKeyboard peer_id prompt kbd = runMethod (SendKeyboard peer_id prompt kbd)
 
 getUpdates_ :: (Monad m) => VKState -> VkontakteT m HTTP.Request
 getUpdates_ VKState {..} =
