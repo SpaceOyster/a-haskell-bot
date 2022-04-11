@@ -26,7 +26,8 @@ repeatPrompt userM = do
 data BotDSL api ret
   = FetchUpdates ([Update api] -> BotDSL api ret)
   | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
-  | ReactToCommand (Command api) (BotDSL api ret)
+  | GetCommand (Command api) (BotCommand -> BotDSL api ret)
+  | ExecCommand BotCommand (Command api) (BotDSL api ret)
   | ReactToCallback (CallbackQuery api) (BotDSL api ret)
   | GetAuthorsSettings (Message api) (DB.UserData -> BotDSL api ret)
   | EchoMessageNTimes (Message api) Int (BotDSL api ret)
@@ -46,7 +47,8 @@ instance Monad (BotDSL a) where
       Done ret -> mk ret
       FetchUpdates next -> FetchUpdates $ next >=> mk
       QualifyUpdate u next -> QualifyUpdate u $ next >=> mk
-      ReactToCommand c next -> ReactToCommand c $ next >>= mk
+      GetCommand c next -> GetCommand c $ next >=> mk
+      ExecCommand bc c next -> ExecCommand bc c $ next >>= mk
       ReactToCallback c next -> ReactToCallback c $ next >>= mk
       GetAuthorsSettings m next -> GetAuthorsSettings m $ next >=> mk
       EchoMessageNTimes m n next -> EchoMessageNTimes m n $ next >>= mk
@@ -110,9 +112,9 @@ reactToMessage msg = do
   Bot.echoMessageNTimes msg n
 
 reactToCommand :: EchoBotMonad m => Command m -> m ()
-reactToCommand msg = do
-  cmd <- Bot.getCommand msg
-  Bot.execCommand cmd msg
+reactToCommand c = do
+  cmd <- Bot.getCommand c
+  Bot.execCommand cmd c
 
 reactToUpdate :: EchoBotMonad m => Update m -> m ()
 reactToUpdate update = do
@@ -131,7 +133,8 @@ doBotThing = forever (fetchUpdates >>= reactToUpdates)
 interpret :: EchoBotMonad m => BotDSL m a -> m a
 interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
 interpret (QualifyUpdate u next) = qualifyUpdate u >>= interpret . next
-interpret (ReactToCommand c next) = reactToCommand c >> interpret next
+interpret (GetCommand c next) = getCommand c >>= interpret . next
+interpret (ExecCommand bc c next) = execCommand bc c >> interpret next
 interpret (ReactToCallback c next) = reactToCallback c >> interpret next
 interpret (GetAuthorsSettings m next) = getAuthorsSettings m >>= interpret . next
 interpret (EchoMessageNTimes m n next) = echoMessageNTimes m n >> interpret next
@@ -154,6 +157,11 @@ botLoop = do
       ECallback cq -> reactToCallbackDSL cq
   botLoop
 
+reactToCommandDSL :: Command api -> BotDSL api ()
+reactToCommandDSL c = do
+  cmd <- GetCommand c Done
+  ExecCommand cmd c $ Done ()
+
 reactToMessageDSL :: Message api -> BotDSL api ()
 reactToMessageDSL msg = do
   settings <- getAuthorsSettingsDSL msg
@@ -165,9 +173,6 @@ getAuthorsSettingsDSL msg = GetAuthorsSettings msg Done
 
 echoMessageNTimesDSL :: Message api -> Int -> BotDSL api ()
 echoMessageNTimesDSL msg n = EchoMessageNTimes msg n $ Done ()
-
-reactToCommandDSL :: Command api -> BotDSL api ()
-reactToCommandDSL cmd = ReactToCommand cmd $ Done ()
 
 reactToCallbackDSL :: CallbackQuery api -> BotDSL api ()
 reactToCallbackDSL cq = ReactToCallback cq $ Done ()
