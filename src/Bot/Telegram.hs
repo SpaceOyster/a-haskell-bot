@@ -112,7 +112,7 @@ instance
     lift $
       Log.logDebug $
         "got command " <> T.tshow cmd <> " in message id " <> T.tshow message_id
-    execCommand cmd msg
+    Bot.execCommand cmd msg
     pure []
 
   reactToCallback ::
@@ -150,30 +150,31 @@ instance
     _ <- n `replicateM` TG.Methods.copyMessage msg
     pure []
 
-execCommand ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m
-  ) =>
-  Bot.BotCommand ->
-  (TG.Message -> TG.TelegramT m ())
-execCommand cmd TG.Message {..} = do
-  let address = TG.chat_id chat
-  prompt <- lift $ Bot.repeatPrompt from
-  replies <- lift BR.getReplies
-  _ <- case cmd of
-    Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
-    Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
-    Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
-    Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
-  pure ()
   getCommand :: (Monad m) => TG.Message -> TG.TelegramT m Bot.BotCommand
   getCommand TG.Message {text} =
     pure $ case text of
       Nothing -> Bot.UnknownCommand
       Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
+
+  execCommand ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    Bot.BotCommand ->
+    (TG.Message -> TG.TelegramT m ())
+  execCommand cmd TG.Message {..} = do
+    let address = TG.chat_id chat
+    prompt <- lift $ Bot.repeatPrompt from
+    replies <- lift BR.getReplies
+    _ <- case cmd of
+      Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
+      Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
+      Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
+      Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
+    pure ()
 
 data QueryData
   = QDRepeat Int

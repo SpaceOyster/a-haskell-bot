@@ -103,6 +103,7 @@ class (Monad m) => EchoBotMonad m where
   getAuthorsSettings :: Message m -> m DB.UserData
   echoMessageNTimes :: Message m -> Int -> m [Response m]
   getCommand :: Command m -> m Bot.BotCommand
+  execCommand :: BotCommand -> (Command m -> m ())
 
 reactToMessage :: EchoBotMonad m => Message m -> m [Response m]
 reactToMessage msg = do

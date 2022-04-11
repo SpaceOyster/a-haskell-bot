@@ -114,7 +114,7 @@ instance
           <> T.tshow msg_id
           <> " , peer_id: "
           <> T.tshow msg_peer_id
-    execCommand cmd msg
+    Bot.execCommand cmd msg
     pure []
 
   reactToCallback ::
@@ -156,27 +156,28 @@ instance
     _ <- n `replicateM` VK.Methods.copyMessage msg
     pure []
 
-execCommand ::
-  ( MonadThrow m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m
-  ) =>
-  Bot.BotCommand ->
-  (VK.Message -> VK.VkontakteT m ())
-execCommand cmd VK.Message {..} = do
-  let address = msg_peer_id
-  prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
-  replies <- lift BR.getReplies
-  _ <- case cmd of
-    Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
-    Bot.Help -> VK.Methods.sendTextMessage address (Bot.help replies)
-    Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
-    Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
-  pure ()
   getCommand :: (Monad m) => VK.Message -> VK.VkontakteT m Bot.BotCommand
   getCommand = pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
+
+  execCommand ::
+    ( MonadThrow m,
+      Log.MonadLog m,
+      HTTP.MonadHTTP m,
+      DB.MonadUsersDB m,
+      BR.MonadBotReplies m
+    ) =>
+    Bot.BotCommand ->
+    (VK.Message -> VK.VkontakteT m ())
+  execCommand cmd VK.Message {..} = do
+    let address = msg_peer_id
+    prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
+    replies <- lift BR.getReplies
+    _ <- case cmd of
+      Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
+      Bot.Help -> VK.Methods.sendTextMessage address (Bot.help replies)
+      Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
+      Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
+    pure ()
 
 newtype Payload
   = RepeatPayload Int
