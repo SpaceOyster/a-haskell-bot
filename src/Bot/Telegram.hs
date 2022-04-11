@@ -108,7 +108,7 @@ instance
     TG.Message ->
     TG.TelegramT m [TG.Response]
   reactToCommand msg@TG.Message {message_id} = do
-    let cmd = getCommand msg
+    cmd <- Bot.getCommand msg
     lift $
       Log.logDebug $
         "got command " <> T.tshow cmd <> " in message id " <> T.tshow message_id
@@ -169,6 +169,11 @@ execCommand cmd TG.Message {..} = do
     Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
     Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
   pure ()
+  getCommand :: (Monad m) => TG.Message -> TG.TelegramT m Bot.BotCommand
+  getCommand TG.Message {text} =
+    pure $ case text of
+      Nothing -> Bot.UnknownCommand
+      Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
 data QueryData
   = QDRepeat Int
@@ -182,12 +187,6 @@ qualifyQuery qstring =
     _ -> QDOther qstring
   where
     (qtype, qdata) = T.break (== '_') qstring
-
-getCommand :: TG.Message -> Bot.BotCommand
-getCommand TG.Message {text} =
-  case text of
-    Nothing -> Bot.UnknownCommand
-    Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]

@@ -105,7 +105,7 @@ instance
     VK.Message ->
     VK.VkontakteT m [VK.Response]
   reactToCommand msg@VK.Message {msg_id, msg_peer_id} = do
-    let cmd = getCommand msg
+    cmd <- Bot.getCommand msg
     lift $
       Log.logDebug $
         "Got command"
@@ -175,6 +175,8 @@ execCommand cmd VK.Message {..} = do
     Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
     Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
   pure ()
+  getCommand :: (Monad m) => VK.Message -> VK.VkontakteT m Bot.BotCommand
+  getCommand = pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
 
 newtype Payload
   = RepeatPayload Int
@@ -186,9 +188,6 @@ instance A.FromJSON Payload where
   parseJSON =
     A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
       RepeatPayload <$> o A..: "repeat"
-
-getCommand :: VK.Message -> Bot.BotCommand
-getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
