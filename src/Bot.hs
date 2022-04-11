@@ -98,7 +98,6 @@ class (Monad m) => EchoBotMonad m where
 
   fetchUpdates :: m [Update m]
   qualifyUpdate :: Update m -> m (Entity m)
-  reactToCommand :: Command m -> m [Response m]
   reactToCallback :: CallbackQuery m -> m [Response m]
   getAuthorsSettings :: Message m -> m DB.UserData
   echoMessageNTimes :: Message m -> Int -> m [Response m]
@@ -110,6 +109,12 @@ reactToMessage msg = do
   settings <- getAuthorsSettings msg
   let n = DB.getEchoMultiplier settings
   Bot.echoMessageNTimes msg n
+
+reactToCommand :: EchoBotMonad m => Command m -> m [Response m]
+reactToCommand msg = do
+  cmd <- Bot.getCommand msg
+  Bot.execCommand cmd msg
+  pure []
 
 reactToUpdate :: EchoBotMonad m => Update m -> m [Response m]
 reactToUpdate update = do

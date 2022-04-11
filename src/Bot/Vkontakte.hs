@@ -95,28 +95,6 @@ instance
     | otherwise = pure $ Bot.EMessage m
   qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
 
-  reactToCommand ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    VK.Message ->
-    VK.VkontakteT m [VK.Response]
-  reactToCommand msg@VK.Message {msg_id, msg_peer_id} = do
-    cmd <- Bot.getCommand msg
-    lift $
-      Log.logDebug $
-        "Got command"
-          <> T.tshow cmd
-          <> " in message id "
-          <> T.tshow msg_id
-          <> " , peer_id: "
-          <> T.tshow msg_peer_id
-    Bot.execCommand cmd msg
-    pure []
-
   reactToCallback ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -169,6 +147,14 @@ instance
     Bot.BotCommand ->
     (VK.Message -> VK.VkontakteT m ())
   execCommand cmd VK.Message {..} = do
+    lift $
+      Log.logDebug $
+        "Got command"
+          <> T.tshow cmd
+          <> " in message id "
+          <> T.tshow msg_id
+          <> " , peer_id: "
+          <> T.tshow msg_peer_id
     let address = msg_peer_id
     prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
     replies <- lift BR.getReplies

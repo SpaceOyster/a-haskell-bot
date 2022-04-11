@@ -98,23 +98,6 @@ instance
         throwM . botError $
           "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
-  reactToCommand ::
-    ( MonadThrow m,
-      Log.MonadLog m,
-      HTTP.MonadHTTP m,
-      DB.MonadUsersDB m,
-      BR.MonadBotReplies m
-    ) =>
-    TG.Message ->
-    TG.TelegramT m [TG.Response]
-  reactToCommand msg@TG.Message {message_id} = do
-    cmd <- Bot.getCommand msg
-    lift $
-      Log.logDebug $
-        "got command " <> T.tshow cmd <> " in message id " <> T.tshow message_id
-    Bot.execCommand cmd msg
-    pure []
-
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
@@ -166,6 +149,9 @@ instance
     Bot.BotCommand ->
     (TG.Message -> TG.TelegramT m ())
   execCommand cmd TG.Message {..} = do
+    lift $
+      Log.logDebug $
+        "got command " <> T.tshow cmd <> " in message id " <> T.tshow message_id
     let address = TG.chat_id chat
     prompt <- lift $ Bot.repeatPrompt from
     replies <- lift BR.getReplies
