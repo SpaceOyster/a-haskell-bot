@@ -23,7 +23,6 @@ import qualified API.Vkontakte as VK
     KeyboardActionType (..),
     KeyboardButton (..),
     Message (..),
-    Response (..),
     User (..),
     VKState (..),
     VkontakteT (..),
@@ -33,7 +32,7 @@ import API.Vkontakte.Methods as VK.Methods
 import App.Error (botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
-import Control.Monad (replicateM)
+import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (evalStateT, lift, put)
 import qualified Data.Aeson as A
@@ -77,7 +76,6 @@ instance
   Bot.EchoBotMonad (VK.VkontakteT m)
   where
   type Update (VK.VkontakteT m) = VK.GroupEvent
-  type Response (VK.VkontakteT m) = VK.Response
   type Message (VK.VkontakteT m) = VK.Message
   type Command (VK.VkontakteT m) = VK.Message
   type CallbackQuery (VK.VkontakteT m) = VK.CallbackEvent
@@ -103,7 +101,7 @@ instance
       BR.MonadBotReplies m
     ) =>
     VK.CallbackEvent ->
-    VK.VkontakteT m [VK.Response]
+    VK.VkontakteT m ()
   reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
     let callback = A.parseMaybe A.parseJSON payload
     let user = VK.User user_id
@@ -115,7 +113,7 @@ instance
         prompt <- lift $ BR.getReply Bot.settingsSaved
         lift $ DB.setUserMultiplier user n
         _ <- VK.Methods.sendMessageEventAnswer cq prompt
-        pure []
+        pure ()
       Nothing ->
         throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow payload
 
@@ -124,15 +122,14 @@ instance
     let author = VK.User msg_from_id
     lift $ author & DB.getUserData & DB.orDefaultData
 
-  echoMessageNTimes :: VK.Message -> Int -> VK.VkontakteT m [VK.Response]
+  echoMessageNTimes :: VK.Message -> Int -> VK.VkontakteT m ()
   echoMessageNTimes msg n = do
     lift $
       Log.logDebug $
         "generating " <> T.tshow n
           <> " echoes for Message: "
           <> T.tshow (VK.msg_id msg)
-    _ <- n `replicateM` VK.Methods.copyMessage msg
-    pure []
+    n `replicateM_` VK.Methods.copyMessage msg
 
   getCommand :: (Monad m) => VK.Message -> VK.VkontakteT m Bot.BotCommand
   getCommand = pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text

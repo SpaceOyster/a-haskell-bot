@@ -21,7 +21,6 @@ import qualified API.Telegram as TG
     InlineKeyboardButton (..),
     InlineKeyboardMarkup (..),
     Message (..),
-    Response (..),
     TGState (..),
     TelegramT (..),
     Update (..),
@@ -39,7 +38,7 @@ import qualified API.Telegram.Methods as TG.Methods
 import App.Error (botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
-import Control.Monad (replicateM)
+import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (evalStateT, lift)
 import Data.Function ((&))
@@ -77,7 +76,6 @@ instance
   Bot.EchoBotMonad (TG.TelegramT m)
   where
   type Update (TG.TelegramT m) = TG.Update
-  type Response (TG.TelegramT m) = TG.Response
   type Message (TG.TelegramT m) = TG.Message
   type Command (TG.TelegramT m) = TG.Message
   type CallbackQuery (TG.TelegramT m) = TG.CallbackQuery
@@ -101,7 +99,7 @@ instance
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
-    TG.TelegramT m [TG.Response]
+    TG.TelegramT m ()
   reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
     lift $
       Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
@@ -114,7 +112,7 @@ instance
             "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         lift $ DB.setUserMultiplier user n
         _ <- TG.Methods.answerCallbackQuery cq_id
-        pure []
+        pure ()
       QDOther s ->
         throwM . botError $ "Unknown CallbackQuery type: " <> T.tshow s
 
@@ -123,15 +121,14 @@ instance
     author <- TG.getAuthorThrow msg
     lift $ author & DB.getUserData & DB.orDefaultData
 
-  echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m [TG.Response]
+  echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m ()
   echoMessageNTimes msg n = do
     lift $
       Log.logDebug $
         "generating " <> T.tshow n
           <> " echoes for Message: "
           <> T.tshow (TG.message_id msg)
-    _ <- n `replicateM` TG.Methods.copyMessage msg
-    pure []
+    n `replicateM_` TG.Methods.copyMessage msg
 
   getCommand :: (Monad m) => TG.Message -> TG.TelegramT m Bot.BotCommand
   getCommand TG.Message {text} =

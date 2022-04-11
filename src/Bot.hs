@@ -26,10 +26,10 @@ repeatPrompt userM = do
 data BotDSL api ret
   = FetchUpdates ([Update api] -> BotDSL api ret)
   | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
-  | ReactToCommand (Command api) ([Response api] -> BotDSL api ret)
-  | ReactToCallback (CallbackQuery api) ([Response api] -> BotDSL api ret)
+  | ReactToCommand (Command api) (BotDSL api ret)
+  | ReactToCallback (CallbackQuery api) (BotDSL api ret)
   | GetAuthorsSettings (Message api) (DB.UserData -> BotDSL api ret)
-  | EchoMessageNTimes (Message api) Int ([Response api] -> BotDSL api ret)
+  | EchoMessageNTimes (Message api) Int (BotDSL api ret)
   | Done ret
 
 instance Functor (BotDSL a) where
@@ -46,10 +46,10 @@ instance Monad (BotDSL a) where
       Done ret -> mk ret
       FetchUpdates next -> FetchUpdates $ next >=> mk
       QualifyUpdate u next -> QualifyUpdate u $ next >=> mk
-      ReactToCommand c next -> ReactToCommand c $ next >=> mk
-      ReactToCallback c next -> ReactToCallback c $ next >=> mk
+      ReactToCommand c next -> ReactToCommand c $ next >>= mk
+      ReactToCallback c next -> ReactToCallback c $ next >>= mk
       GetAuthorsSettings m next -> GetAuthorsSettings m $ next >=> mk
-      EchoMessageNTimes m n next -> EchoMessageNTimes m n $ next >=> mk
+      EchoMessageNTimes m n next -> EchoMessageNTimes m n $ next >>= mk
 
 andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
 andThen = (>>=)
@@ -91,32 +91,30 @@ data Entity api
 
 class (Monad m) => EchoBotMonad m where
   type Update m
-  type Response m
   type Message m
   type Command m
   type CallbackQuery m
 
   fetchUpdates :: m [Update m]
   qualifyUpdate :: Update m -> m (Entity m)
-  reactToCallback :: CallbackQuery m -> m [Response m]
+  reactToCallback :: CallbackQuery m -> m ()
   getAuthorsSettings :: Message m -> m DB.UserData
-  echoMessageNTimes :: Message m -> Int -> m [Response m]
+  echoMessageNTimes :: Message m -> Int -> m ()
   getCommand :: Command m -> m Bot.BotCommand
   execCommand :: BotCommand -> (Command m -> m ())
 
-reactToMessage :: EchoBotMonad m => Message m -> m [Response m]
+reactToMessage :: EchoBotMonad m => Message m -> m ()
 reactToMessage msg = do
   settings <- getAuthorsSettings msg
   let n = DB.getEchoMultiplier settings
   Bot.echoMessageNTimes msg n
 
-reactToCommand :: EchoBotMonad m => Command m -> m [Response m]
+reactToCommand :: EchoBotMonad m => Command m -> m ()
 reactToCommand msg = do
   cmd <- Bot.getCommand msg
   Bot.execCommand cmd msg
-  pure []
 
-reactToUpdate :: EchoBotMonad m => Update m -> m [Response m]
+reactToUpdate :: EchoBotMonad m => Update m -> m ()
 reactToUpdate update = do
   qu <- qualifyUpdate update
   case qu of
@@ -124,19 +122,19 @@ reactToUpdate update = do
     Bot.EMessage msg -> Bot.reactToMessage msg
     Bot.ECallback cq -> Bot.reactToCallback cq
 
-reactToUpdates :: EchoBotMonad m => [Update m] -> m [Response m]
-reactToUpdates updates = join <$> mapM reactToUpdate updates
+reactToUpdates :: EchoBotMonad m => [Update m] -> m ()
+reactToUpdates = mapM_ reactToUpdate
 
-doBotThing :: EchoBotMonad m => m [Response m]
+doBotThing :: EchoBotMonad m => m ()
 doBotThing = forever (fetchUpdates >>= reactToUpdates)
 
 interpret :: EchoBotMonad m => BotDSL m a -> m a
 interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
 interpret (QualifyUpdate u next) = qualifyUpdate u >>= interpret . next
-interpret (ReactToCommand c next) = reactToCommand c >>= interpret . next
-interpret (ReactToCallback c next) = reactToCallback c >>= interpret . next
+interpret (ReactToCommand c next) = reactToCommand c >> interpret next
+interpret (ReactToCallback c next) = reactToCallback c >> interpret next
 interpret (GetAuthorsSettings m next) = getAuthorsSettings m >>= interpret . next
-interpret (EchoMessageNTimes m n next) = echoMessageNTimes m n >>= interpret . next
+interpret (EchoMessageNTimes m n next) = echoMessageNTimes m n >> interpret next
 interpret (Done ret) = pure ret
 
 fetchUpdatesDSL :: BotDSL api [Update api]
@@ -156,7 +154,7 @@ botLoop = do
       ECallback cq -> reactToCallbackDSL cq
   botLoop
 
-reactToMessageDSL :: Message api -> BotDSL api [Response api]
+reactToMessageDSL :: Message api -> BotDSL api ()
 reactToMessageDSL msg = do
   settings <- getAuthorsSettingsDSL msg
   let n = DB.getEchoMultiplier settings
@@ -165,11 +163,11 @@ reactToMessageDSL msg = do
 getAuthorsSettingsDSL :: Message api -> BotDSL api DB.UserData
 getAuthorsSettingsDSL msg = GetAuthorsSettings msg Done
 
-echoMessageNTimesDSL :: Message api -> Int -> BotDSL api [Response api]
-echoMessageNTimesDSL msg n = EchoMessageNTimes msg n Done
+echoMessageNTimesDSL :: Message api -> Int -> BotDSL api ()
+echoMessageNTimesDSL msg n = EchoMessageNTimes msg n $ Done ()
 
-reactToCommandDSL :: Command api -> BotDSL api [Response api]
-reactToCommandDSL cmd = ReactToCommand cmd Done
+reactToCommandDSL :: Command api -> BotDSL api ()
+reactToCommandDSL cmd = ReactToCommand cmd $ Done ()
 
-reactToCallbackDSL :: CallbackQuery api -> BotDSL api [Response api]
-reactToCallbackDSL cq = ReactToCallback cq Done
+reactToCallbackDSL :: CallbackQuery api -> BotDSL api ()
+reactToCallbackDSL cq = ReactToCallback cq $ Done ()
