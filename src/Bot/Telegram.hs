@@ -100,20 +100,10 @@ instance
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
     TG.TelegramT m ()
-  reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
-    lift $
-      Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
-    let user = from
+  reactToCallback cq =
     case qualifyQuery cq of
-      Just (Bot.QDRepeat n) -> do
-        lift $
-          Log.logInfo $
-            "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-        lift $ DB.setUserMultiplier user n
-        _ <- TG.Methods.answerCallbackQuery cq_id
-        pure ()
-      Nothing ->
-        throwM . botError $ "Unknown CallbackQuery type: " <> T.tshow cq
+      Just qdata -> respondToCallback qdata cq
+      Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
   getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do
@@ -165,6 +155,17 @@ qualifyQuery cq = do
   case qtype of
     "repeat" -> pure $ Bot.QDRepeat $ read $ T.unpack $ T.tail qdata
     _ -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
+
+respondToCallback ::
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m, DB.MonadUsersDB m) =>
+  Bot.QueryData ->
+  TG.CallbackQuery ->
+  TG.TelegramT m ()
+respondToCallback (Bot.QDRepeat n) c = do
+  let user = TG.from (c :: TG.CallbackQuery)
+  lift $ Log.logInfo $ "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+  _ <- TG.Methods.answerCallbackQuery $ TG.cq_id c
+  lift $ DB.setUserMultiplier user n
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
