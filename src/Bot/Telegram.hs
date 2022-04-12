@@ -105,7 +105,7 @@ instance
       Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
     let user = from
     case qualifyQuery cq of
-      Just (QDRepeat n) -> do
+      Just (Bot.QDRepeat n) -> do
         lift $
           Log.logInfo $
             "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
@@ -158,16 +158,12 @@ instance
       Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
     pure ()
 
-newtype QueryData
-  = QDRepeat Int
-  deriving (Show)
-
-qualifyQuery :: TG.CallbackQuery -> Maybe QueryData
+qualifyQuery :: TG.CallbackQuery -> Maybe Bot.QueryData
 qualifyQuery cq = do
   qstring <- TG.query_data cq
   let (qtype, qdata) = T.break (== '_') qstring
   case qtype of
-    "repeat" -> pure $ QDRepeat $ read $ T.unpack $ T.tail qdata
+    "repeat" -> pure $ Bot.QDRepeat $ read $ T.unpack $ T.tail qdata
     _ -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 repeatKeyboard :: TG.InlineKeyboardMarkup

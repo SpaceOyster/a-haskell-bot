@@ -105,7 +105,7 @@ instance
   reactToCallback cq = do
     let user = VK.User $ VK.user_id cq
     case qualifyQuery cq of
-      Just (QDRepeat n) -> do
+      Just (Bot.QDRepeat n) -> do
         lift $
           Log.logInfo $
             "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
@@ -161,18 +161,15 @@ instance
       Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
     pure ()
 
-newtype QueryData
-  = QDRepeat Int
+instance A.ToJSON Bot.QueryData where
+  toJSON (Bot.QDRepeat i) = A.object ["repeat" A..= i]
 
-instance A.ToJSON QueryData where
-  toJSON (QDRepeat i) = A.object ["repeat" A..= i]
-
-instance A.FromJSON QueryData where
+instance A.FromJSON Bot.QueryData where
   parseJSON =
-    A.withObject "FromJSON Bot.Vkontakte.QueryData" $ \o ->
-      QDRepeat <$> o A..: "repeat"
+    A.withObject "FromJSON Bot.QueryData" $ \o ->
+      Bot.QDRepeat <$> o A..: "repeat"
 
-qualifyQuery :: VK.CallbackEvent -> Maybe QueryData
+qualifyQuery :: VK.CallbackEvent -> Maybe Bot.QueryData
 qualifyQuery cq = do
   let qstring = VK.payload cq
   A.parseMaybe A.parseJSON qstring
@@ -191,7 +188,7 @@ repeatKeyboard =
       VK.KeyboardAction
         { action_type = VK.Callback,
           action_label = Just $ T.tshow i,
-          action_payload = Just $ A.toJSON $ QDRepeat i,
+          action_payload = Just $ A.toJSON $ Bot.QDRepeat i,
           action_link = Nothing
         }
 

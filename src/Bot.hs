@@ -91,6 +91,10 @@ data Entity api
   | ECommand (Command api)
   | ECallback (CallbackQuery api)
 
+newtype QueryData
+  = QDRepeat Int
+  deriving (Show)
+
 class (Monad m) => EchoBotMonad m where
   type Update m
   type Message m
