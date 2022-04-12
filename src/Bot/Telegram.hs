@@ -103,18 +103,17 @@ instance
   reactToCallback cq@TG.CallbackQuery {cq_id, from} = do
     lift $
       Log.logDebug $ "Getting query data from CallbackQuery: " <> T.tshow cq_id
-    cdata <- TG.getQDataThrow cq
     let user = from
-    case qualifyQuery cdata of
-      QDRepeat n -> do
+    case qualifyQuery cq of
+      Just (QDRepeat n) -> do
         lift $
           Log.logInfo $
             "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
         lift $ DB.setUserMultiplier user n
         _ <- TG.Methods.answerCallbackQuery cq_id
         pure ()
-      QDOther s ->
-        throwM . botError $ "Unknown CallbackQuery type: " <> T.tshow s
+      Nothing ->
+        throwM . botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
   getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do
@@ -159,18 +158,17 @@ instance
       Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
     pure ()
 
-data QueryData
+newtype QueryData
   = QDRepeat Int
-  | QDOther T.Text
   deriving (Show)
 
-qualifyQuery :: T.Text -> QueryData
-qualifyQuery qstring =
+qualifyQuery :: TG.CallbackQuery -> Maybe QueryData
+qualifyQuery cq = do
+  qstring <- TG.query_data cq
+  let (qtype, qdata) = T.break (== '_') qstring
   case qtype of
-    "repeat" -> QDRepeat $ read $ T.unpack $ T.tail qdata
-    _ -> QDOther qstring
-  where
-    (qtype, qdata) = T.break (== '_') qstring
+    "repeat" -> pure $ QDRepeat $ read $ T.unpack $ T.tail qdata
+    _ -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
