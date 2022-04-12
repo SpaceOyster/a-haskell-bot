@@ -102,20 +102,19 @@ instance
     ) =>
     VK.CallbackEvent ->
     VK.VkontakteT m ()
-  reactToCallback cq@VK.CallbackEvent {user_id, payload} = do
-    let callback = A.parseMaybe A.parseJSON payload
-    let user = VK.User user_id
-    case callback of
+  reactToCallback cq = do
+    let user = VK.User $ VK.user_id cq
+    case qualifyQuery cq of
       Just (RepeatPayload n) -> do
         lift $
           Log.logInfo $
             "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-        prompt <- lift $ BR.getReply Bot.settingsSaved
         lift $ DB.setUserMultiplier user n
+        prompt <- lift $ BR.getReply Bot.settingsSaved
         _ <- VK.Methods.sendMessageEventAnswer cq prompt
         pure ()
       Nothing ->
-        throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow payload
+        throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {msg_from_id} = do
@@ -172,6 +171,11 @@ instance A.FromJSON Payload where
   parseJSON =
     A.withObject "FromJSON Bot.Vkontakte.Payload" $ \o ->
       RepeatPayload <$> o A..: "repeat"
+
+qualifyQuery :: VK.CallbackEvent -> Maybe Payload
+qualifyQuery cq = do
+  let qstring = VK.payload cq
+  A.parseMaybe A.parseJSON qstring
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
