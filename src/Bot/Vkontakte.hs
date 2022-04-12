@@ -102,19 +102,10 @@ instance
     ) =>
     VK.CallbackEvent ->
     VK.VkontakteT m ()
-  reactToCallback cq = do
-    let user = VK.User $ VK.user_id cq
+  reactToCallback cq =
     case qualifyQuery cq of
-      Just (Bot.QDRepeat n) -> do
-        lift $
-          Log.logInfo $
-            "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-        lift $ DB.setUserMultiplier user n
-        prompt <- lift $ BR.getReply Bot.settingsSaved
-        _ <- VK.Methods.sendMessageEventAnswer cq prompt
-        pure ()
-      Nothing ->
-        throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
+      Just qdata -> respondToCallback qdata cq
+      Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {msg_from_id} = do
@@ -173,6 +164,18 @@ qualifyQuery :: VK.CallbackEvent -> Maybe Bot.QueryData
 qualifyQuery cq = do
   let qstring = VK.payload cq
   A.parseMaybe A.parseJSON qstring
+
+respondToCallback ::
+  (BR.MonadBotReplies m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+  Bot.QueryData ->
+  VK.CallbackEvent ->
+  VK.VkontakteT m ()
+respondToCallback (Bot.QDRepeat n) c = do
+  let user = VK.User $ VK.user_id c
+  lift $ Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+  prompt <- lift $ BR.getReply Bot.settingsSaved
+  _ <- VK.Methods.sendMessageEventAnswer c prompt
+  lift $ DB.setUserMultiplier user n
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
