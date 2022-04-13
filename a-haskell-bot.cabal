@@ -70,6 +70,7 @@ library
     , http-client-tls
     , mtl
     , network-uri
+    , parsec
     , text
     , time
   default-language: Haskell2010
@@ -122,6 +123,7 @@ executable a-haskell-bot-exe
     , http-client-tls
     , mtl
     , network-uri
+    , parsec
     , text
     , time
   default-language: Haskell2010
@@ -148,6 +150,7 @@ test-suite a-haskell-bot-test
     , http-client-tls
     , mtl
     , network-uri
+    , parsec
     , text
     , time
   default-language: Haskell2010
