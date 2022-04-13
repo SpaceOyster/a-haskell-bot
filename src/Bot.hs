@@ -6,13 +6,16 @@
 module Bot where
 
 import Bot.Replies as Bot
-import Control.Monad (ap, forM_, forever, join, liftM, (>=>))
+import Control.Monad (ap, forM_, forever, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.UsersDB as DB
+import Text.Parsec as Parsec (many1, parse)
+import Text.Parsec.Char as Parsec (digit, string)
+import Text.Parsec.Text as Parsec.Text (Parser)
 
 repeatPrompt ::
   (H.Hashable u, MonadThrow m, DB.MonadUsersDB m, BR.MonadBotReplies m) =>
@@ -95,6 +98,16 @@ newtype QueryData
   = QDRepeat Int
   deriving (Show)
 
+parseQuery :: T.Text -> Maybe QueryData
+parseQuery t = either (const Nothing) Just $ Parsec.parse queryParser "QueryData" t
+
+queryParser :: Parsec.Text.Parser QueryData
+queryParser =
+  QDRepeat . read <$> (Parsec.string "repeat_" *> Parsec.many1 Parsec.digit)
+
+encodeQuery :: QueryData -> T.Text
+encodeQuery (QDRepeat n) = "repeat_" <> T.tshow n
+
 class (Monad m) => EchoBotMonad m where
   type Update m
   type Message m
@@ -106,7 +119,7 @@ class (Monad m) => EchoBotMonad m where
   reactToCallback :: CallbackQuery m -> m ()
   getAuthorsSettings :: Message m -> m DB.UserData
   echoMessageNTimes :: Message m -> Int -> m ()
-  getCommand :: Command m -> m Bot.BotCommand
+  getCommand :: Command m -> m BotCommand
   execCommand :: BotCommand -> (Command m -> m ())
 
 reactToMessage :: EchoBotMonad m => Message m -> m ()
