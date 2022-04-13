@@ -39,7 +39,7 @@ import App.Error (botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
-import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.State (evalStateT, lift)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -68,6 +68,7 @@ initiate cfg@Config {..} = do
 
 instance
   ( MonadThrow m,
+    MonadCatch m,
     Log.MonadLog m,
     HTTP.MonadHTTP m,
     DB.MonadUsersDB m,
@@ -148,13 +149,12 @@ instance
       Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
     pure ()
 
-qualifyQuery :: TG.CallbackQuery -> Maybe Bot.QueryData
+qualifyQuery :: (MonadThrow m) => TG.CallbackQuery -> m Bot.QueryData
 qualifyQuery cq = do
-  qstring <- TG.query_data cq
-  let (qtype, qdata) = T.break (== '_') qstring
-  case qtype of
-    "repeat" -> pure $ Bot.QDRepeat $ read $ T.unpack $ T.tail qdata
-    _ -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
+  let qstringM = TG.query_data cq
+  case qstringM >>= Bot.parseQuery of
+    Just qdata -> pure qdata
+    Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 respondToCallback ::
   (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m, DB.MonadUsersDB m) =>
@@ -170,11 +170,11 @@ respondToCallback (Bot.QDRepeat n) c = do
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
   where
-    button :: Integer -> TG.InlineKeyboardButton
+    button :: Int -> TG.InlineKeyboardButton
     button x =
       TG.InlineKeyboardButton
         { text = T.tshow x,
-          callback_data = "repeat_" <> T.tshow x
+          callback_data = Bot.encodeQuery $ Bot.QDRepeat x
         }
 
 isCommandE :: TG.Message -> Bool
