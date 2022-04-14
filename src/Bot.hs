@@ -84,7 +84,7 @@ parseCommand s =
 
 isCommand :: T.Text -> Bool
 isCommand "" = False
-isCommand s = (== '/') . T.head $ s
+isCommand s = T.head s == '/'
 
 loop :: EchoBotMonad m => Int -> m a
 loop period = interpret botLoop
