@@ -35,7 +35,7 @@ import App.Error (botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
-import Control.Monad.Catch (MonadThrow (..))
+import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.State (evalStateT, lift, put)
 import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
 import qualified Data.Aeson.Types as A (parseMaybe)
@@ -71,6 +71,7 @@ initiate cfg@Config {..} = do
 
 instance
   ( MonadThrow m,
+    MonadCatch m,
     Log.MonadLog m,
     HTTP.MonadHTTP m,
     DB.MonadUsersDB m,
