@@ -3,13 +3,6 @@ module App.Error where
 import Control.Monad.Catch (Exception)
 import Data.Text
 
-data Priority
-  = Debug
-  | Info
-  | Warning
-  | Error
-  deriving (Eq, Enum, Show)
-
 data AppError
   = APIError Text
   | BotError Text
