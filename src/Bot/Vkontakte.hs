@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -35,7 +37,7 @@ import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (evalStateT, lift, put)
-import qualified Data.Aeson as A
+import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -43,6 +45,7 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
+import GHC.Generics (Generic)
 
 data Config = Config
   { key :: String,
@@ -152,18 +155,21 @@ instance
       Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
     pure ()
 
-instance A.ToJSON Bot.QueryData where
-  toJSON (Bot.QDRepeat i) = A.object ["repeat" A..= i]
+newtype CallbackQueryJSON = CallbackQueryJSON {unCallbackQueryJSON :: T.Text}
+  deriving (Generic, A.ToJSON, A.FromJSON)
 
-instance A.FromJSON Bot.QueryData where
-  parseJSON =
-    A.withObject "FromJSON Bot.QueryData" $ \o ->
-      Bot.QDRepeat <$> o A..: "repeat"
+wrapCallbackQuery :: Bot.QueryData -> CallbackQueryJSON
+wrapCallbackQuery = CallbackQueryJSON . Bot.encodeQuery
 
-qualifyQuery :: VK.CallbackEvent -> Maybe Bot.QueryData
+unwrapCallbackQuery :: CallbackQueryJSON -> Maybe Bot.QueryData
+unwrapCallbackQuery = Bot.parseQuery . unCallbackQueryJSON
+
+qualifyQuery :: (MonadThrow m) => VK.CallbackEvent -> m Bot.QueryData
 qualifyQuery cq = do
-  let qstring = VK.payload cq
-  A.parseMaybe A.parseJSON qstring
+  let cbJSON = A.parseMaybe A.parseJSON $ VK.payload cq
+  case cbJSON >>= unwrapCallbackQuery of
+    Just qdata -> pure qdata
+    Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 respondToCallback ::
   (BR.MonadBotReplies m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
@@ -191,7 +197,8 @@ repeatKeyboard =
       VK.KeyboardAction
         { action_type = VK.Callback,
           action_label = Just $ T.tshow i,
-          action_payload = Just $ A.toJSON $ Bot.QDRepeat i,
+          action_payload =
+            Just . A.toJSON $ wrapCallbackQuery (Bot.QDRepeat i),
           action_link = Nothing
         }
 
