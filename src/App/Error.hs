@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveAnyClass #-}
+
 module App.Error where
 
 import Control.Monad.Catch (Exception)
@@ -9,9 +11,7 @@ data AppError
   | HTTPError Text
   | LoggerError Text
   | DBError Text
-  deriving (Show)
-
-instance Exception AppError
+  deriving (Show, Exception)
 
 apiError :: Text -> AppError
 apiError = APIError
