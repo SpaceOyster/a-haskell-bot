@@ -1,15 +1,18 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications #-}
 
 module App.Monad where
 
 import App.Env (Env (..))
+import App.Error (AppError)
 import qualified Bot.Replies as BR
-import Control.Monad.Catch (MonadCatch, MonadThrow)
+import Control.Monad.Catch (MonadCatch, MonadThrow, catch)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..))
 import Data.Has (grab)
+import qualified Data.Text.Extended as T (tshow)
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP
 import qualified Effects.Log as Log
@@ -33,8 +36,15 @@ newtype App a = App
       MonadReader AppEnv
     )
 
-runApp :: AppEnv -> App a -> IO a
-runApp env = (`runReaderT` env) . unApp
+runApp :: AppEnv -> App () -> IO ()
+runApp env app =
+  flip runReaderT env . unApp $
+    app `catch` \e ->
+      Log.logError . mconcat $
+        [ "Unable to proceed: \n",
+          T.tshow (e :: AppError),
+          "\nClosing application."
+        ]
 
 instance Log.MonadLog App where
   doLog p t = do
