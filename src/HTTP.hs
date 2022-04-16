@@ -55,7 +55,13 @@ new_ _cfg = do
     rethrow req ex = throwM $ convertException req ex
 
 convertException :: HTTP.Request -> H.HttpException -> AppError
-convertException req ex = httpError $ "Failed to send request: " <> T.tshow req <> "\n\tWith Error: " <> T.tshow ex
+convertException req ex =
+  httpError . mconcat $
+    [ "Failed to send request: ",
+      T.tshow req,
+      "\n\tWith Error: ",
+      T.tshow ex
+    ]
 
 sendWith :: H.Manager -> HTTP.Request -> IO L8.ByteString
 sendWith manager req =
