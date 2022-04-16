@@ -45,7 +45,7 @@ new cfg = new_ cfg `catch` rethrow
   where
     rethrow = throwM . convert
     convert :: IOError -> AppError
-    convert = httpError . ("Failed to initiate HTTP handler: " <>) . T.tshow
+    convert e = httpError $ "Failed to initiate HTTP handler: " <> T.tshow e
 
 new_ :: Config -> IO Handle
 new_ _cfg = do
