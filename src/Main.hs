@@ -80,10 +80,11 @@ runWithApp :: AppConfig -> BotToRun -> IO ()
 runWithApp cfg@AppConfig {..} bot =
   Logger.withHandle logger $ \hLog -> do
     Logger.hLogInfo hLog "Initiating Main Bot loop"
-    Logger.hLogInfo hLog $
-      "API Polling period is "
-        <> T.tshow (fromIntegral poll_period / 1000 :: Double)
-        <> "ms"
+    Logger.hLogInfo hLog . mconcat $
+      [ "API Polling period is ",
+        T.tshow (fromIntegral poll_period / 1000 :: Double),
+        "ms"
+      ]
     env <- newAppEnv hLog cfg
     let app Telegram = TG.evalTelegramT telegram $ Bot.loop poll_period
         app Vkontakte = VK.evalVkontakteT vkontakte $ Bot.loop poll_period
