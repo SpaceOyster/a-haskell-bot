@@ -112,7 +112,7 @@ instance
   qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
 
   reactToCallback ::
-    ( MonadThrow m,
+    ( MonadCatch m,
       Log.MonadLog m,
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
@@ -120,10 +120,11 @@ instance
     ) =>
     VK.CallbackEvent ->
     VK.VkontakteT m ()
-  reactToCallback cq =
-    case qualifyQuery cq of
-      Just qdata -> respondToCallback qdata cq
-      Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
+  reactToCallback cq = flip catch logError $ do
+    qdata <- qualifyQuery cq
+    respondToCallback qdata cq
+    where
+      logError e = lift . Log.logWarning $ T.tshow (e :: AppError)
 
   getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {msg_from_id} = do
