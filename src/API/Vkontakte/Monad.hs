@@ -71,12 +71,14 @@ apiMethod method qps = do
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
-  maybe ex pure . URI.parseURI $
-    "https://api.vk.com/method/?v=" <> v
-      <> "&access_token="
-      <> key
-      <> "&group_id="
-      <> show group_id
+  maybe ex pure . URI.parseURI . mconcat $
+    [ "https://api.vk.com/method/?v=",
+      v,
+      "&access_token=",
+      key,
+      "&group_id=",
+      show group_id
+    ]
   where
     ex = throwM $ apiError "Unable to parse Vkontakte API URL"
 
