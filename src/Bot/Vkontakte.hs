@@ -131,14 +131,27 @@ instance
     let author = VK.User msg_from_id
     lift $ author & DB.getUserData & DB.orDefaultData
 
-  echoMessageNTimes :: VK.Message -> Int -> VK.VkontakteT m ()
+  echoMessageNTimes ::
+    (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+    VK.Message ->
+    Int ->
+    VK.VkontakteT m ()
   echoMessageNTimes msg n = do
-    lift $
-      Log.logDebug $
-        "generating " <> T.tshow n
-          <> " echoes for Message: "
-          <> T.tshow (VK.msg_id msg)
-    n `replicateM_` VK.Methods.copyMessage msg
+    lift . Log.logDebug . mconcat $
+      [ "generating ",
+        T.tshow n,
+        " echoes for Message: ",
+        T.tshow (VK.msg_id msg)
+      ]
+    replicateM_ n (VK.Methods.copyMessage msg) `catch` logError
+    where
+      logError e = do
+        lift . Log.logError . T.unlines $
+          [ "Failed to reply with echo to message: ",
+            T.tshow msg,
+            "\tWith Error: ",
+            T.tshow (e :: AppError)
+          ]
 
   getCommand :: (Monad m) => VK.Message -> VK.VkontakteT m Bot.BotCommand
   getCommand = pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
