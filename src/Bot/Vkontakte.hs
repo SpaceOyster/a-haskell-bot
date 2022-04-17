@@ -157,7 +157,7 @@ instance
   getCommand = pure . Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
 
   execCommand ::
-    ( MonadThrow m,
+    ( MonadCatch m,
       Log.MonadLog m,
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
@@ -165,15 +165,15 @@ instance
     ) =>
     Bot.BotCommand ->
     (VK.Message -> VK.VkontakteT m ())
-  execCommand cmd VK.Message {..} = do
-    lift $
-      Log.logDebug $
-        "Got command"
-          <> T.tshow cmd
-          <> " in message id "
-          <> T.tshow msg_id
-          <> " , peer_id: "
-          <> T.tshow msg_peer_id
+  execCommand cmd msg@VK.Message {..} = flip catch logError $ do
+    lift . Log.logDebug . mconcat $
+      [ "Got command ",
+        T.tshow cmd,
+        " in message id: ",
+        T.tshow msg_id,
+        " , peer_id: ",
+        T.tshow msg_peer_id
+      ]
     let address = msg_peer_id
     prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
     replies <- lift BR.getReplies
@@ -183,6 +183,14 @@ instance
       Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
       Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
     pure ()
+    where
+      logError e =
+        lift . Log.logError . T.unlines $
+          [ "Failed to execute " <> T.tshow cmd <> " from message ",
+            T.tshow msg,
+            "\t With Error: ",
+            T.tshow (e :: AppError)
+          ]
 
 newtype CallbackQueryJSON = CallbackQueryJSON {unCallbackQueryJSON :: T.Text}
   deriving (Generic, A.ToJSON, A.FromJSON)
