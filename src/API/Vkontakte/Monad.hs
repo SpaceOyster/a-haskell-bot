@@ -44,12 +44,7 @@ data Config = Config
     v :: String
   }
 
-instance Semigroup VKState where
-  _a <> b = b
-
-instance Monoid VKState where
-  mempty =
-    VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
+emptyVKState = VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
 rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => PollResponse -> VkontakteT m PollResponse
@@ -60,11 +55,13 @@ updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 initiate ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VkontakteT m VKState
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Config ->
+  VkontakteT m VKState
 initiate cfg = do
   lift $ Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
-  put $ mempty {apiURI}
+  put $ emptyVKState {apiURI}
   initiatePollServer
 
 apiMethod :: (Monad m) => T.Text -> [URI.QueryParam] -> VkontakteT m URI.URI

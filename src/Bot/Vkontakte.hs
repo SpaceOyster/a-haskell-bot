@@ -28,6 +28,7 @@ import qualified API.Vkontakte as VK
     User (..),
     VKState (..),
     VkontakteT (..),
+    emptyVKState,
     initiate,
   )
 import API.Vkontakte.Methods as VK.Methods
@@ -56,8 +57,12 @@ data Config = Config
   }
   deriving (Show)
 
-evalVkontakteT :: (Monad m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VK.VkontakteT m a -> m a
-evalVkontakteT cfg t = flip evalStateT mempty $
+evalVkontakteT ::
+  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Config ->
+  VK.VkontakteT m a ->
+  m a
+evalVkontakteT cfg t = flip evalStateT VK.emptyVKState $
   VK.unVkontakteT $ do
     st <- initiate cfg
     put st >> t
