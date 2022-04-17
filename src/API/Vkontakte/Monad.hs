@@ -97,12 +97,12 @@ getLongPollServer = do
   case A.decode json of
     Just (PollInitServer r) -> pure r
     Just (PollInitError Error {error_code, error_msg}) ->
-      throwM $
-        apiError $
-          "Vkontakte poll server responded with error: "
-            <> T.tshow error_code
-            <> ": "
-            <> error_msg
+      throwM . apiError . mconcat $
+        [ "Vkontakte poll server responded with error: ",
+          T.tshow error_code,
+          ": ",
+          error_msg
+        ]
     Nothing -> throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
