@@ -94,13 +94,18 @@ instance
   type CallbackQuery (VK.VkontakteT m) = VK.CallbackEvent
 
   fetchUpdates ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+    (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     VK.VkontakteT m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
-    VK.Methods.getUpdates
+    catch VK.Methods.getUpdates $ \e -> do
+      lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
+      pure []
 
-  qualifyUpdate :: (MonadThrow m) => VK.GroupEvent -> VK.VkontakteT m (Bot.Entity (VK.VkontakteT m))
+  qualifyUpdate ::
+    (Monad m) =>
+    VK.GroupEvent ->
+    VK.VkontakteT m (Bot.Entity (VK.VkontakteT m))
   qualifyUpdate (VK.MessageNew m)
     | isCommandE m = pure $ Bot.ECommand m
     | otherwise = pure $ Bot.EMessage m
