@@ -32,7 +32,7 @@ import qualified API.Vkontakte as VK
     initiate,
   )
 import API.Vkontakte.Methods as VK.Methods
-import App.Error (botError)
+import App.Error (AppError, botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
@@ -68,11 +68,15 @@ evalVkontakteT cfg t = flip evalStateT VK.emptyVKState $
     put st >> t
 
 initiate ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => Config -> VK.VkontakteT m VK.VKState
+  (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Config ->
+  VK.VkontakteT m VK.VKState
 initiate cfg@Config {..} = do
   lift $ Log.logInfo "Initiating Vkontakte Bot"
   lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
-  VK.initiate VK.Config {..}
+  VK.initiate VK.Config {..} `catch` \e -> do
+    lift $ Log.logError "Failed to initiate Vkontakte Long Poll API"
+    throwM (e :: AppError)
 
 instance
   ( MonadThrow m,
