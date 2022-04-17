@@ -36,11 +36,7 @@ newtype Config = Config
   { key :: String
   }
 
-instance Semigroup TGState where
-  _a <> b = b
-
-instance Monoid TGState where
-  mempty = TGState {lastUpdate = 0, apiURI = URI.nullURI}
+emptyTGState = TGState {lastUpdate = 0, apiURI = URI.nullURI}
 
 newStateFromM :: [Update] -> TGState -> Maybe TGState
 newStateFromM us@(_ : _) st = Just $ st {lastUpdate = 1 + update_id (last us)}
@@ -56,7 +52,7 @@ initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
   Log.logInfo "Initiating Telegram API handle"
   apiURI <- makeBaseURI cfg
-  pure $ mempty {apiURI}
+  pure $ emptyTGState {apiURI}
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
