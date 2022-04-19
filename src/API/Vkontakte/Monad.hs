@@ -44,6 +44,7 @@ data Config = Config
     v :: String
   }
 
+emptyVKState :: VKState
 emptyVKState = VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
 
 rememberLastUpdate ::
