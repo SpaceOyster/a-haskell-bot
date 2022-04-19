@@ -98,7 +98,7 @@ instance
     VK.VkontakteT m [VK.GroupEvent]
   fetchUpdates = do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
-    catch VK.Methods.getUpdates $ \e -> do
+    VK.Methods.getUpdates `catch` \e -> do
       lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
       pure []
 
