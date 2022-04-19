@@ -36,6 +36,7 @@ newtype Config = Config
   { key :: String
   }
 
+emptyTGState :: TGState
 emptyTGState = TGState {lastUpdate = 0, apiURI = URI.nullURI}
 
 newStateFromM :: [Update] -> TGState -> Maybe TGState
