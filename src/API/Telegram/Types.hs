@@ -1,7 +1,6 @@
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
-{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -15,8 +14,6 @@ module API.Telegram.Types
     User (..),
     Message (..),
     Update (..),
-    getAuthorThrow,
-    getQDataThrow,
     fromResponse,
   )
 where
@@ -54,20 +51,6 @@ data Message = Message
   }
   deriving (Show, Generic, FromJSON)
 
-getAuthorThrow :: (MonadThrow m) => Message -> m User
-getAuthorThrow Message {message_id, from} =
-  case from of
-    Just t -> pure t
-    Nothing ->
-      throwM . apiError $ "Message " <> T.tshow message_id <> " has no author"
-
-getTextThrow :: (MonadThrow m) => Message -> m T.Text
-getTextThrow Message {message_id, text} =
-  case text of
-    Just t -> pure t
-    Nothing ->
-      throwM . apiError $ "Message " <> T.tshow message_id <> " has no text"
-
 data BotCommand = BotCommand
   { command :: T.Text,
     description :: T.Text
@@ -82,14 +65,6 @@ data CallbackQuery = CallbackQuery
     query_data :: Maybe T.Text
   }
   deriving (Show)
-
-getQDataThrow :: (MonadThrow m) => CallbackQuery -> m T.Text
-getQDataThrow CallbackQuery {cq_id, query_data} =
-  case query_data of
-    Just d -> pure d
-    Nothing ->
-      throwM . apiError $
-        "CallbackQuery " <> T.tshow cq_id <> " has no query data"
 
 instance FromJSON CallbackQuery where
   parseJSON =
@@ -140,13 +115,6 @@ data Update = Update
     callback_query :: Maybe CallbackQuery
   }
   deriving (Show, Generic, FromJSON)
-
-getMessageThrow :: (MonadThrow m) => Update -> m Message
-getMessageThrow Update {update_id, message} =
-  case message of
-    Just t -> pure t
-    Nothing ->
-      throwM . apiError $ "Update " <> T.tshow update_id <> " has no message"
 
 data Error = Error
   { error_code :: Int,

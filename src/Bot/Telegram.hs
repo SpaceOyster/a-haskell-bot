@@ -24,8 +24,6 @@ import qualified API.Telegram as TG
     TGState (..),
     TelegramT (..),
     Update (..),
-    getAuthorThrow,
-    getQDataThrow,
     initiate,
   )
 import qualified API.Telegram.Methods as TG.Methods
