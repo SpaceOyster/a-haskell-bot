@@ -108,8 +108,8 @@ instance
 
   getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do
-    author <- TG.getAuthorThrow msg
-    lift $ author & DB.getUserData & DB.orDefaultData
+    let maybeAuthor = TG.from (msg :: TG.Message)
+    lift $ maybeAuthor & DB.getUserDataM & DB.orDefaultData
 
   echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m ()
   echoMessageNTimes msg n = do
