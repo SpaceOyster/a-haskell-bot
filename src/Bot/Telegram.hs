@@ -94,7 +94,10 @@ instance
       lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
       pure []
 
-  qualifyUpdate :: (MonadThrow m) => TG.Update -> TG.TelegramT m (Bot.Entity (TG.TelegramT m))
+  qualifyUpdate ::
+    (Monad m) =>
+    TG.Update ->
+    TG.TelegramT m (Bot.Entity (TG.TelegramT m))
   qualifyUpdate u@TG.Update {message, callback_query}
     | Just cq <- callback_query = pure $ Bot.ECallback cq
     | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
@@ -107,12 +110,16 @@ instance
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
     TG.TelegramT m ()
-  reactToCallback cq =
-    case qualifyQuery cq of
-      Just qdata -> respondToCallback qdata cq
-      Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
+  reactToCallback cq = flip catch logError $ do
+    qdata <- qualifyQuery cq
+    respondToCallback qdata cq
+    where
+      logError e = lift . Log.logWarning $ T.tshow (e :: AppError)
 
-  getAuthorsSettings :: (DB.MonadUsersDB m) => TG.Message -> TG.TelegramT m DB.UserData
+  getAuthorsSettings ::
+    (DB.MonadUsersDB m) =>
+    TG.Message ->
+    TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do
     let maybeAuthor = TG.from (msg :: TG.Message)
     lift $ maybeAuthor & DB.getUserDataM & DB.orDefaultData
