@@ -29,7 +29,6 @@ repeatPrompt userM = do
 
 data BotDSL api ret
   = FetchUpdates ([Entity api] -> BotDSL api ret)
-  | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
   | GetCommand (Command api) (BotCommand -> BotDSL api ret)
   | ExecCommand BotCommand (Command api) (BotDSL api ret)
   | ReactToCallback (CallbackQuery api) (BotDSL api ret)
@@ -50,7 +49,6 @@ instance Monad (BotDSL a) where
     case t of
       Done ret -> mk ret
       FetchUpdates next -> FetchUpdates $ next >=> mk
-      QualifyUpdate u next -> QualifyUpdate u $ next >=> mk
       GetCommand c next -> GetCommand c $ next >=> mk
       ExecCommand bc c next -> ExecCommand bc c $ next >>= mk
       ReactToCallback c next -> ReactToCallback c $ next >>= mk
@@ -149,7 +147,6 @@ doBotThing = forever (fetchUpdates >>= reactToUpdates)
 
 interpret :: EchoBotMonad m => BotDSL m a -> m a
 interpret (FetchUpdates next) = fetchUpdates >>= interpret . next
-interpret (QualifyUpdate u next) = qualifyUpdate u >>= interpret . next
 interpret (GetCommand c next) = getCommand c >>= interpret . next
 interpret (ExecCommand bc c next) = execCommand bc c >> interpret next
 interpret (ReactToCallback c next) = reactToCallback c >> interpret next
@@ -159,9 +156,6 @@ interpret (Done ret) = pure ret
 
 fetchUpdatesDSL :: BotDSL api [Entity api]
 fetchUpdatesDSL = FetchUpdates Done
-
-qualifyUpdateDSL :: Update api -> BotDSL api (Entity api)
-qualifyUpdateDSL u = QualifyUpdate u Done
 
 botLoop :: BotDSL a ret
 botLoop = do
