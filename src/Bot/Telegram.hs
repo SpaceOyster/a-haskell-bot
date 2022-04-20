@@ -161,10 +161,13 @@ instance
     ) =>
     Bot.BotCommand ->
     (TG.Message -> TG.TelegramT m ())
-  execCommand cmd TG.Message {..} = do
-    lift $
-      Log.logDebug $
-        "got command " <> T.tshow cmd <> " in message id " <> T.tshow message_id
+  execCommand cmd msg@TG.Message {..} = flip catch logError $ do
+    lift . Log.logDebug . mconcat $
+      [ "got command ",
+        T.tshow cmd,
+        " in message id ",
+        T.tshow message_id
+      ]
     let address = TG.chat_id chat
     prompt <- lift $ Bot.repeatPrompt from
     replies <- lift BR.getReplies
@@ -174,6 +177,14 @@ instance
       Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
       Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
     pure ()
+    where
+      logError e =
+        lift . Log.logError . T.unlines $
+          [ "Failed to execute " <> T.tshow cmd <> " from message ",
+            T.tshow msg,
+            "\t With Error: ",
+            T.tshow (e :: AppError)
+          ]
 
 qualifyQuery :: (MonadThrow m) => TG.CallbackQuery -> m Bot.QueryData
 qualifyQuery cq = do
