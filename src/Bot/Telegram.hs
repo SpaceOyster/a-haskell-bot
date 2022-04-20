@@ -70,6 +70,18 @@ initiate cfg@Config {..} = do
     Log.logError "Failed to initiate Telegram Poll API"
     throwM (e :: AppError)
 
+qualifyUpdate_ ::
+  (MonadThrow m) =>
+  TG.Update ->
+  m (Bot.Entity (TG.TelegramT n))
+qualifyUpdate_ u@TG.Update {message, callback_query}
+  | Just cq <- callback_query = pure $ Bot.ECallback cq
+  | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
+  | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
+  | otherwise =
+      throwM . botError $
+        "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
+
 instance
   ( MonadThrow m,
     MonadCatch m,
@@ -87,11 +99,11 @@ instance
 
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    TG.TelegramT m [TG.Update]
     TG.TelegramT m [Bot.Entity (TG.TelegramT m)]
   fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "fetching Updates"
-    TG.Methods.getUpdates
+    updates <- TG.Methods.getUpdates
+    pure $ [x | u <- updates, x <- qualifyUpdate_ u]
     where
       logError e = do
         lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)

@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -27,7 +28,7 @@ repeatPrompt userM = do
   pure $ Bot.insertUserData userData prompt
 
 data BotDSL api ret
-  = FetchUpdates ([Update api] -> BotDSL api ret)
+  = FetchUpdates ([Entity api] -> BotDSL api ret)
   | QualifyUpdate (Update api) (Entity api -> BotDSL api ret)
   | GetCommand (Command api) (BotCommand -> BotDSL api ret)
   | ExecCommand BotCommand (Command api) (BotDSL api ret)
@@ -114,7 +115,7 @@ class (Monad m) => EchoBotMonad m where
   type Command m
   type CallbackQuery m
 
-  fetchUpdates :: m [Update m]
+  fetchUpdates :: m [Entity m]
   qualifyUpdate :: Update m -> m (Entity m)
   reactToCallback :: CallbackQuery m -> m ()
   getAuthorsSettings :: Message m -> m DB.UserData
@@ -133,15 +134,14 @@ reactToCommand c = do
   cmd <- Bot.getCommand c
   Bot.execCommand cmd c
 
-reactToUpdate :: EchoBotMonad m => Update m -> m ()
+reactToUpdate :: EchoBotMonad m => Entity m -> m ()
 reactToUpdate update = do
-  qu <- qualifyUpdate update
-  case qu of
+  case update of
     Bot.ECommand msg -> Bot.reactToCommand msg
     Bot.EMessage msg -> Bot.reactToMessage msg
     Bot.ECallback cq -> Bot.reactToCallback cq
 
-reactToUpdates :: EchoBotMonad m => [Update m] -> m ()
+reactToUpdates :: EchoBotMonad m => [Entity m] -> m ()
 reactToUpdates = mapM_ reactToUpdate
 
 doBotThing :: EchoBotMonad m => m ()
@@ -157,7 +157,7 @@ interpret (GetAuthorsSettings m next) = getAuthorsSettings m >>= interpret . nex
 interpret (EchoMessageNTimes m n next) = echoMessageNTimes m n >> interpret next
 interpret (Done ret) = pure ret
 
-fetchUpdatesDSL :: BotDSL api [Update api]
+fetchUpdatesDSL :: BotDSL api [Entity api]
 fetchUpdatesDSL = FetchUpdates Done
 
 qualifyUpdateDSL :: Update api -> BotDSL api (Entity api)
@@ -166,12 +166,10 @@ qualifyUpdateDSL u = QualifyUpdate u Done
 botLoop :: BotDSL a ret
 botLoop = do
   updates <- fetchUpdatesDSL
-  forM_ updates $ \u -> do
-    e <- qualifyUpdateDSL u
-    case e of
-      ECommand cmd -> reactToCommandDSL cmd
-      EMessage msg -> reactToMessageDSL msg
-      ECallback cq -> reactToCallbackDSL cq
+  forM_ updates $ \case
+    ECommand cmd -> reactToCommandDSL cmd
+    EMessage msg -> reactToMessageDSL msg
+    ECallback cq -> reactToCallbackDSL cq
   botLoop
 
 reactToCommandDSL :: Command api -> BotDSL api ()

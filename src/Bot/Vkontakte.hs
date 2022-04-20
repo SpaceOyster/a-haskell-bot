@@ -78,6 +78,15 @@ initiate cfg@Config {..} = do
     lift $ Log.logError "Failed to initiate Vkontakte Long Poll API"
     throwM (e :: AppError)
 
+qualifyUpdate_ ::
+  (MonadThrow m) =>
+  VK.GroupEvent ->
+  m (Bot.Entity (VK.VkontakteT n))
+qualifyUpdate_ (VK.MessageNew m)
+  | isCommandE m = pure $ Bot.ECommand m
+  | otherwise = pure $ Bot.EMessage m
+qualifyUpdate_ (VK.MessageEvent c) = pure $ Bot.ECallback c
+
 instance
   ( MonadThrow m,
     MonadCatch m,
@@ -95,10 +104,11 @@ instance
 
   fetchUpdates ::
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    VK.VkontakteT m [VK.GroupEvent]
+    VK.VkontakteT m [Bot.Entity (VK.VkontakteT m)]
   fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
-    VK.Methods.getUpdates
+    updates <- VK.Methods.getUpdates
+    pure $ [x | u <- updates, x <- qualifyUpdate_ u]
     where
       logError e = do
         lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
