@@ -124,14 +124,27 @@ instance
     let maybeAuthor = TG.from (msg :: TG.Message)
     lift $ maybeAuthor & DB.getUserDataM & DB.orDefaultData
 
-  echoMessageNTimes :: TG.Message -> Int -> TG.TelegramT m ()
+  echoMessageNTimes ::
+    (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+    TG.Message ->
+    Int ->
+    TG.TelegramT m ()
   echoMessageNTimes msg n = do
-    lift $
-      Log.logDebug $
-        "generating " <> T.tshow n
-          <> " echoes for Message: "
-          <> T.tshow (TG.message_id msg)
-    n `replicateM_` TG.Methods.copyMessage msg
+    lift . Log.logDebug . mconcat $
+      [ "grnerating ",
+        T.tshow n,
+        " echoes for Message: ",
+        T.tshow (TG.message_id msg)
+      ]
+    replicateM_ n (TG.Methods.copyMessage msg) `catch` logError
+    where
+      logError e =
+        lift . Log.logError . T.unlines $
+          [ "Failed to reply with echo to message: ",
+            T.tshow msg,
+            "\tWith Error: ",
+            T.tshow (e :: AppError)
+          ]
 
   getCommand :: (Monad m) => TG.Message -> TG.TelegramT m Bot.BotCommand
   getCommand TG.Message {text} =
