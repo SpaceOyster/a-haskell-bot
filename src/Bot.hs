@@ -108,7 +108,6 @@ encodeQuery :: QueryData -> T.Text
 encodeQuery (QDRepeat n) = "repeat_" <> T.tshow n
 
 class (Monad m) => EchoBotMonad m where
-  type Update m
   type Message m
   type Command m
   type CallbackQuery m

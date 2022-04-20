@@ -88,7 +88,6 @@ instance
   ) =>
   Bot.EchoBotMonad (VK.VkontakteT m)
   where
-  type Update (VK.VkontakteT m) = VK.GroupEvent
   type Message (VK.VkontakteT m) = VK.Message
   type Command (VK.VkontakteT m) = VK.Message
   type CallbackQuery (VK.VkontakteT m) = VK.CallbackEvent

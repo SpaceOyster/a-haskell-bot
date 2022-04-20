@@ -80,7 +80,6 @@ instance
   ) =>
   Bot.EchoBotMonad (TG.TelegramT m)
   where
-  type Update (TG.TelegramT m) = TG.Update
   type Message (TG.TelegramT m) = TG.Message
   type Command (TG.TelegramT m) = TG.Message
   type CallbackQuery (TG.TelegramT m) = TG.CallbackQuery
