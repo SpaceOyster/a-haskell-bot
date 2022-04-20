@@ -126,7 +126,10 @@ instance
     where
       logError e = lift . Log.logWarning $ T.tshow (e :: AppError)
 
-  getAuthorsSettings :: VK.Message -> VK.VkontakteT m DB.UserData
+  getAuthorsSettings ::
+    (DB.MonadUsersDB m) =>
+    VK.Message ->
+    VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {msg_from_id} = do
     let author = VK.User msg_from_id
     lift $ author & DB.getUserData & DB.orDefaultData
@@ -145,7 +148,7 @@ instance
       ]
     replicateM_ n (VK.Methods.copyMessage msg) `catch` logError
     where
-      logError e = do
+      logError e =
         lift . Log.logError . T.unlines $
           [ "Failed to reply with echo to message: ",
             T.tshow msg,
