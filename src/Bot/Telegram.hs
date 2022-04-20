@@ -33,7 +33,7 @@ import qualified API.Telegram.Methods as TG.Methods
     sendInlineKeyboard,
     sendMessage,
   )
-import App.Error (botError)
+import App.Error (AppError, botError)
 import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
@@ -53,16 +53,22 @@ data Config = Config
   }
   deriving (Show)
 
-evalTelegramT :: (Monad m, MonadThrow m, Log.MonadLog m) => Config -> TG.TelegramT m a -> m a
+evalTelegramT ::
+  (Monad m, MonadCatch m, Log.MonadLog m) =>
+  Config ->
+  TG.TelegramT m a ->
+  m a
 evalTelegramT cfg t = do
   st <- initiate cfg
   evalStateT (TG.unTelegramT t) st
 
-initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TG.TGState
+initiate :: (MonadCatch m, Log.MonadLog m) => Config -> m TG.TGState
 initiate cfg@Config {..} = do
   Log.logInfo "Initiating Telegram Bot"
   Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
-  TG.initiate TG.Config {..}
+  TG.initiate TG.Config {..} `catch` \e -> do
+    Log.logError "Failed to initiate Telegram Poll API"
+    throwM (e :: AppError)
 
 instance
   ( MonadThrow m,
