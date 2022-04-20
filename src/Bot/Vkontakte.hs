@@ -96,11 +96,13 @@ instance
   fetchUpdates ::
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     VK.VkontakteT m [VK.GroupEvent]
-  fetchUpdates = do
+  fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
-    VK.Methods.getUpdates `catch` \e -> do
-      lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
-      pure []
+    VK.Methods.getUpdates
+    where
+      logError e = do
+        lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
+        pure []
 
   qualifyUpdate ::
     (Monad m) =>
