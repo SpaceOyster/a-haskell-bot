@@ -88,11 +88,14 @@ instance
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     TG.TelegramT m [TG.Update]
-  fetchUpdates = do
+    TG.TelegramT m [Bot.Entity (TG.TelegramT m)]
+  fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "fetching Updates"
-    TG.Methods.getUpdates `catch` \e -> do
-      lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
-      pure []
+    TG.Methods.getUpdates
+    where
+      logError e = do
+        lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
+        pure []
 
   qualifyUpdate ::
     (Monad m) =>
