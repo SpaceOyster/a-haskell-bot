@@ -90,7 +90,9 @@ instance
     TG.TelegramT m [TG.Update]
   fetchUpdates = do
     lift $ Log.logInfo "fetching Updates"
-    TG.Methods.getUpdates
+    TG.Methods.getUpdates `catch` \e -> do
+      lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
+      pure []
 
   qualifyUpdate :: (MonadThrow m) => TG.Update -> TG.TelegramT m (Bot.Entity (TG.TelegramT m))
   qualifyUpdate u@TG.Update {message, callback_query}
