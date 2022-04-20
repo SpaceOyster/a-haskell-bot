@@ -114,7 +114,6 @@ class (Monad m) => EchoBotMonad m where
   type CallbackQuery m
 
   fetchUpdates :: m [Entity m]
-  qualifyUpdate :: Update m -> m (Entity m)
   reactToCallback :: CallbackQuery m -> m ()
   getAuthorsSettings :: Message m -> m DB.UserData
   echoMessageNTimes :: Message m -> Int -> m ()

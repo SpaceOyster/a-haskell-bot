@@ -78,15 +78,6 @@ initiate cfg@Config {..} = do
     lift $ Log.logError "Failed to initiate Vkontakte Long Poll API"
     throwM (e :: AppError)
 
-qualifyUpdate_ ::
-  (MonadThrow m) =>
-  VK.GroupEvent ->
-  m (Bot.Entity (VK.VkontakteT n))
-qualifyUpdate_ (VK.MessageNew m)
-  | isCommandE m = pure $ Bot.ECommand m
-  | otherwise = pure $ Bot.EMessage m
-qualifyUpdate_ (VK.MessageEvent c) = pure $ Bot.ECallback c
-
 instance
   ( MonadThrow m,
     MonadCatch m,
@@ -108,20 +99,11 @@ instance
   fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     updates <- VK.Methods.getUpdates
-    pure $ [x | u <- updates, x <- qualifyUpdate_ u]
+    pure $ [x | u <- updates, x <- qualifyUpdate u]
     where
       logError e = do
         lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
         pure []
-
-  qualifyUpdate ::
-    (Monad m) =>
-    VK.GroupEvent ->
-    VK.VkontakteT m (Bot.Entity (VK.VkontakteT m))
-  qualifyUpdate (VK.MessageNew m)
-    | isCommandE m = pure $ Bot.ECommand m
-    | otherwise = pure $ Bot.EMessage m
-  qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
 
   reactToCallback ::
     ( MonadCatch m,
@@ -206,6 +188,15 @@ instance
             "\t With Error: ",
             T.tshow (e :: AppError)
           ]
+
+qualifyUpdate ::
+  (MonadThrow m) =>
+  VK.GroupEvent ->
+  m (Bot.Entity (VK.VkontakteT n))
+qualifyUpdate (VK.MessageNew m)
+  | isCommandE m = pure $ Bot.ECommand m
+  | otherwise = pure $ Bot.EMessage m
+qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
 
 newtype CallbackQueryJSON = CallbackQueryJSON {unCallbackQueryJSON :: T.Text}
   deriving (Generic, A.ToJSON, A.FromJSON)

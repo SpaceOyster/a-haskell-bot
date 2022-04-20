@@ -70,18 +70,6 @@ initiate cfg@Config {..} = do
     Log.logError "Failed to initiate Telegram Poll API"
     throwM (e :: AppError)
 
-qualifyUpdate_ ::
-  (MonadThrow m) =>
-  TG.Update ->
-  m (Bot.Entity (TG.TelegramT n))
-qualifyUpdate_ u@TG.Update {message, callback_query}
-  | Just cq <- callback_query = pure $ Bot.ECallback cq
-  | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
-  | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
-  | otherwise =
-      throwM . botError $
-        "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
-
 instance
   ( MonadThrow m,
     MonadCatch m,
@@ -103,23 +91,11 @@ instance
   fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "fetching Updates"
     updates <- TG.Methods.getUpdates
-    pure $ [x | u <- updates, x <- qualifyUpdate_ u]
+    pure $ [x | u <- updates, x <- qualifyUpdate u]
     where
       logError e = do
         lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
         pure []
-
-  qualifyUpdate ::
-    (Monad m) =>
-    TG.Update ->
-    TG.TelegramT m (Bot.Entity (TG.TelegramT m))
-  qualifyUpdate u@TG.Update {message, callback_query}
-    | Just cq <- callback_query = pure $ Bot.ECallback cq
-    | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
-    | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
-    | otherwise =
-        throwM . botError $
-          "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
@@ -200,6 +176,18 @@ instance
             "\t With Error: ",
             T.tshow (e :: AppError)
           ]
+
+qualifyUpdate ::
+  (MonadThrow m) =>
+  TG.Update ->
+  m (Bot.Entity (TG.TelegramT n))
+qualifyUpdate u@TG.Update {message, callback_query}
+  | Just cq <- callback_query = pure $ Bot.ECallback cq
+  | Just msg <- message, isCommandE msg = pure $ Bot.ECommand msg
+  | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
+  | otherwise =
+      throwM . botError $
+        "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
 qualifyQuery :: (MonadThrow m) => TG.CallbackQuery -> m Bot.QueryData
 qualifyQuery cq = do
