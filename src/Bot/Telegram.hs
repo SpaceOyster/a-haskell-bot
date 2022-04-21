@@ -136,12 +136,6 @@ instance
             T.tshow (e :: AppError)
           ]
 
-  getCommand :: (Monad m) => TG.Message -> TG.TelegramT m Bot.BotCommand
-  getCommand TG.Message {text} =
-    pure $ case text of
-      Nothing -> Bot.UnknownCommand
-      Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
-
   execCommand ::
     ( MonadThrow m,
       Log.MonadLog m,
@@ -176,8 +170,8 @@ instance
             T.tshow (e :: AppError)
           ]
 
-getCommand_ :: TG.Message -> Bot.BotCommand
-getCommand_ TG.Message {text} =
+getCommand :: TG.Message -> Bot.BotCommand
+getCommand TG.Message {text} =
   case text of
     Nothing -> Bot.UnknownCommand
     Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
@@ -188,7 +182,7 @@ qualifyUpdate ::
   m (Bot.Entity (TG.TelegramT n))
 qualifyUpdate u@TG.Update {message, callback_query}
   | Just cq <- callback_query = pure $ Bot.ECallback cq
-  | Just msg <- message, isCommandE msg = pure $ Bot.ECommand (getCommand_ msg) msg
+  | Just msg <- message, isCommandE msg = pure $ Bot.ECommand (getCommand msg) msg
   | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
   | otherwise =
       throwM . botError $

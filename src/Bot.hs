@@ -114,7 +114,6 @@ class (Monad m) => EchoBotMonad m where
   reactToCallback :: CallbackQuery m -> m ()
   getAuthorsSettings :: Message m -> m DB.UserData
   echoMessageNTimes :: Message m -> Int -> m ()
-  getCommand :: Command m -> m BotCommand
   execCommand :: BotCommand -> (Command m -> m ())
 
 reactToMessage :: EchoBotMonad m => Message m -> m ()
@@ -125,7 +124,6 @@ reactToMessage msg = do
 
 reactToCommand :: EchoBotMonad m => BotCommand -> Command m -> m ()
 reactToCommand cmd c = do
-  -- cmd <- Bot.getCommand c
   Bot.execCommand cmd c
 
 reactToUpdate :: EchoBotMonad m => Entity m -> m ()
