@@ -188,12 +188,15 @@ instance
             T.tshow (e :: AppError)
           ]
 
+getCommand_ :: VK.Message -> Bot.BotCommand
+getCommand_ = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
+
 qualifyUpdate ::
   (MonadThrow m) =>
   VK.GroupEvent ->
   m (Bot.Entity (VK.VkontakteT n))
 qualifyUpdate (VK.MessageNew m)
-  | isCommandE m = pure $ Bot.ECommand m
+  | isCommandE m = pure $ Bot.ECommand (getCommand_ m) m
   | otherwise = pure $ Bot.EMessage m
 qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
 

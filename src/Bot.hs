@@ -90,7 +90,7 @@ loop period = interpret botLoop
 
 data Entity api
   = EMessage (Message api)
-  | ECommand (Command api)
+  | ECommand BotCommand (Command api)
   | ECallback (CallbackQuery api)
 
 newtype QueryData
@@ -125,15 +125,15 @@ reactToMessage msg = do
   let n = DB.getEchoMultiplier settings
   Bot.echoMessageNTimes msg n
 
-reactToCommand :: EchoBotMonad m => Command m -> m ()
-reactToCommand c = do
-  cmd <- Bot.getCommand c
+reactToCommand :: EchoBotMonad m => BotCommand -> Command m -> m ()
+reactToCommand cmd c = do
+  -- cmd <- Bot.getCommand c
   Bot.execCommand cmd c
 
 reactToUpdate :: EchoBotMonad m => Entity m -> m ()
 reactToUpdate update = do
   case update of
-    Bot.ECommand msg -> Bot.reactToCommand msg
+    Bot.ECommand cmd msg -> Bot.reactToCommand cmd msg
     Bot.EMessage msg -> Bot.reactToMessage msg
     Bot.ECallback cq -> Bot.reactToCallback cq
 
@@ -159,14 +159,14 @@ botLoop :: BotDSL a ret
 botLoop = do
   updates <- fetchUpdatesDSL
   forM_ updates $ \case
-    ECommand cmd -> reactToCommandDSL cmd
+    ECommand cmd ent -> reactToCommandDSL cmd ent
     EMessage msg -> reactToMessageDSL msg
     ECallback cq -> reactToCallbackDSL cq
   botLoop
 
-reactToCommandDSL :: Command api -> BotDSL api ()
-reactToCommandDSL c = do
-  cmd <- GetCommand c Done
+reactToCommandDSL :: BotCommand -> Command api -> BotDSL api ()
+reactToCommandDSL cmd c = do
+  -- cmd <- GetCommand c Done
   ExecCommand cmd c $ Done ()
 
 reactToMessageDSL :: Message api -> BotDSL api ()
