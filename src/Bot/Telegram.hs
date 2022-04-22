@@ -88,12 +88,12 @@ instance
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     TG.TelegramT m [Bot.Entity (TG.TelegramT m)]
   fetchUpdates = flip catch logError $ do
-    lift $ Log.logInfo "fetching Updates"
+    Log.logInfo "fetching Updates"
     updates <- TG.Methods.getUpdates
     pure $ [x | u <- updates, x <- toBotEntity u]
     where
       logError e = do
-        lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
+        Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
         pure []
 
   reactToCallback ::
@@ -104,7 +104,7 @@ instance
     qdata <- qualifyQuery cq
     respondToCallback qdata cq
     where
-      logError e = lift . Log.logWarning $ T.tshow (e :: AppError)
+      logError e = Log.logWarning $ T.tshow (e :: AppError)
 
   getAuthorsSettings ::
     (DB.MonadUsersDB m) =>
@@ -120,7 +120,7 @@ instance
     Int ->
     TG.TelegramT m ()
   echoMessageNTimes msg n = do
-    lift . Log.logDebug . mconcat $
+    Log.logDebug . mconcat $
       [ "grnerating ",
         T.tshow n,
         " echoes for Message: ",
@@ -129,7 +129,7 @@ instance
     replicateM_ n (TG.Methods.copyMessage msg) `catch` logError
     where
       logError e =
-        lift . Log.logError . T.unlines $
+        Log.logError . T.unlines $
           [ "Failed to reply with echo to message: ",
             T.tshow msg,
             "\tWith Error: ",
@@ -146,8 +146,8 @@ instance
     Bot.BotCommand ->
     (TG.Message -> TG.TelegramT m ())
   execCommand cmd msg@TG.Message {..} = flip catch logError $ do
-    lift . Log.logDebug . mconcat $
-      [ "got command ",
+    Log.logDebug . mconcat $
+      [ "Got command ",
         T.tshow cmd,
         " in message id ",
         T.tshow message_id
@@ -162,7 +162,7 @@ instance
       Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
     where
       logError e =
-        lift . Log.logError . T.unlines $
+        Log.logError . T.unlines $
           [ "Failed to execute " <> T.tshow cmd <> " from message ",
             T.tshow msg,
             "\t With Error: ",
@@ -203,7 +203,7 @@ respondToCallback ::
   TG.TelegramT m ()
 respondToCallback (Bot.QDRepeat n) c = do
   let user = TG.from (c :: TG.CallbackQuery)
-  lift $ Log.logInfo $ "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+  Log.logInfo $ "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
   _ <- TG.Methods.answerCallbackQuery $ TG.cq_id c
   lift $ DB.setUserMultiplier user n
 

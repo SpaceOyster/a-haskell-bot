@@ -75,7 +75,7 @@ runMethod ::
 runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
-  lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
+  Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) fromResponse $ A.decode json
   where
     ex json = throwM . apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
@@ -93,7 +93,7 @@ mkRequest m =
 getUpdates_ :: Log.MonadLog m => TelegramT m HTTP.Request
 getUpdates_ = do
   st <- get
-  lift $ Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
+  Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
   let json =
         encode . object $ ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
   uri <- apiMethod "getUpdates"
