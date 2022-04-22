@@ -16,7 +16,7 @@ import API.Vkontakte.Monad
 import API.Vkontakte.Types
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (get, modify')
+import Control.Monad.State (get)
 import Control.Monad.Trans (MonadTrans (..), lift)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
@@ -32,7 +32,7 @@ runMethod ::
 runMethod m = do
   req <- mkRequest m
   json <- lift $ HTTP.sendRequest req
-  lift $ Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
+  Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) fromResponse $ A.decode json
   where
     ex json = throwM $ apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
@@ -56,10 +56,10 @@ mkRequest m =
 getUpdates :: (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) => VkontakteT m [GroupEvent]
 getUpdates = do
   st <- get
-  lift $ Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
+  Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
   req <- getUpdates_ st
   json <- lift $ HTTP.sendRequest req
-  lift $ Log.logDebug $ "Got response from Poll server: " <> T.lazyDecodeUtf8 json
+  Log.logDebug $ "Got response from Poll server: " <> T.lazyDecodeUtf8 json
   res <- maybe (ex json) rememberLastUpdate $ A.decode json
   extractUpdates res
   where

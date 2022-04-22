@@ -72,10 +72,10 @@ initiate ::
   Config ->
   VK.VkontakteT m VK.VKState
 initiate cfg@Config {..} = do
-  lift $ Log.logInfo "Initiating Vkontakte Bot"
-  lift $ Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
+  Log.logInfo "Initiating Vkontakte Bot"
+  Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
   VK.initiate VK.Config {..} `catch` \e -> do
-    lift $ Log.logError "Failed to initiate Vkontakte Long Poll API"
+    Log.logError "Failed to initiate Vkontakte Long Poll API"
     throwM (e :: AppError)
 
 instance
@@ -96,12 +96,12 @@ instance
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     VK.VkontakteT m [Bot.Entity (VK.VkontakteT m)]
   fetchUpdates = flip catch logError $ do
-    lift $ Log.logInfo "Vkontakte: fetching Updates"
+    Log.logInfo "Vkontakte: fetching Updates"
     updates <- VK.Methods.getUpdates
     pure $ [x | u <- updates, x <- toBotEntity u]
     where
       logError e = do
-        lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
+        Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
         pure []
 
   reactToCallback ::
@@ -117,7 +117,7 @@ instance
     qdata <- qualifyQuery cq
     respondToCallback qdata cq
     where
-      logError e = lift . Log.logWarning $ T.tshow (e :: AppError)
+      logError e = Log.logWarning $ T.tshow (e :: AppError)
 
   getAuthorsSettings ::
     (DB.MonadUsersDB m) =>
@@ -133,7 +133,7 @@ instance
     Int ->
     VK.VkontakteT m ()
   echoMessageNTimes msg n = do
-    lift . Log.logDebug . mconcat $
+    Log.logDebug . mconcat $
       [ "generating ",
         T.tshow n,
         " echoes for Message: ",
@@ -142,7 +142,7 @@ instance
     replicateM_ n (VK.Methods.copyMessage msg) `catch` logError
     where
       logError e =
-        lift . Log.logError . T.unlines $
+        Log.logError . T.unlines $
           [ "Failed to reply with echo to message: ",
             T.tshow msg,
             "\tWith Error: ",
@@ -159,7 +159,7 @@ instance
     Bot.BotCommand ->
     (VK.Message -> VK.VkontakteT m ())
   execCommand cmd msg@VK.Message {..} = flip catch logError $ do
-    lift . Log.logDebug . mconcat $
+    Log.logDebug . mconcat $
       [ "Got command ",
         T.tshow cmd,
         " in message id: ",
@@ -178,7 +178,7 @@ instance
     pure ()
     where
       logError e =
-        lift . Log.logError . T.unlines $
+        Log.logError . T.unlines $
           [ "Failed to execute " <> T.tshow cmd <> " from message ",
             T.tshow msg,
             "\t With Error: ",
@@ -220,7 +220,7 @@ respondToCallback ::
   VK.VkontakteT m ()
 respondToCallback (Bot.QDRepeat n) c = do
   let user = VK.User $ VK.user_id c
-  lift $ Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
+  Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
   prompt <- lift $ BR.getReply Bot.settingsSaved
   _ <- VK.Methods.sendMessageEventAnswer c prompt
   lift $ DB.setUserMultiplier user n
