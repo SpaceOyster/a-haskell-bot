@@ -26,11 +26,9 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
       Monad,
       MonadThrow,
       MonadCatch,
-      MonadState TGState
+      MonadState TGState,
+      MonadTrans
     )
-
-instance MonadTrans TelegramT where
-  lift = TelegramT . lift
 
 instance (Log.MonadLog m) => Log.MonadLog (TelegramT m) where
   doLog p t = lift . Log.doLog p $ "[Telegram] " <> t
