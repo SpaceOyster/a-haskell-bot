@@ -90,7 +90,7 @@ instance
   fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "fetching Updates"
     updates <- TG.Methods.getUpdates
-    pure $ [x | u <- updates, x <- qualifyUpdate u]
+    pure $ [x | u <- updates, x <- toBotEntity u]
     where
       logError e = do
         lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
@@ -175,11 +175,11 @@ getCommand TG.Message {text} =
     Nothing -> Bot.UnknownCommand
     Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
-qualifyUpdate ::
+toBotEntity ::
   (MonadThrow m) =>
   TG.Update ->
   m (Bot.Entity (TG.TelegramT n))
-qualifyUpdate u@TG.Update {message, callback_query}
+toBotEntity u@TG.Update {message, callback_query}
   | Just cq <- callback_query = pure $ Bot.ECallback cq
   | Just msg <- message =
       if isCommandE msg
