@@ -181,8 +181,10 @@ qualifyUpdate ::
   m (Bot.Entity (TG.TelegramT n))
 qualifyUpdate u@TG.Update {message, callback_query}
   | Just cq <- callback_query = pure $ Bot.ECallback cq
-  | Just msg <- message, isCommandE msg = pure $ Bot.ECommand (getCommand msg) msg
-  | Just msg <- message, not (isCommandE msg) = pure $ Bot.EMessage msg
+  | Just msg <- message =
+      if isCommandE msg
+        then pure $ Bot.ECommand (getCommand msg) msg
+        else pure $ Bot.EMessage msg
   | otherwise =
       throwM . botError $
         "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
