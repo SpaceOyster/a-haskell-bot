@@ -98,7 +98,7 @@ instance
   fetchUpdates = flip catch logError $ do
     lift $ Log.logInfo "Vkontakte: fetching Updates"
     updates <- VK.Methods.getUpdates
-    pure $ [x | u <- updates, x <- qualifyUpdate u]
+    pure $ [x | u <- updates, x <- toBotEntity u]
     where
       logError e = do
         lift . Log.logError $ "Failed to fetch Updates: " <> T.tshow (e :: AppError)
@@ -188,14 +188,14 @@ instance
 getCommand :: VK.Message -> Bot.BotCommand
 getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
 
-qualifyUpdate ::
+toBotEntity ::
   (MonadThrow m) =>
   VK.GroupEvent ->
   m (Bot.Entity (VK.VkontakteT n))
-qualifyUpdate (VK.MessageNew m)
+toBotEntity (VK.MessageNew m)
   | isCommandE m = pure $ Bot.ECommand (getCommand m) m
   | otherwise = pure $ Bot.EMessage m
-qualifyUpdate (VK.MessageEvent c) = pure $ Bot.ECallback c
+toBotEntity (VK.MessageEvent c) = pure $ Bot.ECallback c
 
 newtype CallbackQueryJSON = CallbackQueryJSON {unCallbackQueryJSON :: T.Text}
   deriving (Generic, A.ToJSON, A.FromJSON)
