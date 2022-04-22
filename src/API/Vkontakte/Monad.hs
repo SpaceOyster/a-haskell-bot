@@ -32,11 +32,9 @@ newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
       Monad,
       MonadThrow,
       MonadCatch,
-      MonadState VKState
+      MonadState VKState,
+      MonadTrans
     )
-
-instance MonadTrans VkontakteT where
-  lift = VkontakteT . lift
 
 instance (Log.MonadLog m) => Log.MonadLog (VkontakteT m) where
   doLog p t = lift . Log.doLog p $ "[Vkontakte] " <> t
