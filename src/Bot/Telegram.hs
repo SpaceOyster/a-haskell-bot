@@ -155,12 +155,11 @@ instance
     let address = TG.chat_id chat
     prompt <- lift $ Bot.repeatPrompt from
     replies <- lift BR.getReplies
-    _ <- case cmd of
+    () <$ case cmd of
       Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
       Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
       Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
       Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
-    pure ()
     where
       logError e =
         lift . Log.logError . T.unlines $
