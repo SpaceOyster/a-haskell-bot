@@ -32,6 +32,9 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
 instance MonadTrans TelegramT where
   lift = TelegramT . lift
 
+instance (Log.MonadLog m) => Log.MonadLog (TelegramT m) where
+  doLog p t = lift . Log.doLog p $ "[Telegram] " <> t
+
 newtype Config = Config
   { key :: String
   }
