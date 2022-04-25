@@ -38,7 +38,7 @@ import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
-import Control.Monad.State (evalStateT, lift)
+import Control.Monad.State (evalStateT)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
@@ -112,7 +112,7 @@ instance
     TG.TelegramT m DB.UserData
   getAuthorsSettings msg = do
     let maybeAuthor = TG.from (msg :: TG.Message)
-    lift $ maybeAuthor & DB.getUserDataM & DB.orDefaultData
+    maybeAuthor & DB.getUserDataM & DB.orDefaultData
 
   echoMessageNTimes ::
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
@@ -153,8 +153,8 @@ instance
         T.tshow message_id
       ]
     let address = TG.chat_id chat
-    prompt <- lift $ Bot.repeatPrompt from
-    replies <- lift BR.getReplies
+    prompt <- Bot.repeatPrompt from
+    replies <- BR.getReplies
     () <$ case cmd of
       Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
       Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
@@ -205,7 +205,7 @@ respondToCallback (Bot.QDRepeat n) c = do
   let user = TG.from (c :: TG.CallbackQuery)
   Log.logInfo $ "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
   _ <- TG.Methods.answerCallbackQuery $ TG.cq_id c
-  lift $ DB.setUserMultiplier user n
+  DB.setUserMultiplier user n
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
