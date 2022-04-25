@@ -38,7 +38,6 @@ library
       App.Error
       App.Monad
       Bot
-      Bot.Replies
       Bot.Telegram
       Bot.Vkontakte
       Data.Has
@@ -91,7 +90,6 @@ executable a-haskell-bot-exe
       App.Error
       App.Monad
       Bot
-      Bot.Replies
       Bot.Telegram
       Bot.Vkontakte
       Data.Has

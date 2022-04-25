@@ -9,7 +9,6 @@ import App.Config
 import qualified App.Env as App
 import qualified App.Monad as App
 import qualified Bot
-import qualified Bot.Replies as Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
@@ -19,6 +18,7 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
 import qualified Data.Text.Extended as T
+import qualified Effects.BotReplies as BR
 import qualified HTTP
 import qualified Logger
 import qualified System.Environment as E
@@ -100,5 +100,5 @@ newAppEnv hLog appCfg = do
       { envLogger = hLog,
         envHTTP = hHTTP,
         envUsersDB = hUsersDB,
-        envBotReplies = Bot.fromRepliesM $ repliesM appCfg
+        envBotReplies = BR.fromRepliesM $ repliesM appCfg
       }

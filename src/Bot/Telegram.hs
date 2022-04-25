@@ -35,7 +35,6 @@ import qualified API.Telegram.Methods as TG.Methods
   )
 import App.Error (AppError, botError)
 import qualified Bot
-import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.State (evalStateT)
@@ -49,7 +48,7 @@ import qualified Effects.UsersDB as DB
 data Config = Config
   { key :: String,
     defaultEchoMultiplier :: Int,
-    repliesM :: Bot.RepliesM
+    repliesM :: BR.RepliesM
   }
   deriving (Show)
 
@@ -156,10 +155,10 @@ instance
     prompt <- Bot.repeatPrompt from
     replies <- BR.getReplies
     () <$ case cmd of
-      Bot.Start -> TG.Methods.sendMessage address (Bot.greeting replies)
-      Bot.Help -> TG.Methods.sendMessage address (Bot.help replies)
+      Bot.Start -> TG.Methods.sendMessage address (BR.greeting replies)
+      Bot.Help -> TG.Methods.sendMessage address (BR.help replies)
       Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
-      Bot.UnknownCommand -> TG.Methods.sendMessage address (Bot.unknown replies)
+      Bot.UnknownCommand -> TG.Methods.sendMessage address (BR.unknown replies)
     where
       logError e =
         Log.logError . T.unlines $

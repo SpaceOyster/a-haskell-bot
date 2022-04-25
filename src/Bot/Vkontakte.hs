@@ -34,7 +34,6 @@ import qualified API.Vkontakte as VK
 import API.Vkontakte.Methods as VK.Methods
 import App.Error (AppError, botError)
 import qualified Bot
-import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.State (evalStateT, put)
@@ -51,7 +50,7 @@ import GHC.Generics (Generic)
 data Config = Config
   { key :: String,
     defaultEchoMultiplier :: Int,
-    repliesM :: Bot.RepliesM,
+    repliesM :: BR.RepliesM,
     group_id :: Integer,
     v :: String
   }
@@ -171,10 +170,10 @@ instance
     prompt <- Bot.repeatPrompt $ Just $ VK.User msg_from_id
     replies <- BR.getReplies
     _ <- case cmd of
-      Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
-      Bot.Help -> VK.Methods.sendTextMessage address (Bot.help replies)
+      Bot.Start -> VK.Methods.sendTextMessage address (BR.greeting replies)
+      Bot.Help -> VK.Methods.sendTextMessage address (BR.help replies)
       Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
-      Bot.UnknownCommand -> VK.Methods.sendTextMessage address (Bot.unknown replies)
+      Bot.UnknownCommand -> VK.Methods.sendTextMessage address (BR.unknown replies)
     pure ()
     where
       logError e =
@@ -221,7 +220,7 @@ respondToCallback ::
 respondToCallback (Bot.QDRepeat n) c = do
   let user = VK.User $ VK.user_id c
   Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-  prompt <- BR.getReply Bot.settingsSaved
+  prompt <- BR.getReply BR.settingsSaved
   _ <- VK.Methods.sendMessageEventAnswer c prompt
   DB.setUserMultiplier user n
 

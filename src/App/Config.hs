@@ -1,33 +1,33 @@
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module App.Config
-  ( AppConfig(..)
-  ) where
+  ( AppConfig (..),
+  )
+where
 
-import qualified Bot.Replies as Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (Parser)
+import qualified Effects.BotReplies as BR
 import qualified Logger
 
-data AppConfig =
-  AppConfig
-    { poll_period :: Int
-    , repliesM :: Bot.RepliesM
-    , defaultEchoMultiplier :: Int
-    , logger :: Logger.Config
-    , telegram :: TG.Config
-    , vkontakte :: VK.Config
-    }
+data AppConfig = AppConfig
+  { poll_period :: Int,
+    repliesM :: BR.RepliesM,
+    defaultEchoMultiplier :: Int,
+    logger :: Logger.Config,
+    telegram :: TG.Config,
+    vkontakte :: VK.Config
+  }
   deriving (Show)
 
-mergeStringsTG :: TG.Config -> Bot.RepliesM -> TG.Config
+mergeStringsTG :: TG.Config -> BR.RepliesM -> TG.Config
 mergeStringsTG cfg ss = cfg {TG.repliesM = TG.repliesM cfg <> ss}
 
-mergeStringsVK :: VK.Config -> Bot.RepliesM -> VK.Config
+mergeStringsVK :: VK.Config -> BR.RepliesM -> VK.Config
 mergeStringsVK cfg ss = cfg {VK.repliesM = VK.repliesM cfg <> ss}
 
 instance A.FromJSON AppConfig where
@@ -63,7 +63,7 @@ parseVKConfig =
     v <- o A..:? "api-version" A..!= "5.86"
     pure $ VK.Config {..}
 
-parseStringsM :: A.Value -> A.Parser Bot.RepliesM
+parseStringsM :: A.Value -> A.Parser BR.RepliesM
 parseStringsM =
   A.withObject "AppConfig.replies" $ \o -> do
     helpM <- o A..:? "help"
@@ -71,4 +71,4 @@ parseStringsM =
     repeatM <- o A..:? "repeat"
     unknownM <- o A..:? "unknown"
     settingsSavedM <- o A..:? "settings-saved"
-    pure $ Bot.RepliesM {..}
+    pure $ BR.RepliesM {..}

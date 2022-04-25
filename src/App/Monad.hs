@@ -7,7 +7,6 @@ module App.Monad where
 
 import App.Env (Env (..))
 import App.Error (AppError)
-import qualified Bot.Replies as BR
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch)
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Reader (MonadReader (..), ReaderT (..))

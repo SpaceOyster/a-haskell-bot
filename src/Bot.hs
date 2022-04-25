@@ -6,7 +6,6 @@
 
 module Bot where
 
-import Bot.Replies as Bot
 import Control.Monad (ap, forM_, forever, liftM, (>=>))
 import Control.Monad.Catch (MonadThrow (..))
 import Data.Function ((&))
@@ -24,8 +23,8 @@ repeatPrompt ::
   m T.Text
 repeatPrompt userM = do
   userData <- userM & DB.getUserDataM & DB.orDefaultData
-  prompt <- BR.getReply Bot.repeat
-  pure $ Bot.insertUserData userData prompt
+  prompt <- BR.getReply BR.repeat
+  pure $ BR.insertUserData userData prompt
 
 data BotDSL api ret
   = FetchUpdates ([Entity api] -> BotDSL api ret)

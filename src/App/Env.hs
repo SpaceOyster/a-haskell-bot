@@ -1,23 +1,22 @@
-{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
 module App.Env where
 
-import qualified Bot.Replies as Bot
-import Data.Has (Has(..))
+import Data.Has (Has (..))
 import Data.Kind (Type)
+import qualified Effects.BotReplies as BR
 import qualified HTTP
 import qualified Logger
 import qualified UsersDB
 
-data Env (m :: Type -> Type) =
-  Env
-    { envLogger :: Logger.Handle
-    , envHTTP :: HTTP.Handle
-    , envUsersDB :: UsersDB.Handle
-    , envBotReplies :: Bot.Replies
-    }
+data Env (m :: Type -> Type) = Env
+  { envLogger :: Logger.Handle,
+    envHTTP :: HTTP.Handle,
+    envUsersDB :: UsersDB.Handle,
+    envBotReplies :: BR.Replies
+  }
 
 instance Has Logger.Handle (Env m) where
   obtain = envLogger
@@ -28,5 +27,5 @@ instance Has HTTP.Handle (Env m) where
 instance Has UsersDB.Handle (Env m) where
   obtain = envUsersDB
 
-instance Has Bot.Replies (Env m) where
+instance Has BR.Replies (Env m) where
   obtain = envBotReplies
