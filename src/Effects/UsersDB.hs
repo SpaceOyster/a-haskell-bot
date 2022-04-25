@@ -1,6 +1,10 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE UndecidableInstances #-}
+
 module Effects.UsersDB where
 
 import Control.Monad (join)
+import Control.Monad.Trans (MonadTrans, lift)
 import Data.Function ((&))
 import qualified Data.Hashable as H
 import Data.Maybe (fromMaybe)
@@ -18,6 +22,15 @@ class Monad m => MonadUsersDB m where
     defaultData <- defaultUserData
     udata <- getUserData user
     setUserData user $ morph $ fromMaybe defaultData udata
+
+instance
+  {-# OVERLAPPABLE #-}
+  (MonadUsersDB m, MonadTrans t, Monad (t m)) =>
+  MonadUsersDB (t m)
+  where
+  defaultUserData = lift defaultUserData
+  getUserData = lift . getUserData
+  setUserData u d = lift $ setUserData u d
 
 getUserDataM :: (H.Hashable u, MonadUsersDB m) => Maybe u -> m (Maybe UserData)
 getUserDataM maybeUser = join <$> traverse getUserData maybeUser
