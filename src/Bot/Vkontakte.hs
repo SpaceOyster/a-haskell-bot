@@ -37,7 +37,7 @@ import qualified Bot
 import qualified Bot.Replies as Bot
 import Control.Monad (replicateM_)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
-import Control.Monad.State (evalStateT, lift, put)
+import Control.Monad.State (evalStateT, put)
 import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
@@ -125,7 +125,7 @@ instance
     VK.VkontakteT m DB.UserData
   getAuthorsSettings VK.Message {msg_from_id} = do
     let author = VK.User msg_from_id
-    lift $ author & DB.getUserData & DB.orDefaultData
+    author & DB.getUserData & DB.orDefaultData
 
   echoMessageNTimes ::
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
@@ -168,8 +168,8 @@ instance
         T.tshow msg_peer_id
       ]
     let address = msg_peer_id
-    prompt <- lift $ Bot.repeatPrompt $ Just $ VK.User msg_from_id
-    replies <- lift BR.getReplies
+    prompt <- Bot.repeatPrompt $ Just $ VK.User msg_from_id
+    replies <- BR.getReplies
     _ <- case cmd of
       Bot.Start -> VK.Methods.sendTextMessage address (Bot.greeting replies)
       Bot.Help -> VK.Methods.sendTextMessage address (Bot.help replies)
@@ -221,9 +221,9 @@ respondToCallback ::
 respondToCallback (Bot.QDRepeat n) c = do
   let user = VK.User $ VK.user_id c
   Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-  prompt <- lift $ BR.getReply Bot.settingsSaved
+  prompt <- BR.getReply Bot.settingsSaved
   _ <- VK.Methods.sendMessageEventAnswer c prompt
-  lift $ DB.setUserMultiplier user n
+  DB.setUserMultiplier user n
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
