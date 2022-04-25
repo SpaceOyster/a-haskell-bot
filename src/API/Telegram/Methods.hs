@@ -15,7 +15,6 @@ import API.Telegram.Types as Types
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), get)
-import Control.Monad.Trans (MonadTrans (..), lift)
 import Data.Aeson as A (FromJSON, Value (..), decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -74,7 +73,7 @@ runMethod ::
   TelegramT m a
 runMethod m = do
   req <- mkRequest m
-  json <- lift $ HTTP.sendRequest req
+  json <- HTTP.sendRequest req
   Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) fromResponse $ A.decode json
   where
