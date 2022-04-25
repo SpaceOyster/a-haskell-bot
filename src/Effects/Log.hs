@@ -1,8 +1,11 @@
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module Effects.Log where
 
 import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Trans (MonadTrans, lift)
 import qualified Data.Aeson as A (FromJSON (..), withText)
 import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
 import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
@@ -35,6 +38,13 @@ class
   MonadLog m
   where
   doLog :: Priority -> T.Text -> m ()
+
+instance
+  {-# OVERLAPPABLE #-}
+  (MonadLog m, MonadTrans t, Monad (t m)) =>
+  MonadLog (t m)
+  where
+  doLog p t = lift $ doLog p t
 
 timeStamp :: IO T.Text
 timeStamp = do
