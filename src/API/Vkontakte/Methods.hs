@@ -17,7 +17,6 @@ import API.Vkontakte.Types
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (get)
-import Control.Monad.Trans (MonadTrans (..), lift)
 import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy.Char8 as L8
 import qualified Data.Text.Extended as T
@@ -31,7 +30,7 @@ runMethod ::
   VkontakteT m a
 runMethod m = do
   req <- mkRequest m
-  json <- lift $ HTTP.sendRequest req
+  json <- HTTP.sendRequest req
   Log.logDebug $ "Got response: " <> T.lazyDecodeUtf8 json
   maybe (ex json) fromResponse $ A.decode json
   where
@@ -58,7 +57,7 @@ getUpdates = do
   st <- get
   Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
   req <- getUpdates_ st
-  json <- lift $ HTTP.sendRequest req
+  json <- HTTP.sendRequest req
   Log.logDebug $ "Got response from Poll server: " <> T.lazyDecodeUtf8 json
   res <- maybe (ex json) rememberLastUpdate $ A.decode json
   extractUpdates res
