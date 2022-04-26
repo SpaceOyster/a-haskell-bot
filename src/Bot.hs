@@ -52,9 +52,6 @@ instance Monad (BotDSL a) where
       GetAuthorsSettings m next -> GetAuthorsSettings m $ next >=> mk
       EchoMessageNTimes m n next -> EchoMessageNTimes m n $ next >>= mk
 
-andThen :: BotDSL a r -> (r -> BotDSL a r') -> BotDSL a r'
-andThen = (>>=)
-
 -- | command has to be between 1-32 chars long
 -- description has to be between 3-256 chars long
 data BotCommand
