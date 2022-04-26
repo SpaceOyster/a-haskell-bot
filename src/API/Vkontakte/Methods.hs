@@ -94,7 +94,7 @@ sendKeyboard peer_id prompt kbd = runMethod (SendKeyboard peer_id prompt kbd)
 
 getUpdates_ :: (Monad m) => VKState -> VkontakteT m HTTP.Request
 getUpdates_ VKState {..} =
-  pure . HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS, "wait" URI.:=: "25"]
+  pure . HTTP.GET $ URI.addQueryParams pollURI ["ts" URI.:=: T.unpack lastTS, "wait" URI.:=: show wait_seconds]
 
 sendMessageEventAnswer_ :: (Monad m) => CallbackEvent -> T.Text -> VkontakteT m HTTP.Request
 sendMessageEventAnswer_ CallbackEvent {..} prompt =

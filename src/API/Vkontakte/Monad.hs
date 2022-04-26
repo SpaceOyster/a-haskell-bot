@@ -21,7 +21,8 @@ import qualified Network.URI.Extended as URI
 data VKState = VKState
   { lastTS :: T.Text,
     pollURI :: URI.URI,
-    apiURI :: URI.URI
+    apiURI :: URI.URI,
+    wait :: Int
   }
   deriving (Show)
 
@@ -42,11 +43,18 @@ instance (Log.MonadLog m) => Log.MonadLog (VkontakteT m) where
 data Config = Config
   { key :: String,
     group_id :: Integer,
-    v :: String
+    v :: String,
+    wait_seconds :: Int
   }
 
 emptyVKState :: VKState
-emptyVKState = VKState {lastTS = mempty, pollURI = URI.nullURI, apiURI = URI.nullURI}
+emptyVKState =
+  VKState
+    { lastTS = mempty,
+      pollURI = URI.nullURI,
+      apiURI = URI.nullURI,
+      wait = 25
+    }
 
 rememberLastUpdate ::
   (MonadThrow m, Log.MonadLog m) => PollResponse -> VkontakteT m PollResponse
@@ -63,7 +71,8 @@ initiate ::
 initiate cfg = do
   lift $ Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
-  put $ emptyVKState {apiURI}
+  let wait = min 90 (max 1 $ wait_seconds (cfg :: Config))
+  put $ emptyVKState {apiURI, wait}
   initiatePollServer
 
 apiMethod :: (Monad m) => T.Text -> [URI.QueryParam] -> VkontakteT m URI.URI

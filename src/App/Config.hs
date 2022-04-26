@@ -62,6 +62,7 @@ parseVKConfig =
     repliesM <- mempty <|> o A..: "replies" >>= parseStringsM
     group_id <- o A..:? "group-id" A..!= 0
     v <- o A..:? "api-version" A..!= "5.86"
+    wait_seconds <- o A..:? "wait-seconds" A..!= 25
     pure $ VK.Config {..}
 
 parseStringsM :: A.Value -> A.Parser BR.RepliesM

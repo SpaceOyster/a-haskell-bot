@@ -52,7 +52,8 @@ data Config = Config
     defaultEchoMultiplier :: Int,
     repliesM :: BR.RepliesM,
     group_id :: Integer,
-    v :: String
+    v :: String,
+    wait_seconds :: Int
   }
   deriving (Show)
 
