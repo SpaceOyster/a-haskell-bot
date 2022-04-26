@@ -94,7 +94,7 @@ getUpdates_ = do
   st <- get
   Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
   let json =
-        encode . object $ ["offset" .= lastUpdate st, "timeout" .= (25 :: Int)]
+        encode . object $ ["offset" .= lastUpdate st, "timeout" .= timeout st]
   uri <- apiMethod "getUpdates"
   pure $ HTTP.POST uri json
 

@@ -51,6 +51,7 @@ parseTGConfig =
     defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
     repliesM <- mempty <|> o A..: "replies" >>= parseStringsM
+    timeout_seconds <- o A..:? "timeout-seconds" A..!= 100
     pure $ TG.Config {..}
 
 parseVKConfig :: A.Value -> A.Parser VK.Config

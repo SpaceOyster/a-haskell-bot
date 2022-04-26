@@ -11,12 +11,14 @@ import App.Error (apiError)
 import Control.Monad.Catch (MonadCatch, MonadThrow (..))
 import Control.Monad.State (MonadState (..), StateT, get, put)
 import Control.Monad.Trans (MonadTrans (..), lift)
+import qualified Data.Text.Extended as T (tshow)
 import qualified Effects.Log as Log
 import qualified Network.URI.Extended as URI
 
 data TGState = TGState
   { lastUpdate :: Integer,
-    apiURI :: URI.URI
+    apiURI :: URI.URI,
+    timeout :: Int
   }
 
 newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
@@ -33,12 +35,14 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
 instance (Log.MonadLog m) => Log.MonadLog (TelegramT m) where
   doLog p t = lift . Log.doLog p $ "[Telegram] " <> t
 
-newtype Config = Config
-  { key :: String
+data Config = Config
+  { key :: String,
+    timeout_seconds :: Int
   }
+  deriving (Show)
 
 emptyTGState :: TGState
-emptyTGState = TGState {lastUpdate = 0, apiURI = URI.nullURI}
+emptyTGState = TGState {lastUpdate = 0, apiURI = URI.nullURI, timeout = 100}
 
 newStateFromM :: [Update] -> TGState -> Maybe TGState
 newStateFromM us@(_ : _) st = Just $ st {lastUpdate = 1 + update_id (last us)}
@@ -52,9 +56,10 @@ rememberLastUpdate us = do
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
-  Log.logInfo "Initiating Telegram API handle"
+  Log.logInfo $ "Initiating Telegram API handle with: " <> T.tshow cfg
   apiURI <- makeBaseURI cfg
-  pure $ emptyTGState {apiURI}
+  let timeout = min 100 (max 1 $ timeout_seconds cfg)
+  pure $ emptyTGState {apiURI, timeout}
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {..} =
