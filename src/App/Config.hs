@@ -15,8 +15,7 @@ import qualified Effects.BotReplies as BR
 import qualified Logger
 
 data AppConfig = AppConfig
-  { poll_period :: Int,
-    repliesM :: BR.RepliesM,
+  { repliesM :: BR.RepliesM,
     defaultEchoMultiplier :: Int,
     logger :: Logger.Config,
     telegram :: TG.Config,
@@ -35,8 +34,6 @@ instance A.FromJSON AppConfig where
     A.withObject "FromJSON Main.AppConfig" $ \o -> do
       defaults <- o A..: "defaults"
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
-      poll_period_ms <- defaults A..: "poll-period-ms"
-      let poll_period = (1000 *) $ max 500 poll_period_ms
       repliesM <- mempty <|> o A..: "replies" >>= parseStringsM
       logger <- o A..:? "logger" A..!= mempty
       telegram' <- o A..: "telegram" >>= parseTGConfig

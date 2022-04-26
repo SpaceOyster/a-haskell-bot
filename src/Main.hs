@@ -17,7 +17,6 @@ import qualified Data.Aeson as Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
-import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified HTTP
 import qualified Logger
@@ -80,14 +79,9 @@ runWithApp :: AppConfig -> BotToRun -> IO ()
 runWithApp cfg@AppConfig {..} bot =
   Logger.withHandle logger $ \hLog -> do
     Logger.hLogInfo hLog "Initiating Main Bot loop"
-    Logger.hLogInfo hLog . mconcat $
-      [ "API Polling period is ",
-        T.tshow (fromIntegral poll_period / 1000 :: Double),
-        "ms"
-      ]
     env <- newAppEnv hLog cfg
-    let app Telegram = TG.evalTelegramT telegram $ Bot.loop poll_period
-        app Vkontakte = VK.evalVkontakteT vkontakte $ Bot.loop poll_period
+    let app Telegram = TG.evalTelegramT telegram Bot.loop
+        app Vkontakte = VK.evalVkontakteT vkontakte Bot.loop
     App.runApp env $ app bot
 
 newAppEnv :: Logger.Handle -> AppConfig -> IO App.AppEnv
