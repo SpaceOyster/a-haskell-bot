@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-module UsersDB
+module Handlers.UsersDB
   ( UsersMap (..),
     Config (..),
     Handle (..),

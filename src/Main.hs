@@ -20,9 +20,9 @@ import Data.List (intercalate)
 import qualified Effects.BotReplies as BR
 import qualified Handlers.HTTP as HTTP
 import qualified Handlers.Logger as Logger
+import qualified Handlers.UsersDB as UsersDB
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
-import qualified UsersDB
 
 data BotToRun
   = Telegram

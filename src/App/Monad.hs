@@ -16,9 +16,9 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import qualified UsersDB
 import qualified Handlers.HTTP as HTTP
 import qualified Handlers.Logger as Logger
+import qualified Handlers.UsersDB as UsersDB
 
 type AppEnv = Env App
 

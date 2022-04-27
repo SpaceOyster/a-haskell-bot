@@ -52,9 +52,9 @@ library
       Handlers.Logger.File
       Handlers.Logger.Internal
       Handlers.Logger.StdOut
+      Handlers.UsersDB
       Main
       Network.URI.Extended
-      UsersDB
   other-modules:
       Paths_a_haskell_bot
   hs-source-dirs:
@@ -104,8 +104,8 @@ executable a-haskell-bot-exe
       Handlers.Logger.File
       Handlers.Logger.Internal
       Handlers.Logger.StdOut
+      Handlers.UsersDB
       Network.URI.Extended
-      UsersDB
       Paths_a_haskell_bot
   hs-source-dirs:
       src
