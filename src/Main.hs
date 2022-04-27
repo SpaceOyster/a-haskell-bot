@@ -18,8 +18,8 @@ import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
 import qualified Effects.BotReplies as BR
-import qualified HTTP
 import qualified Logger
+import qualified Handlers.HTTP as HTTP
 import qualified System.Environment as E
 import qualified System.Exit as Exit (die)
 import qualified UsersDB

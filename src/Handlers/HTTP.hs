@@ -2,7 +2,7 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module HTTP
+module Handlers.HTTP
   ( Config (..),
     Handle (..),
     HTTP.Request (..),
