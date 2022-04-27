@@ -2,7 +2,7 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 
-module Logger.Internal
+module Handlers.Logger.Internal
   ( Handle (..),
     Log.Priority (..),
     hLogDebug,

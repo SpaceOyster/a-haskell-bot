@@ -1,7 +1,13 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Logger.StdOut (module Logger.Internal, withHandle, new, close) where
+module Handlers.Logger.StdOut
+  ( module Handlers.Logger.Internal,
+    withHandle,
+    new,
+    close,
+  )
+where
 
 import App.Error (AppError, loggerError)
 import Control.Exception (bracket)
@@ -10,7 +16,7 @@ import Control.Monad.Catch (catch, throwM)
 import Data.Text.Extended as T (Text, tshow)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Effects.Log as Log (Priority, Verbosity, composeMessage)
-import Logger.Internal
+import Handlers.Logger.Internal
 import qualified System.IO as IO (Handle, hFlush, stdout)
 
 withHandle :: Log.Verbosity -> (Handle -> IO ()) -> IO ()

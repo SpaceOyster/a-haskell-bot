@@ -47,11 +47,11 @@ library
       Effects.HTTP
       Effects.Log
       Effects.UsersDB
-      Logger
-      Logger.File
-      Logger.Internal
-      Logger.StdOut
       Handlers.HTTP
+      Handlers.Logger
+      Handlers.Logger.File
+      Handlers.Logger.Internal
+      Handlers.Logger.StdOut
       Main
       Network.URI.Extended
       UsersDB
@@ -99,11 +99,11 @@ executable a-haskell-bot-exe
       Effects.HTTP
       Effects.Log
       Effects.UsersDB
-      Logger
-      Logger.File
-      Logger.Internal
-      Logger.StdOut
       Handlers.HTTP
+      Handlers.Logger
+      Handlers.Logger.File
+      Handlers.Logger.Internal
+      Handlers.Logger.StdOut
       Network.URI.Extended
       UsersDB
       Paths_a_haskell_bot

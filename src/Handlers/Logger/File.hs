@@ -1,7 +1,12 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Logger.File (module Logger.Internal, withHandle, new) where
+module Handlers.Logger.File
+  ( module Handlers.Logger.Internal,
+    withHandle,
+    new,
+  )
+where
 
 import App.Error (AppError, loggerError)
 import Control.Concurrent.MVar (MVar, newMVar, withMVar)
@@ -10,7 +15,7 @@ import Control.Monad.Catch (catch, throwM)
 import Data.Text.Extended as T (Text, tshow)
 import qualified Data.Text.IO as T (hPutStrLn)
 import qualified Effects.Log as Log (Priority, Verbosity, composeMessage)
-import Logger.Internal
+import Handlers.Logger.Internal
 import qualified System.IO as IO
   ( FilePath,
     Handle,

@@ -12,7 +12,7 @@ import Control.Applicative ((<|>))
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (Parser)
 import qualified Effects.BotReplies as BR
-import qualified Logger
+import qualified Handlers.Logger as Logger
 
 data AppConfig = AppConfig
   { repliesM :: BR.RepliesM,

@@ -1,7 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Logger (module Logger.Internal, Config (..), withHandle, withHandlePure) where
+module Handlers.Logger
+  ( module Handlers.Logger.Internal,
+    Config (..),
+    withHandle,
+    withHandlePure,
+  )
+where
 
 import Control.Applicative ((<|>))
 import Control.Monad (when)
@@ -9,9 +15,9 @@ import qualified Data.Aeson as Aeson (FromJSON (..), withObject, (.!=), (.:?))
 import Data.IORef (atomicModifyIORef, newIORef, readIORef)
 import qualified Data.Text.Extended as T (Text)
 import qualified Effects.Log as Log (Priority (..), Verbosity)
-import qualified Logger.File
-import Logger.Internal
-import qualified Logger.StdOut
+import qualified Handlers.Logger.File as Logger.File
+import Handlers.Logger.Internal
+import qualified Handlers.Logger.StdOut as Logger.StdOut
 
 data Config = Config
   { file :: Maybe FilePath,

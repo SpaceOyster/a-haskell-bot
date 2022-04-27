@@ -7,9 +7,9 @@ module App.Env where
 import Data.Has (Has (..))
 import Data.Kind (Type)
 import qualified Effects.BotReplies as BR
-import qualified Logger
 import qualified UsersDB
 import qualified Handlers.HTTP as HTTP
+import qualified Handlers.Logger as Logger
 
 data Env (m :: Type -> Type) = Env
   { envLogger :: Logger.Handle,
