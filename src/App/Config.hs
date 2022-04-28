@@ -37,7 +37,6 @@ instance A.FromJSON AppConfig where
 parseTGConfig :: A.Value -> A.Parser TG.Config
 parseTGConfig =
   A.withObject "FromJSON Bot.Telegram" $ \o -> do
-    defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
     timeout_seconds <- o A..:? "timeout-seconds" A..!= 100
     pure $ TG.Config {..}
