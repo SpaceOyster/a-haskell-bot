@@ -1,7 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Effects.BotReplies where
@@ -9,19 +8,9 @@ module Effects.BotReplies where
 import Control.Applicative ((<|>))
 import Control.Monad.Trans (MonadTrans, lift)
 import Data.Has
-import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T (Text, replace, tshow)
 import Effects.UsersDB (UserData (..))
 import Prelude hiding (repeat)
-
-data RepliesM = RepliesM
-  { helpM :: Maybe T.Text,
-    greetingM :: Maybe T.Text,
-    repeatM :: Maybe T.Text,
-    unknownM :: Maybe T.Text,
-    settingsSavedM :: Maybe T.Text
-  }
-  deriving (Show)
 
 data Replies = Replies
   { help :: T.Text,
@@ -34,36 +23,6 @@ data Replies = Replies
 
 instance Has Replies Replies where
   obtain = id
-
-fromRepliesM :: RepliesM -> Replies
-fromRepliesM RepliesM {..} =
-  Replies
-    { help = fromMaybe "" helpM,
-      greeting = fromMaybe "" greetingM,
-      repeat = fromMaybe "" repeatM,
-      unknown = fromMaybe "" unknownM,
-      settingsSaved = fromMaybe "" settingsSavedM
-    }
-
-instance Semigroup RepliesM where
-  s0 <> s1 =
-    RepliesM
-      { helpM = helpM s0 <|> helpM s1,
-        greetingM = greetingM s0 <|> greetingM s1,
-        repeatM = repeatM s0 <|> repeatM s1,
-        unknownM = unknownM s0 <|> unknownM s1,
-        settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
-      }
-
-instance Monoid RepliesM where
-  mempty =
-    RepliesM
-      { helpM = mempty,
-        greetingM = mempty,
-        repeatM = mempty,
-        unknownM = mempty,
-        settingsSavedM = mempty
-      }
 
 insertUserData :: UserData -> T.Text -> T.Text
 insertUserData ud = T.replace "%n" (T.tshow $ getEchoMultiplier ud)

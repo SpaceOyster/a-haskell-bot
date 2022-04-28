@@ -11,7 +11,9 @@ import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (Parser)
-import qualified Effects.BotReplies as BR
+import Data.Maybe (fromMaybe)
+import qualified Data.Text as T (Text)
+import qualified Effects.BotReplies as BR (Replies (..))
 import qualified Handlers.Logger as Logger
 
 data AppConfig = AppConfig
@@ -23,12 +25,51 @@ data AppConfig = AppConfig
   }
   deriving (Show)
 
+data RepliesM = RepliesM
+  { helpM :: Maybe T.Text,
+    greetingM :: Maybe T.Text,
+    repeatM :: Maybe T.Text,
+    unknownM :: Maybe T.Text,
+    settingsSavedM :: Maybe T.Text
+  }
+  deriving (Show)
+
+fromRepliesM :: RepliesM -> BR.Replies
+fromRepliesM RepliesM {..} =
+  BR.Replies
+    { help = fromMaybe "" helpM,
+      greeting = fromMaybe "" greetingM,
+      repeat = fromMaybe "" repeatM,
+      unknown = fromMaybe "" unknownM,
+      settingsSaved = fromMaybe "" settingsSavedM
+    }
+
+instance Semigroup RepliesM where
+  s0 <> s1 =
+    RepliesM
+      { helpM = helpM s0 <|> helpM s1,
+        greetingM = greetingM s0 <|> greetingM s1,
+        repeatM = repeatM s0 <|> repeatM s1,
+        unknownM = unknownM s0 <|> unknownM s1,
+        settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
+      }
+
+instance Monoid RepliesM where
+  mempty =
+    RepliesM
+      { helpM = mempty,
+        greetingM = mempty,
+        repeatM = mempty,
+        unknownM = mempty,
+        settingsSavedM = mempty
+      }
+
 instance A.FromJSON AppConfig where
   parseJSON =
     A.withObject "FromJSON Main.AppConfig" $ \o -> do
       defaults <- o A..: "defaults"
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
-      replies <- BR.fromRepliesM <$> (o A..: "replies" >>= parseRepliesM)
+      replies <- fromRepliesM <$> (o A..: "replies" >>= parseRepliesM)
       logger <- o A..:? "logger" A..!= mempty
       telegram <- o A..: "telegram" >>= parseTGConfig
       vkontakte <- o A..: "vkontakte" >>= parseVKConfig
@@ -50,7 +91,7 @@ parseVKConfig =
     wait_seconds <- o A..:? "wait-seconds" A..!= 25
     pure $ VK.Config {..}
 
-parseRepliesM :: A.Value -> A.Parser BR.RepliesM
+parseRepliesM :: A.Value -> A.Parser RepliesM
 parseRepliesM =
   A.withObject "AppConfig.replies" $ \o -> do
     helpM <- o A..:? "help"
@@ -58,4 +99,4 @@ parseRepliesM =
     repeatM <- o A..:? "repeat"
     unknownM <- o A..:? "unknown"
     settingsSavedM <- o A..:? "settings-saved"
-    pure $ BR.RepliesM {..}
+    pure $ RepliesM {..}

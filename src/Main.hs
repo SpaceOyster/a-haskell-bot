@@ -17,7 +17,7 @@ import qualified Data.Aeson as Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
-import qualified Effects.BotReplies as BR
+import qualified Effects.BotReplies ()
 import qualified Handlers.HTTP as HTTP
 import qualified Handlers.Logger as Logger
 import qualified Handlers.UsersDB as UsersDB
