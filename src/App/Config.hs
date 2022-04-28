@@ -23,9 +23,6 @@ data AppConfig = AppConfig
   }
   deriving (Show)
 
-mergeStringsTG :: TG.Config -> BR.RepliesM -> TG.Config
-mergeStringsTG cfg ss = cfg {TG.repliesM = TG.repliesM cfg <> ss}
-
 mergeStringsVK :: VK.Config -> BR.RepliesM -> VK.Config
 mergeStringsVK cfg ss = cfg {VK.repliesM = VK.repliesM cfg <> ss}
 
@@ -36,10 +33,9 @@ instance A.FromJSON AppConfig where
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
       repliesM <- mempty <|> o A..: "replies" >>= parseRepliesM
       logger <- o A..:? "logger" A..!= mempty
-      telegram' <- o A..: "telegram" >>= parseTGConfig
-      let telegram = telegram' `mergeStringsTG` repliesM
       vkontakte' <- o A..: "vkontakte" >>= parseVKConfig
       let vkontakte = vkontakte' `mergeStringsVK` repliesM
+      telegram <- o A..: "telegram" >>= parseTGConfig
       pure $ AppConfig {..}
 
 parseTGConfig :: A.Value -> A.Parser TG.Config
@@ -47,7 +43,6 @@ parseTGConfig =
   A.withObject "FromJSON Bot.Telegram" $ \o -> do
     defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
-    repliesM <- mempty <|> o A..: "replies" >>= parseRepliesM
     timeout_seconds <- o A..:? "timeout-seconds" A..!= 100
     pure $ TG.Config {..}
 

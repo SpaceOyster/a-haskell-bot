@@ -48,7 +48,6 @@ import qualified Effects.UsersDB as DB
 data Config = Config
   { key :: String,
     defaultEchoMultiplier :: Int,
-    repliesM :: BR.RepliesM,
     timeout_seconds :: Int
   }
   deriving (Show)
