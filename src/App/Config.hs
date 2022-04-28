@@ -8,7 +8,6 @@ where
 
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
-import Control.Applicative ((<|>))
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A (Parser)
 import Data.Maybe (fromMaybe)
@@ -43,26 +42,6 @@ fromRepliesM RepliesM {..} =
       unknown = fromMaybe "" unknownM,
       settingsSaved = fromMaybe "" settingsSavedM
     }
-
-instance Semigroup RepliesM where
-  s0 <> s1 =
-    RepliesM
-      { helpM = helpM s0 <|> helpM s1,
-        greetingM = greetingM s0 <|> greetingM s1,
-        repeatM = repeatM s0 <|> repeatM s1,
-        unknownM = unknownM s0 <|> unknownM s1,
-        settingsSavedM = settingsSavedM s0 <|> settingsSavedM s1
-      }
-
-instance Monoid RepliesM where
-  mempty =
-    RepliesM
-      { helpM = mempty,
-        greetingM = mempty,
-        repeatM = mempty,
-        unknownM = mempty,
-        settingsSavedM = mempty
-      }
 
 instance A.FromJSON AppConfig where
   parseJSON =
