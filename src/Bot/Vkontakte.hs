@@ -50,7 +50,6 @@ import GHC.Generics (Generic)
 data Config = Config
   { key :: String,
     defaultEchoMultiplier :: Int,
-    repliesM :: BR.RepliesM,
     group_id :: Integer,
     v :: String,
     wait_seconds :: Int

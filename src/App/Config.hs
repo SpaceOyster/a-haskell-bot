@@ -23,9 +23,6 @@ data AppConfig = AppConfig
   }
   deriving (Show)
 
-mergeStringsVK :: VK.Config -> BR.RepliesM -> VK.Config
-mergeStringsVK cfg ss = cfg {VK.repliesM = VK.repliesM cfg <> ss}
-
 instance A.FromJSON AppConfig where
   parseJSON =
     A.withObject "FromJSON Main.AppConfig" $ \o -> do
@@ -33,9 +30,8 @@ instance A.FromJSON AppConfig where
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
       repliesM <- mempty <|> o A..: "replies" >>= parseRepliesM
       logger <- o A..:? "logger" A..!= mempty
-      vkontakte' <- o A..: "vkontakte" >>= parseVKConfig
-      let vkontakte = vkontakte' `mergeStringsVK` repliesM
       telegram <- o A..: "telegram" >>= parseTGConfig
+      vkontakte <- o A..: "vkontakte" >>= parseVKConfig
       pure $ AppConfig {..}
 
 parseTGConfig :: A.Value -> A.Parser TG.Config
@@ -51,7 +47,6 @@ parseVKConfig =
   A.withObject "FromJSON Bot.Telegram" $ \o -> do
     defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
-    repliesM <- mempty <|> o A..: "replies" >>= parseRepliesM
     group_id <- o A..:? "group-id" A..!= 0
     v <- o A..:? "api-version" A..!= "5.86"
     wait_seconds <- o A..:? "wait-seconds" A..!= 25
