@@ -44,7 +44,6 @@ parseTGConfig =
 parseVKConfig :: A.Value -> A.Parser VK.Config
 parseVKConfig =
   A.withObject "FromJSON Bot.Telegram" $ \o -> do
-    defaultEchoMultiplier <- o A..:? "default-echo-multiplier" A..!= 1
     key <- o A..:? "api-key" A..!= ""
     group_id <- o A..:? "group-id" A..!= 0
     v <- o A..:? "api-version" A..!= "5.86"
