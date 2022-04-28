@@ -15,7 +15,7 @@ import qualified Effects.BotReplies as BR
 import qualified Handlers.Logger as Logger
 
 data AppConfig = AppConfig
-  { repliesM :: BR.RepliesM,
+  { replies :: BR.Replies,
     defaultEchoMultiplier :: Int,
     logger :: Logger.Config,
     telegram :: TG.Config,
@@ -28,7 +28,7 @@ instance A.FromJSON AppConfig where
     A.withObject "FromJSON Main.AppConfig" $ \o -> do
       defaults <- o A..: "defaults"
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
-      repliesM <- mempty <|> o A..: "replies" >>= parseRepliesM
+      replies <- BR.fromRepliesM <$> (o A..: "replies" >>= parseRepliesM)
       logger <- o A..:? "logger" A..!= mempty
       telegram <- o A..: "telegram" >>= parseTGConfig
       vkontakte <- o A..: "vkontakte" >>= parseVKConfig

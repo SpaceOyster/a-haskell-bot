@@ -94,5 +94,5 @@ newAppEnv hLog appCfg = do
       { envLogger = hLog,
         envHTTP = hHTTP,
         envUsersDB = hUsersDB,
-        envBotReplies = BR.fromRepliesM $ repliesM appCfg
+        envBotReplies = replies appCfg
       }
