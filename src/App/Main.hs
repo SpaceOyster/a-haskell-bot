@@ -39,9 +39,8 @@ main = initiateAndRun <|> Exit.die usagePrompt
       botToRun <- readBotName bot
       runWithApp cfg botToRun `catchAll` uncaughtExceptions
     uncaughtExceptions :: SomeException -> IO ()
-    uncaughtExceptions e = do
-      putStrLn . ("Uncaught Exception: " <>) . show $ e
-      Exit.die "\nClosing application."
+    uncaughtExceptions e =
+      Exit.die $ "Uncaught Exception: " <> show e <> "\nClosing application."
 
 readBotName :: (MonadFail m) => String -> m BotToRun
 readBotName str =
