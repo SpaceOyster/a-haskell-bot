@@ -5,7 +5,6 @@
 
 module Effects.BotReplies where
 
-import Control.Applicative ((<|>))
 import Control.Monad.Trans (MonadTrans, lift)
 import Data.Has
 import qualified Data.Text.Extended as T (Text, replace, tshow)
