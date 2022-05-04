@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeFamilies #-}
 
@@ -25,6 +26,8 @@ repeatPrompt userM = do
   userData <- userM & DB.getUserDataM & DB.orDefaultData
   prompt <- BR.getReply BR.repeat
   pure $ BR.insertUserData userData prompt
+
+type BotScript a = forall api. BotDSL api a
 
 data BotDSL api ret
   = FetchUpdates ([Entity api] -> BotDSL api ret)
