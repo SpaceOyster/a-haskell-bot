@@ -4,7 +4,7 @@
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Main where
+module App.Main where
 
 import App.Config
 import qualified App.Env as App
