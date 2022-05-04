@@ -77,38 +77,9 @@ library
 executable a-haskell-bot-exe
   main-is: Main.hs
   other-modules:
-      API.Telegram
-      API.Telegram.Methods
-      API.Telegram.Monad
-      API.Telegram.Types
-      API.Vkontakte
-      API.Vkontakte.Methods
-      API.Vkontakte.Monad
-      API.Vkontakte.Types
-      App.Config
-      App.Env
-      App.Error
-      App.Monad
-      Bot
-      Bot.Telegram
-      Bot.Vkontakte
-      Data.Has
-      Data.Hashable
-      Data.Text.Extended
-      Effects.BotReplies
-      Effects.HTTP
-      Effects.Log
-      Effects.UsersDB
-      Handlers.HTTP
-      Handlers.Logger
-      Handlers.Logger.File
-      Handlers.Logger.Internal
-      Handlers.Logger.StdOut
-      Handlers.UsersDB
-      Network.URI.Extended
       Paths_a_haskell_bot
   hs-source-dirs:
-      src
+      app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       a-haskell-bot

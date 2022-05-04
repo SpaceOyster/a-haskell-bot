@@ -1,4 +1,6 @@
 module Main where
 
+import qualified App.Main (main)
+
 main :: IO ()
-main = putStrLn "main function executed"
+main = App.Main.main

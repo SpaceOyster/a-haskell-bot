@@ -38,7 +38,7 @@ library:
 
 executables:
   a-haskell-bot-exe:
-    source-dirs:         src
+    source-dirs:         app
     main:                Main.hs
     ghc-options:
     - -threaded
