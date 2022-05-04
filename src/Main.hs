@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE RecordWildCards #-}
 
 module Main where
@@ -76,23 +77,28 @@ usagePrompt =
     ]
 
 runWithApp :: AppConfig -> BotToRun -> IO ()
-runWithApp cfg@AppConfig {..} bot =
-  Logger.withHandle logger $ \hLog -> do
+runWithApp cfg bot =
+  Logger.withHandle (logger cfg) $ \hLog -> do
     Logger.hLogInfo hLog "Initiating Main Bot loop"
     env <- newAppEnv hLog cfg
-    let app Telegram = TG.evalTelegramT telegram Bot.loop
-        app Vkontakte = VK.evalVkontakteT vkontakte Bot.loop
-    App.runApp env $ app bot
+    let app = interpretWith bot cfg Bot.botLoop
+    App.runApp env app
 
 newAppEnv :: Logger.Handle -> AppConfig -> IO App.AppEnv
 newAppEnv hLog appCfg = do
   let defaultEchoMultiplier = App.Config.defaultEchoMultiplier appCfg
   hHTTP <- HTTP.new HTTP.Config {}
   hUsersDB <- UsersDB.new UsersDB.Config {defaultEchoMultiplier}
-  pure $
+  pure
     App.Env
       { envLogger = hLog,
         envHTTP = hHTTP,
         envUsersDB = hUsersDB,
         envBotReplies = replies appCfg
       }
+
+interpretWith :: BotToRun -> AppConfig -> (Bot.BotScript ret -> App.App ret)
+interpretWith bot AppConfig {..} =
+  case bot of
+    Telegram -> TG.evalTelegramT telegram . Bot.interpret
+    Vkontakte -> VK.evalVkontakteT vkontakte . Bot.interpret
