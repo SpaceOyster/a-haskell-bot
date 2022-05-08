@@ -162,7 +162,11 @@ data KeyboardAction = KeyboardAction
 instance A.ToJSON KeyboardAction where
   toJSON = A.genericToJSON options
     where
-      options = A.defaultOptions {A.fieldLabelModifier = drop 7, A.omitNothingFields = True}
+      options =
+        A.defaultOptions
+          { A.fieldLabelModifier = drop 7,
+            A.omitNothingFields = True
+          }
 
 instance A.FromJSON KeyboardAction where
   parseJSON = A.genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 7}
@@ -248,7 +252,9 @@ instance A.FromJSON PollInitResponse where
 
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates (PollResponse poll) = pure $ updates poll
-extractUpdates (PollError c) = throwM $ apiError $ "Vkontakte Poll Error: " <> T.tshow c
+extractUpdates (PollError c) =
+  throwM . apiError $
+    "Vkontakte Poll Error: " <> T.tshow c
 
 fromResponse :: (A.FromJSON a, MonadThrow m) => Response -> m a
 fromResponse (ErrorResponse err) =
@@ -258,4 +264,6 @@ fromResponse (ErrorResponse err) =
 fromResponse (ResponseWith v) =
   case A.fromJSON v of
     A.Success a -> pure a
-    A.Error _ -> throwM . apiError $ "Responded with unexpected result: " <> T.lazyDecodeUtf8 (A.encode v)
+    A.Error _ ->
+      throwM . apiError $
+        "Responded with unexpected result: " <> T.lazyDecodeUtf8 (A.encode v)
