@@ -9,7 +9,7 @@ where
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import qualified Data.Aeson as A
-import qualified Data.Aeson.Types as A (Parser)
+import qualified Data.Aeson.Types as A (Parser, parseMaybe)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T (Text)
 import qualified Effects.BotReplies as BR (Replies (..))
@@ -19,8 +19,8 @@ data AppConfig = AppConfig
   { replies :: BR.Replies,
     defaultEchoMultiplier :: Int,
     logger :: Logger.Config,
-    telegram :: TG.Config,
-    vkontakte :: VK.Config
+    telegramM :: Maybe TG.Config,
+    vkontakteM :: Maybe VK.Config
   }
   deriving (Show)
 
@@ -31,20 +31,22 @@ instance A.FromJSON AppConfig where
       defaultEchoMultiplier <- defaults A..:? "default-echo-multiplier" A..!= 1
       replies <- o A..: "replies" >>= parseReplies
       logger <- o A..:? "logger" A..!= mempty
-      telegram <- o A..: "telegram" >>= parseTGConfig
-      vkontakte <- o A..: "vkontakte" >>= parseVKConfig
+      let telegramM = A.parseMaybe parseTGConfig (A.Object o)
+      let vkontakteM = A.parseMaybe parseVKConfig (A.Object o)
       pure $ AppConfig {..}
 
 parseTGConfig :: A.Value -> A.Parser TG.Config
 parseTGConfig =
-  A.withObject "FromJSON Bot.Telegram" $ \o -> do
+  A.withObject "FromJSON Bot.Telegram" $ \obj -> do
+    o <- obj A..: "telegram"
     key <- o A..:? "api-key" A..!= ""
     timeout_seconds <- o A..:? "timeout-seconds" A..!= 100
     pure $ TG.Config {..}
 
 parseVKConfig :: A.Value -> A.Parser VK.Config
 parseVKConfig =
-  A.withObject "FromJSON Bot.Telegram" $ \o -> do
+  A.withObject "FromJSON Bot.Vkontakte" $ \obj -> do
+    o <- obj A..: "vkontakte"
     key <- o A..:? "api-key" A..!= ""
     group_id <- o A..:? "group-id" A..!= 0
     v <- o A..:? "api-version" A..!= "5.86"

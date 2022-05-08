@@ -1,23 +1,25 @@
+{-# LANGUAGE DisambiguateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
 
 module App.Main where
 
 import App.Config
 import qualified App.Env as App
+import App.Error (botError)
 import qualified App.Monad as App
 import qualified Bot
 import qualified Bot.Telegram as TG
 import qualified Bot.Vkontakte as VK
 import Control.Applicative ((<|>))
-import Control.Monad.Catch (SomeException, catchAll)
+import Control.Monad.Catch (MonadThrow, SomeException, catchAll, throwM)
 import qualified Data.Aeson as Aeson (eitherDecode)
 import qualified Data.ByteString.Lazy as BL
 import Data.Char (toLower)
 import Data.List (intercalate)
+import qualified Data.Text.Extended as T (tshow)
 import qualified Effects.BotReplies ()
 import qualified Handlers.HTTP as HTTP
 import qualified Handlers.Logger as Logger
@@ -28,6 +30,7 @@ import qualified System.Exit as Exit (die)
 data BotToRun
   = Telegram
   | Vkontakte
+  deriving (Show)
 
 main :: IO ()
 main = initiateAndRun <|> Exit.die usagePrompt
@@ -80,7 +83,7 @@ runWithApp cfg bot =
   Logger.withHandle (logger cfg) $ \hLog -> do
     Logger.hLogInfo hLog "Initiating Main Bot loop"
     env <- newAppEnv hLog cfg
-    let app = interpretWith bot cfg Bot.botLoop
+    app <- interpretWith bot cfg Bot.botLoop
     App.runApp env app
 
 newAppEnv :: Logger.Handle -> AppConfig -> IO App.AppEnv
@@ -96,8 +99,13 @@ newAppEnv hLog appCfg = do
         envBotReplies = replies appCfg
       }
 
-interpretWith :: BotToRun -> AppConfig -> (Bot.BotScript ret -> App.App ret)
-interpretWith bot AppConfig {..} =
+interpretWith :: (MonadThrow m) => BotToRun -> AppConfig -> Bot.BotScript ret -> m (App.App ret)
+interpretWith bot cfg script =
   case bot of
-    Telegram -> TG.evalTelegramT telegram . Bot.interpret
-    Vkontakte -> VK.evalVkontakteT vkontakte . Bot.interpret
+    Telegram -> interpretWithMaybe TG.evalTelegramT (telegramM cfg)
+    Vkontakte -> interpretWithMaybe VK.evalVkontakteT (vkontakteM cfg)
+  where
+    ex = throwM . botError $ "No config is present for bot: " <> T.tshow bot
+    interpretWithMaybe eval maybeConfig = do
+      botCfg <- maybe ex pure maybeConfig
+      pure . eval botCfg . Bot.interpret $ script
