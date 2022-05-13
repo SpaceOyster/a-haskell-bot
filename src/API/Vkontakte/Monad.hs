@@ -8,10 +8,16 @@
 module API.Vkontakte.Monad where
 
 import API.Vkontakte.Types
+  ( Error (Error, error_code, error_msg),
+    Poll (ts),
+    PollInitResponse (PollInitError, PollInitServer),
+    PollResponse (PollResponse),
+    PollServer (..),
+  )
 import App.Error (apiError)
-import Control.Monad.Catch (MonadCatch, MonadThrow (..))
-import Control.Monad.State (MonadState (..), StateT, get, modify')
-import Control.Monad.Trans (MonadTrans (..), lift)
+import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
+import Control.Monad.State (MonadState, StateT, get, modify', put)
+import Control.Monad.Trans (MonadTrans, lift)
 import qualified Data.Aeson as A
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
