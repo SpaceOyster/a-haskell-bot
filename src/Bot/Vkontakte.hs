@@ -15,10 +15,23 @@ module Bot.Vkontakte
   )
 where
 
-import qualified API.Vkontakte as VK
+import API.Vkontakte.Methods as VK.Methods
+  ( copyMessage,
+    getUpdates,
+    sendKeyboard,
+    sendMessageEventAnswer,
+    sendTextMessage,
+  )
+import qualified API.Vkontakte.Monad as VK
+  ( Config (..),
+    VKState (..),
+    VkontakteT (..),
+    emptyVKState,
+    initiate,
+  )
+import qualified API.Vkontakte.Types as VK
   ( ButtonColor (..),
     CallbackEvent (..),
-    Config (..),
     GroupEvent (..),
     Keyboard (..),
     KeyboardAction (..),
@@ -26,15 +39,10 @@ import qualified API.Vkontakte as VK
     KeyboardButton (..),
     Message (..),
     User (..),
-    VKState (..),
-    VkontakteT (..),
-    emptyVKState,
-    initiate,
   )
-import API.Vkontakte.Methods as VK.Methods
 import App.Error (AppError, botError)
 import qualified Bot
-import Control.Monad (replicateM_)
+import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.State (evalStateT, put)
 import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
@@ -168,12 +176,11 @@ instance
     let address = msg_peer_id
     prompt <- Bot.repeatPrompt $ Just $ VK.User msg_from_id
     replies <- BR.getReplies
-    _ <- case cmd of
+    void $ case cmd of
       Bot.Start -> VK.Methods.sendTextMessage address (BR.greeting replies)
       Bot.Help -> VK.Methods.sendTextMessage address (BR.help replies)
       Bot.Repeat -> VK.Methods.sendKeyboard address prompt repeatKeyboard
       Bot.UnknownCommand -> VK.Methods.sendTextMessage address (BR.unknown replies)
-    pure ()
     where
       logError e =
         Log.logError . T.unlines $
