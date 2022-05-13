@@ -8,9 +8,9 @@ module API.Telegram.Monad where
 
 import API.Telegram.Types (Update (update_id))
 import App.Error (apiError)
-import Control.Monad.Catch (MonadCatch, MonadThrow (..))
-import Control.Monad.State (MonadState (..), StateT, get, put)
-import Control.Monad.Trans (MonadTrans (..), lift)
+import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
+import Control.Monad.State (MonadState, StateT, get, put)
+import Control.Monad.Trans (MonadTrans, lift)
 import qualified Data.Text.Extended as T (tshow)
 import qualified Effects.Log as Log
 import qualified Network.URI.Extended as URI
@@ -33,7 +33,7 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
     )
 
 instance (Log.MonadLog m) => Log.MonadLog (TelegramT m) where
-  doLog p t = lift . Log.doLog p $ "[Telegram] " <> t
+  doLog priority text = lift . Log.doLog priority $ "[Telegram] " <> text
 
 data Config = Config
   { key :: String,
