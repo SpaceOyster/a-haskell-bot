@@ -14,18 +14,6 @@ module Bot.Telegram
   )
 where
 
-import qualified API.Telegram as TG
-  ( CallbackQuery (..),
-    Chat (..),
-    Config (..),
-    InlineKeyboardButton (..),
-    InlineKeyboardMarkup (..),
-    Message (..),
-    TGState (..),
-    TelegramT (..),
-    Update (..),
-    initiate,
-  )
 import qualified API.Telegram.Methods as TG.Methods
   ( answerCallbackQuery,
     copyMessage,
@@ -33,10 +21,24 @@ import qualified API.Telegram.Methods as TG.Methods
     sendInlineKeyboard,
     sendMessage,
   )
+import qualified API.Telegram.Monad as TG
+  ( Config (..),
+    TGState (..),
+    TelegramT (..),
+    initiate,
+  )
+import qualified API.Telegram.Types as TG
+  ( CallbackQuery (..),
+    Chat (..),
+    InlineKeyboardButton (..),
+    InlineKeyboardMarkup (..),
+    Message (..),
+    Update (..),
+  )
 import App.Error (AppError, botError)
 import qualified Bot
-import Control.Monad (replicateM_)
-import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
+import Control.Monad (replicateM_, void)
+import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.State (evalStateT)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -153,7 +155,7 @@ instance
     let address = TG.chat_id chat
     prompt <- Bot.repeatPrompt from
     replies <- BR.getReplies
-    () <$ case cmd of
+    void $ case cmd of
       Bot.Start -> TG.Methods.sendMessage address (BR.greeting replies)
       Bot.Help -> TG.Methods.sendMessage address (BR.help replies)
       Bot.Repeat -> TG.Methods.sendInlineKeyboard address prompt repeatKeyboard
