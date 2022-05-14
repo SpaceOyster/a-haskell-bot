@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot.Vkontakte
-  ( Config (..),
+  ( VK.Config (..),
     initiate,
     evalVkontakteT,
     VK.VkontakteT (..),
@@ -55,17 +55,9 @@ import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
 import GHC.Generics (Generic)
 
-data Config = Config
-  { key :: String,
-    group_id :: Integer,
-    v :: String,
-    wait_seconds :: Int
-  }
-  deriving (Show)
-
 evalVkontakteT ::
   (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-  Config ->
+  VK.Config ->
   VK.VkontakteT m a ->
   m a
 evalVkontakteT cfg t = flip evalStateT VK.emptyVKState $
@@ -75,12 +67,12 @@ evalVkontakteT cfg t = flip evalStateT VK.emptyVKState $
 
 initiate ::
   (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-  Config ->
+  VK.Config ->
   VK.VkontakteT m VK.VKState
-initiate cfg@Config {..} = do
+initiate cfg = do
   Log.logInfo "Initiating Vkontakte Bot"
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
-  VK.initiate VK.Config {..} `catch` \e -> do
+  VK.initiate cfg `catch` \e -> do
     Log.logError "Failed to initiate Vkontakte Long Poll API"
     throwM (e :: AppError)
 

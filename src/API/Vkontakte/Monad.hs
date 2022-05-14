@@ -52,6 +52,7 @@ data Config = Config
     v :: String,
     wait_seconds :: Int
   }
+  deriving (Show)
 
 emptyVKState :: VKState
 emptyVKState =
