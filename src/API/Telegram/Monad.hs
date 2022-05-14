@@ -24,6 +24,13 @@ data TGState = TGState
     timeout :: Int
   }
 
+class (Monad m) => MonadTelegram m where
+  getTGState :: m TGState
+  modifyTGState :: (TGState -> TGState) -> m ()
+  modifyTGState f = getTGState >>= putTGState . f
+  putTGState :: TGState -> m ()
+  putTGState = modifyTGState . const
+
 newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
   deriving newtype
     ( Functor,
@@ -34,13 +41,6 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
       MonadState TGState,
       MonadTrans
     )
-
-class (Monad m) => MonadTelegram m where
-  getTGState :: m TGState
-  modifyTGState :: (TGState -> TGState) -> m ()
-  modifyTGState f = getTGState >>= putTGState . f
-  putTGState :: TGState -> m ()
-  putTGState = modifyTGState . const
 
 instance (Monad m) => MonadTelegram (TelegramT m) where
   getTGState = get

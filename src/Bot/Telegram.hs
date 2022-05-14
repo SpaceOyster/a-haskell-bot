@@ -23,6 +23,7 @@ import qualified API.Telegram.Methods as TG.Methods
   )
 import qualified API.Telegram.Monad as TG
   ( Config (..),
+    MonadTelegram,
     TGState (..),
     TelegramT (..),
     initiate,
@@ -191,10 +192,10 @@ qualifyQuery cq = do
     Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 respondToCallback ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m, DB.MonadUsersDB m) =>
+  (TG.MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m, DB.MonadUsersDB m) =>
   Bot.QueryData ->
   TG.CallbackQuery ->
-  TG.TelegramT m ()
+  m ()
 respondToCallback (Bot.QDRepeat n) c = do
   let user = TG.from (c :: TG.CallbackQuery)
   Log.logInfo $ "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
