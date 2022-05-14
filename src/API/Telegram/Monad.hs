@@ -1,8 +1,11 @@
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE UndecidableInstances #-}
 
 module API.Telegram.Monad where
 
@@ -38,6 +41,10 @@ class (Monad m) => MonadTelegram m where
   modifyTGState f = getTGState >>= putTGState . f
   putTGState :: TGState -> m ()
   putTGState = modifyTGState . const
+
+instance (Monad m) => MonadTelegram (TelegramT m) where
+  getTGState = get
+  putTGState = put
 
 instance (Log.MonadLog m) => Log.MonadLog (TelegramT m) where
   doLog priority text = lift . Log.doLog priority $ "[Telegram] " <> text
