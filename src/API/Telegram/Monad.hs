@@ -32,6 +32,13 @@ newtype TelegramT m a = TelegramT {unTelegramT :: StateT TGState m a}
       MonadTrans
     )
 
+class (Monad m) => MonadTelegram m where
+  getTGState :: m TGState
+  modifyTGState :: (TGState -> TGState) -> m ()
+  modifyTGState f = getTGState >>= putTGState . f
+  putTGState :: TGState -> m ()
+  putTGState = modifyTGState . const
+
 instance (Log.MonadLog m) => Log.MonadLog (TelegramT m) where
   doLog priority text = lift . Log.doLog priority $ "[Telegram] " <> text
 
