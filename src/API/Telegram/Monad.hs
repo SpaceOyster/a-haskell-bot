@@ -63,10 +63,10 @@ newStateFromM us@(_ : _) st = Just $ st {lastUpdate = 1 + update_id (last us)}
 newStateFromM _ _ = Nothing
 
 rememberLastUpdate ::
-  (MonadThrow m, Log.MonadLog m) => [Update] -> TelegramT m [Update]
+  (MonadThrow m, Log.MonadLog m, MonadTelegram m) => [Update] -> m [Update]
 rememberLastUpdate us = do
-  st <- get
-  mapM_ put (newStateFromM us st) >> pure us
+  st <- getTGState
+  mapM_ putTGState (newStateFromM us st) >> pure us
 
 initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
@@ -81,7 +81,7 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ apiError "Unable to parse Telegram API URL"
 
-apiMethod :: Monad m => String -> TelegramT m URI.URI
+apiMethod :: MonadTelegram m => String -> m URI.URI
 apiMethod method = do
-  st <- get
+  st <- getTGState
   pure $ apiURI st `URI.addPath` method
