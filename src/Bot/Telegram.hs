@@ -7,7 +7,7 @@
 {-# LANGUAGE TypeFamilies #-}
 
 module Bot.Telegram
-  ( Config (..),
+  ( TG.Config (..),
     initiate,
     evalTelegramT,
     TG.TelegramT (..),
@@ -47,26 +47,20 @@ import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
 
-data Config = Config
-  { key :: String,
-    timeout_seconds :: Int
-  }
-  deriving (Show)
-
 evalTelegramT ::
   (Monad m, MonadCatch m, Log.MonadLog m) =>
-  Config ->
+  TG.Config ->
   TG.TelegramT m a ->
   m a
 evalTelegramT cfg t = do
   st <- initiate cfg
   evalStateT (TG.unTelegramT t) st
 
-initiate :: (MonadCatch m, Log.MonadLog m) => Config -> m TG.TGState
-initiate cfg@Config {..} = do
+initiate :: (MonadCatch m, Log.MonadLog m) => TG.Config -> m TG.TGState
+initiate cfg = do
   Log.logInfo "Initiating Telegram Bot"
   Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
-  TG.initiate TG.Config {..} `catch` \e -> do
+  TG.initiate cfg `catch` \e -> do
     Log.logError "Failed to initiate Telegram Poll API"
     throwM (e :: AppError)
 
