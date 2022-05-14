@@ -11,8 +11,8 @@ module API.Telegram.Methods
 where
 
 import API.Telegram.Monad
-  ( TGState (lastUpdate, timeout),
-    TelegramT,
+  ( MonadTelegram (getTGState),
+    TGState (lastUpdate, timeout),
     apiMethod,
     rememberLastUpdate,
   )
@@ -25,7 +25,6 @@ import API.Telegram.Types as Types
   )
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
-import Control.Monad.State (MonadState (..), get)
 import Data.Aeson as A (FromJSON, Value (..), decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -40,42 +39,42 @@ data Method
   deriving (Show)
 
 getUpdates ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-  TelegramT m [Update]
+  (MonadTelegram m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  m [Update]
 getUpdates = runMethod GetUpdates >>= rememberLastUpdate
 
 answerCallbackQuery ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  (MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   T.Text ->
-  TelegramT m Bool
+  m Bool
 answerCallbackQuery c = runMethod (AnswerCallbackQuery c)
 
 copyMessage ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  (MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Message ->
-  TelegramT m Value
+  m Value
 copyMessage msg = runMethod (CopyMessage msg)
 
 sendMessage ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  (MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Integer ->
   T.Text ->
-  TelegramT m Message
+  m Message
 sendMessage chatId text = runMethod (SendMessage chatId text)
 
 sendInlineKeyboard ::
-  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
+  (MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m, MonadTelegram m) =>
   Integer ->
   T.Text ->
   InlineKeyboardMarkup ->
-  TelegramT m Message
+  m Message
 sendInlineKeyboard chatId prompt keyboard =
   runMethod (SendInlineKeyboard chatId prompt keyboard)
 
 runMethod ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, A.FromJSON a) =>
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, A.FromJSON a, MonadTelegram m) =>
   Method ->
-  TelegramT m a
+  m a
 runMethod m = do
   req <- mkRequest m
   json <- HTTP.sendRequest req
@@ -84,7 +83,7 @@ runMethod m = do
   where
     ex json = throwM . apiError $ "Unexpected response: " <> T.lazyDecodeUtf8 json
 
-mkRequest :: Log.MonadLog m => Method -> TelegramT m HTTP.Request
+mkRequest :: (MonadTelegram m, Log.MonadLog m) => Method -> m HTTP.Request
 mkRequest m =
   case m of
     GetUpdates -> getUpdates_
@@ -94,22 +93,22 @@ mkRequest m =
     SendInlineKeyboard chatId prompt keyboard ->
       sendInlineKeyboard_ chatId prompt keyboard
 
-getUpdates_ :: Log.MonadLog m => TelegramT m HTTP.Request
+getUpdates_ :: (MonadTelegram m, Log.MonadLog m) => m HTTP.Request
 getUpdates_ = do
-  st <- get
+  st <- getTGState
   Log.logDebug $ "last recieved Update id: " <> T.tshow (lastUpdate st)
   let json =
         encode . object $ ["offset" .= lastUpdate st, "timeout" .= timeout st]
   uri <- apiMethod "getUpdates"
   pure $ HTTP.POST uri json
 
-answerCallbackQuery_ :: Monad m => T.Text -> TelegramT m HTTP.Request
+answerCallbackQuery_ :: MonadTelegram m => T.Text -> m HTTP.Request
 answerCallbackQuery_ cqid = do
   let json = encode . object $ ["callback_query_id" .= cqid]
   uri <- apiMethod "answerCallbackQuery"
   pure $ HTTP.POST uri json
 
-copyMessage_ :: Monad m => Message -> TelegramT m HTTP.Request
+copyMessage_ :: MonadTelegram m => Message -> m HTTP.Request
 copyMessage_ Message {message_id, chat} = do
   let json =
         encode . object $
@@ -120,14 +119,14 @@ copyMessage_ Message {message_id, chat} = do
   uri <- apiMethod "copyMessage"
   pure $ HTTP.POST uri json
 
-sendMessage_ :: Monad m => Integer -> T.Text -> TelegramT m HTTP.Request
+sendMessage_ :: MonadTelegram m => Integer -> T.Text -> m HTTP.Request
 sendMessage_ chatId msg = do
   let json = encode . object $ ["chat_id" .= chatId, "text" .= msg]
   uri <- apiMethod "sendMessage"
   pure $ HTTP.POST uri json
 
 sendInlineKeyboard_ ::
-  Monad m => Integer -> T.Text -> InlineKeyboardMarkup -> TelegramT m HTTP.Request
+  MonadTelegram m => Integer -> T.Text -> InlineKeyboardMarkup -> m HTTP.Request
 sendInlineKeyboard_ chatId prompt keyboard = do
   let json =
         encode . object $
