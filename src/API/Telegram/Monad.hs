@@ -66,3 +66,8 @@ makeBaseURI Config {..} =
   maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
   where
     ex = throwM $ apiError "Unable to parse Telegram API URL"
+
+apiMethod :: Monad m => String -> TelegramT m URI.URI
+apiMethod method = do
+  st <- get
+  pure $ apiURI st `URI.addPath` method

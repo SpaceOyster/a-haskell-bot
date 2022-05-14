@@ -11,7 +11,18 @@ module API.Telegram.Methods
 where
 
 import API.Telegram.Monad
+  ( TGState (lastUpdate, timeout),
+    TelegramT,
+    apiMethod,
+    rememberLastUpdate,
+  )
 import API.Telegram.Types as Types
+  ( Chat (chat_id),
+    InlineKeyboardMarkup,
+    Message (Message, chat, message_id),
+    Update,
+    fromResponse,
+  )
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
 import Control.Monad.State (MonadState (..), get)
@@ -19,7 +30,6 @@ import Data.Aeson as A (FromJSON, Value (..), decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
-import qualified Network.URI.Extended as URI
 
 data Method
   = GetUpdates
@@ -61,11 +71,6 @@ sendInlineKeyboard ::
   TelegramT m Message
 sendInlineKeyboard chatId prompt keyboard =
   runMethod (SendInlineKeyboard chatId prompt keyboard)
-
-apiMethod :: Monad m => String -> TelegramT m URI.URI
-apiMethod method = do
-  st <- get
-  pure $ apiURI st `URI.addPath` method
 
 runMethod ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, A.FromJSON a) =>
