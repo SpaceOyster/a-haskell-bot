@@ -80,6 +80,9 @@ newtype TelegramBot m a = TelegramBot {unTelegramBot :: TG.TelegramT m a}
       MonadTrans
     )
 
+instance (Log.MonadLog m) => Log.MonadLog (TelegramBot m) where
+  doLog priority text = lift . Log.doLog priority $ "[Telegram] " <> text
+
 evalTelegramBot ::
   (MonadCatch m, Log.MonadLog m) =>
   TG.Config ->
