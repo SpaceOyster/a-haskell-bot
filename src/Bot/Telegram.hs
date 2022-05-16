@@ -1,5 +1,7 @@
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -41,6 +43,7 @@ import qualified Bot
 import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.State (evalStateT)
+import Control.Monad.Trans (MonadTrans, lift)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
@@ -64,6 +67,17 @@ initiate cfg = do
   TG.initiate cfg `catch` \e -> do
     Log.logError "Failed to initiate Telegram Poll API"
     throwM (e :: AppError)
+
+newtype TelegramBot m a = TelegramBot {unTelegramBot :: TG.TelegramT m a}
+  deriving newtype
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadThrow,
+      MonadCatch,
+      TG.MonadTelegram,
+      MonadTrans
+    )
 
 instance
   ( MonadThrow m,
