@@ -95,15 +95,15 @@ instance
     DB.MonadUsersDB m,
     BR.MonadBotReplies m
   ) =>
-  Bot.EchoBotMonad (TG.TelegramT m)
+  Bot.EchoBotMonad (TelegramBot m)
   where
-  type Message (TG.TelegramT m) = TG.Message
-  type Command (TG.TelegramT m) = TG.Message
-  type CallbackQuery (TG.TelegramT m) = TG.CallbackQuery
+  type Message (TelegramBot m) = TG.Message
+  type Command (TelegramBot m) = TG.Message
+  type CallbackQuery (TelegramBot m) = TG.CallbackQuery
 
   fetchUpdates ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    TG.TelegramT m [Bot.Entity (TG.TelegramT m)]
+    TelegramBot m [Bot.Entity (TelegramBot m)]
   fetchUpdates = flip catch logError $ do
     Log.logInfo "fetching Updates"
     updates <- TG.Methods.getUpdates
@@ -116,7 +116,7 @@ instance
   reactToCallback ::
     (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
-    TG.TelegramT m ()
+    TelegramBot m ()
   reactToCallback cq = flip catch logError $ do
     qdata <- qualifyQuery cq
     respondToCallback qdata cq
@@ -126,7 +126,7 @@ instance
   getAuthorsSettings ::
     (DB.MonadUsersDB m) =>
     TG.Message ->
-    TG.TelegramT m DB.UserData
+    TelegramBot m DB.UserData
   getAuthorsSettings msg = do
     let maybeAuthor = TG.from (msg :: TG.Message)
     maybeAuthor & DB.getUserDataM & DB.orDefaultData
@@ -135,7 +135,7 @@ instance
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     TG.Message ->
     Int ->
-    TG.TelegramT m ()
+    TelegramBot m ()
   echoMessageNTimes msg n = do
     Log.logDebug . mconcat $
       [ "grnerating ",
@@ -161,7 +161,7 @@ instance
       BR.MonadBotReplies m
     ) =>
     Bot.BotCommand ->
-    (TG.Message -> TG.TelegramT m ())
+    (TG.Message -> TelegramBot m ())
   execCommand cmd msg@TG.Message {..} = flip catch logError $ do
     Log.logDebug . mconcat $
       [ "Got command ",
@@ -195,7 +195,7 @@ getCommand TG.Message {text} =
 toBotEntity ::
   (MonadThrow m) =>
   TG.Update ->
-  m (Bot.Entity (TG.TelegramT n))
+  m (Bot.Entity (TelegramBot n))
 toBotEntity u@TG.Update {message, callback_query}
   | Just cq <- callback_query = pure $ Bot.ECallback cq
   | Just msg <- message =

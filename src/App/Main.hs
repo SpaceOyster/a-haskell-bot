@@ -102,7 +102,7 @@ newAppEnv hLog appCfg = do
 interpretWith :: (MonadThrow m) => BotToRun -> AppConfig -> Bot.BotScript ret -> m (App.App ret)
 interpretWith bot cfg script =
   case bot of
-    Telegram -> interpretWithMaybe TG.evalTelegramT (telegramM cfg)
+    Telegram -> interpretWithMaybe TG.evalTelegramBot (telegramM cfg)
     Vkontakte -> interpretWithMaybe VK.evalVkontakteT (vkontakteM cfg)
   where
     ex = throwM . botError $ "No config is present for bot: " <> T.tshow bot
