@@ -10,8 +10,6 @@
 
 module Bot.Telegram
   ( TG.Config (..),
-    initiate,
-    evalTelegramT,
     TG.TelegramT (..),
     evalTelegramBot,
   )
@@ -27,9 +25,8 @@ import qualified API.Telegram.Methods as TG.Methods
 import qualified API.Telegram.Monad as TG
   ( Config (..),
     MonadTelegram,
-    TGState (..),
     TelegramT (..),
-    initiate,
+    evalTelegramT,
   )
 import qualified API.Telegram.Types as TG
   ( CallbackQuery (..),
@@ -43,7 +40,6 @@ import App.Error (AppError, botError)
 import qualified Bot
 import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
-import Control.Monad.State (evalStateT)
 import Control.Monad.Trans (MonadTrans, lift)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -51,23 +47,6 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-
-evalTelegramT ::
-  (Monad m, MonadCatch m, Log.MonadLog m) =>
-  TG.Config ->
-  TG.TelegramT m a ->
-  m a
-evalTelegramT cfg t = do
-  st <- initiate cfg
-  evalStateT (TG.unTelegramT t) st
-
-initiate :: (MonadCatch m, Log.MonadLog m) => TG.Config -> m TG.TGState
-initiate cfg = do
-  Log.logInfo "Initiating Telegram Bot"
-  Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
-  TG.initiate cfg `catch` \e -> do
-    Log.logError "Failed to initiate Telegram Poll API"
-    throwM (e :: AppError)
 
 newtype TelegramBot m a = TelegramBot {unTelegramBot :: TG.TelegramT m a}
   deriving newtype
@@ -88,7 +67,7 @@ evalTelegramBot ::
   TG.Config ->
   TelegramBot m a ->
   m a
-evalTelegramBot cfg = evalTelegramT cfg . unTelegramBot
+evalTelegramBot cfg = TG.evalTelegramT cfg . unTelegramBot
 
 instance
   ( MonadThrow m,

@@ -10,9 +10,9 @@
 module API.Telegram.Monad where
 
 import API.Telegram.Types (Update (update_id))
-import App.Error (apiError)
-import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
-import Control.Monad.State (MonadState, StateT, get, put)
+import App.Error (AppError, apiError)
+import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
+import Control.Monad.State (MonadState, StateT, evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans)
 import qualified Data.Text.Extended as T (tshow)
 import qualified Effects.Log as Log
@@ -65,8 +65,25 @@ rememberLastUpdate us = do
   st <- getTGState
   mapM_ putTGState (newStateFromM us st) >> pure us
 
-initiate :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
+evalTelegramT ::
+  (Monad m, MonadCatch m, Log.MonadLog m) =>
+  Config ->
+  TelegramT m a ->
+  m a
+evalTelegramT cfg t = do
+  st <- initiate cfg
+  evalStateT (unTelegramT t) st
+
+initiate :: (MonadCatch m, Log.MonadLog m) => Config -> m TGState
 initiate cfg = do
+  Log.logInfo "Initiating Telegram Bot"
+  Log.logDebug $ "Telegram Bot config: " <> T.tshow cfg
+  initiate_ cfg `catch` \e -> do
+    Log.logError "Failed to initiate Telegram Poll API"
+    throwM (e :: AppError)
+
+initiate_ :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
+initiate_ cfg = do
   Log.logInfo $ "Initiating Telegram API handle with: " <> T.tshow cfg
   apiURI <- makeBaseURI cfg
   let timeout = min 100 (max 1 $ timeout_seconds cfg)
