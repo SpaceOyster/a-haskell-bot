@@ -13,6 +13,7 @@ module Bot.Telegram
     initiate,
     evalTelegramT,
     TG.TelegramT (..),
+    evalTelegramBot,
   )
 where
 
@@ -78,6 +79,13 @@ newtype TelegramBot m a = TelegramBot {unTelegramBot :: TG.TelegramT m a}
       TG.MonadTelegram,
       MonadTrans
     )
+
+evalTelegramBot ::
+  (MonadCatch m, Log.MonadLog m) =>
+  TG.Config ->
+  TelegramBot m a ->
+  m a
+evalTelegramBot cfg = evalTelegramT cfg . unTelegramBot
 
 instance
   ( MonadThrow m,
