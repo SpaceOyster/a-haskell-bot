@@ -10,7 +10,6 @@
 
 module Bot.Vkontakte
   ( VK.Config (..),
-    VK.evalVkontakteT,
     evalVkontakteBot,
     VK.VkontakteT (..),
   )
@@ -74,22 +73,16 @@ evalVkontakteBot ::
 evalVkontakteBot cfg = VK.evalVkontakteT cfg . unVkontakteBot
 
 instance
-  ( MonadThrow m,
-    MonadCatch m,
-    Log.MonadLog m,
-    HTTP.MonadHTTP m,
-    DB.MonadUsersDB m,
-    BR.MonadBotReplies m
-  ) =>
-  Bot.EchoBotMonad (VK.VkontakteT m)
+  (MonadThrow m, MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m, BR.MonadBotReplies m) =>
+  Bot.EchoBotMonad (VkontakteBot m)
   where
-  type Message (VK.VkontakteT m) = VK.Message
-  type Command (VK.VkontakteT m) = VK.Message
-  type CallbackQuery (VK.VkontakteT m) = VK.CallbackEvent
+  type Message (VkontakteBot m) = VK.Message
+  type Command (VkontakteBot m) = VK.Message
+  type CallbackQuery (VkontakteBot m) = VK.CallbackEvent
 
   fetchUpdates ::
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-    VK.VkontakteT m [Bot.Entity (VK.VkontakteT m)]
+    VkontakteBot m [Bot.Entity (VkontakteBot m)]
   fetchUpdates = flip catch logError $ do
     Log.logInfo "Vkontakte: fetching Updates"
     updates <- VK.Methods.getUpdates
@@ -107,7 +100,7 @@ instance
       BR.MonadBotReplies m
     ) =>
     VK.CallbackEvent ->
-    VK.VkontakteT m ()
+    VkontakteBot m ()
   reactToCallback cq = flip catch logError $ do
     qdata <- qualifyQuery cq
     respondToCallback qdata cq
@@ -117,7 +110,7 @@ instance
   getAuthorsSettings ::
     (DB.MonadUsersDB m) =>
     VK.Message ->
-    VK.VkontakteT m DB.UserData
+    VkontakteBot m DB.UserData
   getAuthorsSettings VK.Message {msg_from_id} = do
     let author = VK.User msg_from_id
     author & DB.getUserData & DB.orDefaultData
@@ -126,7 +119,7 @@ instance
     (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     VK.Message ->
     Int ->
-    VK.VkontakteT m ()
+    VkontakteBot m ()
   echoMessageNTimes msg n = do
     Log.logDebug . mconcat $
       [ "generating ",
@@ -152,7 +145,7 @@ instance
       BR.MonadBotReplies m
     ) =>
     Bot.BotCommand ->
-    (VK.Message -> VK.VkontakteT m ())
+    (VK.Message -> VkontakteBot m ())
   execCommand cmd msg@VK.Message {..} = flip catch logError $ do
     Log.logDebug . mconcat $
       [ "Got command ",
@@ -185,7 +178,7 @@ getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
 toBotEntity ::
   (MonadThrow m) =>
   VK.GroupEvent ->
-  m (Bot.Entity (VK.VkontakteT n))
+  m (Bot.Entity (VkontakteBot n))
 toBotEntity (VK.MessageNew m)
   | isCommandE m = pure $ Bot.ECommand (getCommand m) m
   | otherwise = pure $ Bot.EMessage m

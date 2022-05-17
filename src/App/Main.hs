@@ -7,6 +7,14 @@
 module App.Main where
 
 import App.Config
+  ( AppConfig
+      ( defaultEchoMultiplier,
+        logger,
+        replies,
+        telegramM,
+        vkontakteM
+      ),
+  )
 import qualified App.Env as App
 import App.Error (botError)
 import qualified App.Monad as App
@@ -103,7 +111,7 @@ interpretWith :: (MonadThrow m) => BotToRun -> AppConfig -> Bot.BotScript ret ->
 interpretWith bot cfg script =
   case bot of
     Telegram -> interpretWithMaybe TG.evalTelegramBot (telegramM cfg)
-    Vkontakte -> interpretWithMaybe VK.evalVkontakteT (vkontakteM cfg)
+    Vkontakte -> interpretWithMaybe VK.evalVkontakteBot (vkontakteM cfg)
   where
     ex = throwM . botError $ "No config is present for bot: " <> T.tshow bot
     interpretWithMaybe eval maybeConfig = do
