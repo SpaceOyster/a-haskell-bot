@@ -32,6 +32,13 @@ data VKState = VKState
   }
   deriving (Show)
 
+class (Monad m) => MonadVkontakte m where
+  getVKState :: m VKState
+  modifyVKState :: (VKState -> VKState) -> m ()
+  modifyVKState f = getVKState >>= putVKState . f
+  putVKState :: VKState -> m ()
+  putVKState = modifyVKState . const
+
 newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
   deriving newtype
     ( Functor,
