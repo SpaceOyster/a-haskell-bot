@@ -1,6 +1,7 @@
-{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -25,6 +26,7 @@ import API.Vkontakte.Methods as VK.Methods
 import qualified API.Vkontakte.Monad as VK
   ( Config (..),
     VKState (..),
+    MonadVkontakte,
     VkontakteT (..),
     emptyVKState,
     initiate,
@@ -45,6 +47,7 @@ import qualified Bot
 import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.State (evalStateT, put)
+import Control.Monad.Trans (MonadTrans, lift)
 import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
@@ -55,8 +58,16 @@ import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
 import GHC.Generics (Generic)
 
-evalVkontakteT ::
-  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+newtype VkontakteBot m a = VkontakteBot {unVkontakteBot :: VK.VkontakteT m a}
+  deriving newtype
+    ( Functor,
+      Applicative,
+      Monad,
+      MonadThrow,
+      MonadCatch,
+      VK.MonadVkontakte,
+      MonadTrans
+    )
   VK.Config ->
   VK.VkontakteT m a ->
   m a
@@ -195,7 +206,8 @@ toBotEntity (VK.MessageNew m)
 toBotEntity (VK.MessageEvent c) = pure $ Bot.ECallback c
 
 newtype CallbackQueryJSON = CallbackQueryJSON {unCallbackQueryJSON :: T.Text}
-  deriving (Generic, A.ToJSON, A.FromJSON)
+  deriving stock (Generic)
+  deriving newtype (A.ToJSON, A.FromJSON)
 
 wrapCallbackQuery :: Bot.QueryData -> CallbackQueryJSON
 wrapCallbackQuery = CallbackQueryJSON . Bot.encodeQuery
