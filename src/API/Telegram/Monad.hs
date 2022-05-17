@@ -1,11 +1,7 @@
 {-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module API.Telegram.Monad where
 
@@ -90,7 +86,7 @@ initiate_ cfg = do
   pure $ emptyTGState {apiURI, timeout}
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
-makeBaseURI Config {..} =
+makeBaseURI Config {key} =
   maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
   where
     ex = throwM $ apiError "Unable to parse Telegram API URL"
