@@ -9,7 +9,6 @@
 
 module Bot.Telegram
   ( TG.Config (..),
-    TG.TelegramT (..),
     evalTelegramBot,
   )
 where
