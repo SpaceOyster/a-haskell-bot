@@ -14,10 +14,10 @@ import API.Vkontakte.Types
     PollResponse (PollResponse),
     PollServer (..),
   )
-import App.Error (apiError)
-import Control.Monad.Catch (MonadCatch, MonadThrow, throwM)
-import Control.Monad.State (MonadState, StateT, get, modify', put)
 import Control.Monad.Trans (MonadTrans, lift)
+import App.Error (AppError, apiError)
+import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
+import Control.Monad.State (MonadState, StateT, evalStateT, get, modify', put)
 import qualified Data.Aeson as A
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -84,11 +84,32 @@ updateStateWith :: PollResponse -> (VKState -> VKState)
 updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
+evalVkontakteT ::
+  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  Config ->
+  VkontakteT m a ->
+  m a
+evalVkontakteT cfg t = flip evalStateT emptyVKState $
+  unVkontakteT $ do
+    st <- initiate cfg
+    put st >> t
+
 initiate ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
+  (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
   Config ->
   m VKState
 initiate cfg = do
+  Log.logInfo "Initiating Vkontakte Bot"
+  Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
+  initiate_ cfg `catch` \e -> do
+    Log.logError "Failed to initiate Vkontakte Long Poll API"
+    throwM (e :: AppError)
+
+initiate_ ::
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
+  Config ->
+  m VKState
+initiate_ cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
   let wait = min 90 (max 1 $ wait_seconds (cfg :: Config))

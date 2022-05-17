@@ -10,8 +10,7 @@
 
 module Bot.Vkontakte
   ( VK.Config (..),
-    initiate,
-    evalVkontakteT,
+    VK.evalVkontakteT,
     evalVkontakteBot,
     VK.VkontakteT (..),
   )
@@ -27,10 +26,8 @@ import API.Vkontakte.Methods as VK.Methods
 import qualified API.Vkontakte.Monad as VK
   ( Config (..),
     MonadVkontakte,
-    VKState (..),
     VkontakteT (..),
-    emptyVKState,
-    initiate,
+    evalVkontakteT,
   )
 import qualified API.Vkontakte.Types as VK
   ( ButtonColor (..),
@@ -47,7 +44,6 @@ import App.Error (AppError, botError)
 import qualified Bot
 import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
-import Control.Monad.State (evalStateT, put)
 import Control.Monad.Trans (MonadTrans, lift)
 import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
 import qualified Data.Aeson.Types as A (parseMaybe)
@@ -75,28 +71,7 @@ evalVkontakteBot ::
   VK.Config ->
   VkontakteBot m a ->
   m a
-evalVkontakteBot cfg = evalVkontakteT cfg . unVkontakteBot
-
-evalVkontakteT ::
-  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
-  VK.Config ->
-  VK.VkontakteT m a ->
-  m a
-evalVkontakteT cfg t = flip evalStateT VK.emptyVKState $
-  VK.unVkontakteT $ do
-    st <- initiate cfg
-    put st >> t
-
-initiate ::
-  (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, VK.MonadVkontakte m) =>
-  VK.Config ->
-  m VK.VKState
-initiate cfg = do
-  Log.logInfo "Initiating Vkontakte Bot"
-  Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
-  VK.initiate cfg `catch` \e -> do
-    Log.logError "Failed to initiate Vkontakte Long Poll API"
-    throwM (e :: AppError)
+evalVkontakteBot cfg = VK.evalVkontakteT cfg . unVkontakteBot
 
 instance
   ( MonadThrow m,
