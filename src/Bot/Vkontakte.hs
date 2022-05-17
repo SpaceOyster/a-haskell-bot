@@ -12,6 +12,7 @@ module Bot.Vkontakte
   ( VK.Config (..),
     initiate,
     evalVkontakteT,
+    evalVkontakteBot,
     VK.VkontakteT (..),
   )
 where
@@ -25,8 +26,8 @@ import API.Vkontakte.Methods as VK.Methods
   )
 import qualified API.Vkontakte.Monad as VK
   ( Config (..),
-    VKState (..),
     MonadVkontakte,
+    VKState (..),
     VkontakteT (..),
     emptyVKState,
     initiate,
@@ -68,6 +69,16 @@ newtype VkontakteBot m a = VkontakteBot {unVkontakteBot :: VK.VkontakteT m a}
       VK.MonadVkontakte,
       MonadTrans
     )
+
+evalVkontakteBot ::
+  (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  VK.Config ->
+  VkontakteBot m a ->
+  m a
+evalVkontakteBot cfg = evalVkontakteT cfg . unVkontakteBot
+
+evalVkontakteT ::
+  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   VK.Config ->
   VK.VkontakteT m a ->
   m a
@@ -77,9 +88,9 @@ evalVkontakteT cfg t = flip evalStateT VK.emptyVKState $
     put st >> t
 
 initiate ::
-  (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, VK.MonadVkontakte m) =>
   VK.Config ->
-  VK.VkontakteT m VK.VKState
+  m VK.VKState
 initiate cfg = do
   Log.logInfo "Initiating Vkontakte Bot"
   Log.logDebug $ "Vkontakte Bot config: " <> T.tshow cfg
