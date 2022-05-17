@@ -52,6 +52,10 @@ newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
 
 instance (Log.MonadLog m) => Log.MonadLog (VkontakteT m) where
   doLog p t = lift . Log.doLog p $ "[Vkontakte] " <> t
+instance (Monad m) => MonadVkontakte (VkontakteT m) where
+  getVKState = get
+  putVKState = put
+  modifyVKState = modify'
 
 data Config = Config
   { key :: String,
