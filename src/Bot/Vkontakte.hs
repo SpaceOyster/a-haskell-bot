@@ -65,6 +65,9 @@ newtype VkontakteBot m a = VkontakteBot {unVkontakteBot :: VK.VkontakteT m a}
       MonadTrans
     )
 
+instance (Log.MonadLog m) => Log.MonadLog (VkontakteBot m) where
+  doLog p t = lift . Log.doLog p $ "[Vkontakte] " <> t
+
 evalVkontakteBot ::
   (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   VK.Config ->

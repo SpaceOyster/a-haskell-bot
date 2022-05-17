@@ -14,10 +14,10 @@ import API.Vkontakte.Types
     PollResponse (PollResponse),
     PollServer (..),
   )
-import Control.Monad.Trans (MonadTrans, lift)
 import App.Error (AppError, apiError)
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.State (MonadState, StateT, evalStateT, get, modify', put)
+import Control.Monad.Trans (MonadTrans)
 import qualified Data.Aeson as A
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
@@ -50,8 +50,6 @@ newtype VkontakteT m a = VkontakteT {unVkontakteT :: StateT VKState m a}
       MonadTrans
     )
 
-instance (Log.MonadLog m) => Log.MonadLog (VkontakteT m) where
-  doLog p t = lift . Log.doLog p $ "[Vkontakte] " <> t
 instance (Monad m) => MonadVkontakte (VkontakteT m) where
   getVKState = get
   putVKState = put
