@@ -75,27 +75,29 @@ emptyVKState =
     }
 
 rememberLastUpdate ::
-  (MonadThrow m, Log.MonadLog m) => PollResponse -> VkontakteT m PollResponse
-rememberLastUpdate res = modify' (updateStateWith res) >> pure res
+  (MonadThrow m, Log.MonadLog m, MonadVkontakte m) =>
+  PollResponse ->
+  m PollResponse
+rememberLastUpdate res = modifyVKState (updateStateWith res) >> pure res
 
 updateStateWith :: PollResponse -> (VKState -> VKState)
 updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 initiate ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
   Config ->
-  VkontakteT m VKState
+  m VKState
 initiate cfg = do
-  lift $ Log.logInfo "Initiating Vkontakte API handle"
+  Log.logInfo "Initiating Vkontakte API handle"
   apiURI <- makeBaseURI cfg
   let wait = min 90 (max 1 $ wait_seconds (cfg :: Config))
-  put $ emptyVKState {apiURI, wait}
+  putVKState $ emptyVKState {apiURI, wait}
   initiatePollServer
 
-apiMethod :: (Monad m) => T.Text -> [URI.QueryParam] -> VkontakteT m URI.URI
+apiMethod :: (MonadVkontakte m) => T.Text -> [URI.QueryParam] -> m URI.URI
 apiMethod method qps = do
-  st <- get
+  st <- getVKState
   pure $ flip URI.addQueryParams qps . URI.addPath (apiURI st) $ T.unpack method
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
@@ -111,18 +113,18 @@ makeBaseURI Config {..} =
   where
     ex = throwM $ apiError "Unable to parse Vkontakte API URL"
 
-initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VkontakteT m VKState
+initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m VKState
 initiatePollServer = do
-  st <- get
+  st <- getVKState
   ps@PollServer {ts} <- getLongPollServer
   pollURI <- makePollURI ps
   let pollCreds = st {lastTS = ts, pollURI}
   pure pollCreds
 
-getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m) => VkontakteT m PollServer
+getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m PollServer
 getLongPollServer = do
   req <- HTTP.GET <$> apiMethod "groups.getLongPollServer" mempty
-  json <- lift $ HTTP.sendRequest req
+  json <- HTTP.sendRequest req
   case A.decode json of
     Just (PollInitServer r) -> pure r
     Just (PollInitError Error {error_code, error_msg}) ->
