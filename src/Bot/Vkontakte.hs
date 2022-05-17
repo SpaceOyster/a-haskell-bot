@@ -211,10 +211,10 @@ qualifyQuery cq = do
     Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 respondToCallback ::
-  (BR.MonadBotReplies m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+  (VK.MonadVkontakte m, BR.MonadBotReplies m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
   Bot.QueryData ->
   VK.CallbackEvent ->
-  VK.VkontakteT m ()
+  m ()
 respondToCallback (Bot.QDRepeat n) c = do
   let user = VK.User $ VK.user_id c
   Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
