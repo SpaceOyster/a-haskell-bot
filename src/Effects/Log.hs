@@ -20,11 +20,11 @@ data Priority
 
 type Verbosity = Priority
 
-prioToText :: Priority -> T.Text
-prioToText Debug = "DEBUG"
-prioToText Info = "INFO"
-prioToText Warning = "WARNING"
-prioToText Error = "ERROR"
+priorityToText :: Priority -> T.Text
+priorityToText Debug = "DEBUG"
+priorityToText Info = "INFO"
+priorityToText Warning = "WARNING"
+priorityToText Error = "ERROR"
 
 instance A.FromJSON Priority where
   parseJSON =
@@ -57,7 +57,7 @@ timeStamp = do
 composeMessage :: (MonadIO m) => Priority -> T.Text -> m T.Text
 composeMessage p t = do
   ts <- liftIO timeStamp
-  pure $ ts <> " " <> prioToText p <> " " <> t
+  pure $ ts <> " " <> priorityToText p <> " " <> t
 
 logDebug, logInfo, logWarning, logError :: MonadLog m => T.Text -> m ()
 logDebug = doLog Debug
