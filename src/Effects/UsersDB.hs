@@ -17,6 +17,7 @@ class Monad m => MonadUsersDB m where
   defaultUserData :: m UserData
   getUserData :: H.Hashable u => u -> m (Maybe UserData)
   setUserData :: H.Hashable u => u -> UserData -> m ()
+  setUserData user udata = modifyUserData user (const udata)
   modifyUserData :: H.Hashable u => u -> (UserData -> UserData) -> m ()
   modifyUserData user morph = do
     defaultData <- defaultUserData
