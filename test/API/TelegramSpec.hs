@@ -3,8 +3,9 @@ module API.TelegramSpec
   ) where
 
 import API.Telegram
+import qualified API.Telegram.TypesSpec (spec)
 import Test.Hspec
 
 spec :: Spec
 spec = do
-  undefined
+  API.Telegram.TypesSpec.spec

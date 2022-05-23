@@ -5,6 +5,7 @@ import qualified Network.URI.ExtendedSpec (spec)
 import qualified Effects.UsersDBSpec (spec)
 import qualified Data.Text.ExtendedSpec (spec)
 import Test.Hspec ( hspec, Spec )
+import qualified API.TelegramSpec (spec)
 
 main :: IO ()
 main = hspec spec
@@ -15,3 +16,4 @@ spec = do
   Effects.BotRepliesSpec.spec
   Effects.UsersDBSpec.spec
   Data.Text.ExtendedSpec.spec
+  API.TelegramSpec.spec

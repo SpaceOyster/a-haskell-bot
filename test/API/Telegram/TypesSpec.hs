@@ -1,0 +1,31 @@
+{-# LANGUAGE OverloadedStrings #-}
+module API.Telegram.TypesSpec
+  ( spec
+  ) where
+
+import API.Telegram.Types as TG
+import Test.Hspec
+import Data.Aeson as Aeson
+
+spec :: Spec
+spec = describe "API.Telegram.Types" $ do
+  fromResponseSpec
+
+fromResponseSpec :: Spec
+fromResponseSpec = describe "fromResponse" $ do
+  context "when Telegram API responded with json" $
+    it "extracts data of Aeson.ToJSON class from API.Telegram.Response" $ do
+      fromResponse (ResponseWith $ Aeson.toJSON ([1,2,3,4] :: [Integer])) 
+        `shouldBe` (Just [1,2,3,4] :: Maybe [Integer])
+      fromResponse (ResponseWith $ Aeson.toJSON True) 
+        `shouldBe` (Just True :: Maybe Bool)
+  context "when json can't be parsed to expected data type" $
+    it "throws error" $ do
+      (fromResponse (ResponseWith $ Aeson.toJSON True) :: IO Integer) 
+        `shouldThrow` anyException
+      (fromResponse (ResponseWith $ Aeson.toJSON ['a','b']) :: IO Bool) 
+        `shouldThrow` anyException
+  context "when Telegram API responded with error" $
+    it "throws error" $ do
+      (fromResponse (ErrorResponse $ TG.Error 101 "sommin bad happn :(") :: IO Bool) 
+        `shouldThrow` anyException
