@@ -6,9 +6,9 @@
 module Effects.BotReplies where
 
 import Control.Monad.Trans (MonadTrans, lift)
-import Data.Has
+import Data.Has (Has(obtain))
 import qualified Data.Text.Extended as T (Text, replace, tshow)
-import Effects.UsersDB (UserData (..))
+import Effects.UsersDB (UserData (getEchoMultiplier))
 import Prelude hiding (repeat)
 
 data Replies = Replies
