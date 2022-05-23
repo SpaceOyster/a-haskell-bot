@@ -7,7 +7,7 @@ module Effects.Log where
 import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Trans (MonadTrans, lift)
 import qualified Data.Aeson as A (FromJSON (..), withText)
-import qualified Data.Text.Extended as T (Text, pack, toUpper, tshow, unpack)
+import qualified Data.Text.Extended as T (Text, pack, unpack)
 import qualified Data.Time.Format as Time (defaultTimeLocale, formatTime)
 import qualified Data.Time.LocalTime as Time (getZonedTime)
 
@@ -21,7 +21,10 @@ data Priority
 type Verbosity = Priority
 
 prioToText :: Priority -> T.Text
-prioToText = T.toUpper . T.tshow
+prioToText Debug = "DEBUG"
+prioToText Info = "INFO"
+prioToText Warning = "WARNING"
+prioToText Error = "ERROR"
 
 instance A.FromJSON Priority where
   parseJSON =
