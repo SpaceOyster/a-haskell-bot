@@ -1,9 +1,11 @@
-import qualified Network.URI.ExtendedSpec
-import Test.Hspec
+module Spec where
+
+import qualified Network.URI.ExtendedSpec (spec)
+import Test.Hspec ( hspec, Spec )
 
 main :: IO ()
 main = hspec spec
 
 spec :: Spec
 spec = do
-  describe "Network.URI.Extended" Network.URI.ExtendedSpec.spec
+  Network.URI.ExtendedSpec.spec
