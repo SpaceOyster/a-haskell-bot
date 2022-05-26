@@ -10,7 +10,7 @@ import qualified Network.URI.Extended as URI
 data Request
   = GET URI.URI
   | POST URI.URI L8.ByteString
-  deriving (Show)
+  deriving (Show, Eq)
 
 class Monad m => MonadHTTP m where
   sendRequest :: Request -> m L8.ByteString
