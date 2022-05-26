@@ -1,13 +1,20 @@
+{-# OPTIONS_GHC -fno-warn-orphans#-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Effects.UsersDBSpec (spec) where
 
 import Effects.UsersDB
-import Test.Hspec (Spec,describe, it, shouldBe, context, pending, shouldReturn)
-import Data.Functor.Identity ( Identity(Identity) )
-import Data.Hashable as H ( Hashable(hash), Hash )
-import Data.Map as Map (Map(..), alter, insert, empty, lookup, fromList)
-import Control.Monad.State (State, get, put, gets, evalState, when)
+    ( UserData(UserData),
+      getUserDataM,
+      getUserMultiplier,
+      getUserMultiplierM,
+      orDefaultData,
+      setUserMultiplier,
+      MonadUsersDB(..) )
+import Test.Hspec (Spec,describe, it, shouldBe, context)
+import Data.Hashable as H ( Hashable(hash) )
+import Data.Map as Map (Map, alter, insert, empty, lookup, fromList)
+import Control.Monad.State (State, get, put, gets, evalState)
 
 spec :: Spec
 spec = describe "Effects.BotReplies" $ do
@@ -26,12 +33,6 @@ instance Eq UserData where
 newtype TestUser = TestUser {unTestUser :: Integer}
   deriving (Show, Eq)
 
-testUser :: TestUser
-testUser = TestUser 12345
-
-testMap :: Map Hash UserData
-testMap = fromList [(1, UserData 12), (2,UserData 2), (1235, UserData 42)]
-
 instance Hashable TestUser where
   hash = unTestUser
 
@@ -47,11 +48,11 @@ instance MonadUsersDB TestMonadUsersDB where
   defaultUserData = pure $ UserData 1000
   getUserData user = TestMonadUsersDB $ gets (Map.lookup (hash user))
   setUserData user udata = TestMonadUsersDB $ do
-    map <- get
-    put $ Map.insert (H.hash user) udata map
+    map' <- get
+    put $ Map.insert (H.hash user) udata map'
   modifyUserData user morph = TestMonadUsersDB $ do
-    map <- get
-    put $ Map.alter (fmap morph) (hash user) map
+    map' <- get
+    put $ Map.alter (fmap morph) (hash user) map'
 
 getUserDataMSpec :: Spec
 getUserDataMSpec = describe "getUserDataM" $ do
