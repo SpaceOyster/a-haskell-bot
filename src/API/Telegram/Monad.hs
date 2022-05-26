@@ -49,8 +49,8 @@ data Config = Config
   }
   deriving (Show)
 
-emptyTGState :: TGState
-emptyTGState = TGState {lastUpdate = 0, apiURI = URI.nullURI, timeout = 100}
+defaultTGState :: TGState
+defaultTGState = TGState {lastUpdate = 0, apiURI = URI.nullURI, timeout = 100}
 
 newStateFromM :: [Update] -> TGState -> Maybe TGState
 newStateFromM us@(_ : _) st = Just $ st {lastUpdate = 1 + update_id (last us)}
@@ -84,7 +84,7 @@ initiate_ cfg = do
   Log.logInfo $ "Initiating Telegram API handle with: " <> T.tshow cfg
   apiURI <- makeBaseURI cfg
   let timeout = min 100 (max 1 $ timeout_seconds cfg)
-  pure $ emptyTGState {apiURI, timeout}
+  pure $ defaultTGState {apiURI, timeout}
 
 makeBaseURI :: MonadThrow m => Config -> m URI.URI
 makeBaseURI Config {key} =
