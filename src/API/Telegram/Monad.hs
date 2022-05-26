@@ -19,6 +19,7 @@ data TGState = TGState
     apiURI :: URI.URI,
     timeout :: Int
   }
+  deriving (Show, Eq)
 
 class (Monad m) => MonadTelegram m where
   getTGState :: m TGState
