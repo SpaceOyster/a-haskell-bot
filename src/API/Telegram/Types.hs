@@ -49,7 +49,7 @@ data Message = Message
     date :: Integer,
     text :: Maybe T.Text
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Eq,Show, Generic, FromJSON)
 
 data BotCommand = BotCommand
   { command :: T.Text,
@@ -64,7 +64,7 @@ data CallbackQuery = CallbackQuery
     inline_message_id :: Maybe T.Text,
     query_data :: Maybe T.Text
   }
-  deriving (Show)
+  deriving (Eq,Show)
 
 instance FromJSON CallbackQuery where
   parseJSON =
@@ -79,7 +79,7 @@ instance FromJSON CallbackQuery where
 newtype User = User
   { user_id :: Integer
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance ToJSON User where
   toJSON = genericToJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
@@ -93,7 +93,7 @@ instance H.Hashable User where
 newtype Chat = Chat
   { chat_id :: Integer
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance FromJSON Chat where
   parseJSON = withObject "Chat" (fmap Chat . (.: "id"))
@@ -114,7 +114,7 @@ data Update = Update
     message :: Maybe Message,
     callback_query :: Maybe CallbackQuery
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show, Generic, FromJSON, Eq)
 
 data Error = Error
   { error_code :: Int,
