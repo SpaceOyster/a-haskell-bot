@@ -109,6 +109,8 @@ test-suite a-haskell-bot-test
       Effects.UsersDBSpec
       Network.URI.ExtendedSpec
       Test.Handlers.HTTP
+      Test.Handlers.Logger
+      Test.Handlers.UsersDB
       Paths_a_haskell_bot
   hs-source-dirs:
       test
