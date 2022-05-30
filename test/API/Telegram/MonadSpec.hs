@@ -94,7 +94,7 @@ evalTelegramTSpec = describe "evalTelegramT" $ do
       `shouldBe` (initiate testConfig2 :: Maybe TGState)
   context "after state initiation" $ it "runs TelegramT transformer" $ do
     evalTelegramT testConfig1 (pure "some") `shouldBe` Just "some"
-    evalTelegramT testConfig2 (pure $ 1+1) `shouldBe` Just 2
+    evalTelegramT testConfig2 (pure (1 + 1 :: Integer)) `shouldBe` Just 2
 
 initiateSpec :: Spec
 initiateSpec = describe "initiate" $ do
