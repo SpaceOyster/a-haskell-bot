@@ -10,6 +10,11 @@ module API.Telegram.Methods
     getUpdates,
     sendInlineKeyboard,
     sendMessage,
+    answerCallbackQuery_,
+    copyMessage_,
+    getUpdates_,
+    sendInlineKeyboard_,
+    sendMessage_,
     MessageID (..),
   )
 where
