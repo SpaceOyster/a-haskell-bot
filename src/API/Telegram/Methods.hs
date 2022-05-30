@@ -1,3 +1,6 @@
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 
@@ -25,10 +28,11 @@ import API.Telegram.Types as Types
   )
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
-import Data.Aeson as A (FromJSON, Value (..), decode, encode, object, (.=))
+import Data.Aeson as A (FromJSON, decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
+import GHC.Generics (Generic)
 
 data Method
   = GetUpdates
@@ -48,6 +52,9 @@ answerCallbackQuery ::
   T.Text ->
   m Bool
 answerCallbackQuery c = runMethod (AnswerCallbackQuery c)
+
+newtype MessageID = MessageID {message_id :: Integer}
+  deriving (Eq, Show, Generic, FromJSON)
 
 copyMessage ::
   (MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
