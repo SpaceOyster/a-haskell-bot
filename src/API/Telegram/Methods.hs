@@ -118,10 +118,11 @@ answerCallbackQuery_ cqid = do
 
 copyMessage_ :: MonadTelegram m => Message -> m HTTP.Request
 copyMessage_ Message {message_id, chat} = do
-  let json =
+  let chatId = chat_id (chat :: Chat)
+      json =
         encode . object $
-          [ "chat_id" .= chat_id (chat :: Chat),
-            "from_chat_id" .= chat_id (chat :: Chat),
+          [ "chat_id" .= chatId,
+            "from_chat_id" .= chatId,
             "message_id" .= message_id
           ]
   uri <- apiMethod "copyMessage"
