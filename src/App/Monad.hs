@@ -45,6 +45,9 @@ runApp env app =
           "\nClosing application."
         ]
 
+evalApp :: AppEnv -> App a -> IO a
+evalApp env app = runReaderT (unApp app) env
+
 instance Log.MonadLog App where
   doLog p t = do
     hLog <- grab @Logger.Handle
