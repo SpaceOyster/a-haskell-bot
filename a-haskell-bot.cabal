@@ -101,6 +101,7 @@ test-suite a-haskell-bot-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      API.Telegram.MethodsSpec
       API.Telegram.MonadSpec
       API.Telegram.TypesSpec
       API.TelegramSpec

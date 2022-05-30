@@ -4,9 +4,11 @@ module API.TelegramSpec
 
 import qualified API.Telegram.TypesSpec (spec)
 import qualified API.Telegram.MonadSpec (spec)
+import qualified API.Telegram.MethodsSpec (spec)
 import Test.Hspec ( Spec )
 
 spec :: Spec
 spec = do
   API.Telegram.TypesSpec.spec
   API.Telegram.MonadSpec.spec
+  API.Telegram.MethodsSpec.spec
