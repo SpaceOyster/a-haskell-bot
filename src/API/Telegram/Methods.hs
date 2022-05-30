@@ -10,6 +10,7 @@ module API.Telegram.Methods
     getUpdates,
     sendInlineKeyboard,
     sendMessage,
+    MessageID (..),
   )
 where
 
@@ -59,7 +60,7 @@ newtype MessageID = MessageID {message_id :: Integer}
 copyMessage ::
   (MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
   Message ->
-  m Value
+  m MessageID
 copyMessage msg = runMethod (CopyMessage msg)
 
 sendMessage ::
