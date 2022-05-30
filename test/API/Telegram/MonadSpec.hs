@@ -1,31 +1,34 @@
-{-# OPTIONS_GHC -fno-warn-orphans#-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module API.Telegram.MonadSpec (spec) where
 
-import Test.Hspec
-    ( context,
-      describe,
-      it,
-      anyException,
-      shouldBe,
-      shouldNotBe,
-      shouldThrow,
-      Spec )
 import API.Telegram.Monad
-    ( TGState(TGState, lastUpdate),
-      MonadTelegram(getTGState),
-      apiMethod,
-      defaultTGState,
-      evalTelegramT,
-      initiate,
-      makeBaseURI,
-      newStateFromM,
-      rememberLastUpdate,
-      Config(Config, key) )
-import API.Telegram.Types ( Update(Update) )
-import qualified Effects.Log as Log
+  ( Config (Config, key),
+    MonadTelegram (getTGState),
+    TGState (TGState, lastUpdate),
+    apiMethod,
+    defaultTGState,
+    evalTelegramT,
+    initiate,
+    makeBaseURI,
+    newStateFromM,
+    rememberLastUpdate,
+  )
+import API.Telegram.Types (Update (Update))
 import Control.Monad.Catch (MonadCatch (..))
 import Data.Maybe (fromJust)
+import qualified Effects.Log as Log
 import Network.URI (parseURI)
+import Test.Hspec
+  ( Spec,
+    anyException,
+    context,
+    describe,
+    it,
+    shouldBe,
+    shouldNotBe,
+    shouldThrow,
+  )
 
 spec :: Spec
 spec = describe "API.Telegram.Monad" $ do
@@ -38,10 +41,13 @@ spec = describe "API.Telegram.Monad" $ do
 
 testUList1 :: [Update]
 testUList1 = [Update 123 Nothing Nothing]
+
 testUList2 :: [Update]
 testUList2 = [Update 123 Nothing Nothing, Update 321 Nothing Nothing]
+
 testConfig1 :: Config
 testConfig1 = Config "" 0
+
 testConfig2 :: Config
 testConfig2 = Config "KEY" 100
 
@@ -50,7 +56,7 @@ instance Log.MonadLog Maybe where
 
 instance MonadCatch Maybe where
   catch x _h = x
-  
+
 instance Log.MonadLog IO where
   doLog _ _ = pure ()
 
