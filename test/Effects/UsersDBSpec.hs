@@ -1,20 +1,21 @@
-{-# OPTIONS_GHC -fno-warn-orphans#-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Effects.UsersDBSpec (spec) where
 
+import Control.Monad.State (State, evalState, get, gets, put)
+import Data.Hashable as H (Hashable (hash))
+import Data.Map as Map (Map, alter, empty, fromList, insert, lookup)
 import Effects.UsersDB
-    ( UserData(UserData),
-      getUserDataM,
-      getUserMultiplier,
-      getUserMultiplierM,
-      orDefaultData,
-      setUserMultiplier,
-      MonadUsersDB(..) )
-import Test.Hspec (Spec,describe, it, shouldBe, context)
-import Data.Hashable as H ( Hashable(hash) )
-import Data.Map as Map (Map, alter, insert, empty, lookup, fromList)
-import Control.Monad.State (State, get, put, gets, evalState)
+  ( MonadUsersDB (..),
+    UserData (UserData),
+    getUserDataM,
+    getUserMultiplier,
+    getUserMultiplierM,
+    orDefaultData,
+    setUserMultiplier,
+  )
+import Test.Hspec (Spec, context, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "Effects.BotReplies" $ do
@@ -25,7 +26,7 @@ spec = describe "Effects.BotReplies" $ do
   orDefaultDataSpec
 
 instance Show UserData where
-  show (UserData x) = "UserData { getEchoMultiplier = "<> show x <>" }"
+  show (UserData x) = "UserData { getEchoMultiplier = " <> show x <> " }"
 
 instance Eq UserData where
   (UserData a) == (UserData b) = a == b
@@ -39,7 +40,7 @@ instance Hashable TestUser where
 type TestDB = Map Integer UserData
 
 newtype TestMonadUsersDB a = TestMonadUsersDB {unTestMonadUsersDB :: State TestDB a}
-  deriving  (Functor, Applicative, Monad)
+  deriving (Functor, Applicative, Monad)
 
 evalTest :: TestMonadUsersDB a -> TestDB -> a
 evalTest m = evalState (unTestMonadUsersDB m)
@@ -56,7 +57,7 @@ instance MonadUsersDB TestMonadUsersDB where
 
 getUserDataMSpec :: Spec
 getUserDataMSpec = describe "getUserDataM" $ do
-  let testMap = fromList [(1, UserData 12), (2,UserData 2), (1235, UserData 42)]
+  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
   let eval x = evalTest x testMap
   context "when got `Just user`" $ do
     it "gets `Just UserData` for user" $ do
@@ -72,38 +73,40 @@ getUserDataMSpec = describe "getUserDataM" $ do
 
 getUserMultiplierSpec :: Spec
 getUserMultiplierSpec = describe "getUserMultiplier" $ do
-  let testMap = fromList [(1, UserData 12), (2,UserData 2), (1235, UserData 42)]
+  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
   let eval x = evalTest x testMap
-  context "when user is present in DB" $ 
+  context "when user is present in DB" $
     it "gets echo multiplier for user" $ do
       eval (getUserMultiplier (TestUser 1)) `shouldBe` 12
       eval (getUserMultiplier (TestUser 2)) `shouldBe` 2
       eval (getUserMultiplier (TestUser 1235)) `shouldBe` 42
-  context "when user is not present in DB" $ 
+  context "when user is not present in DB" $
     it "gets default echo multiplier" $ do
       eval (getUserMultiplier (TestUser 1111)) `shouldBe` 1000
       eval (getUserMultiplier (TestUser 2222)) `shouldBe` 1000
 
 getUserMultiplierMSpec :: Spec
 getUserMultiplierMSpec = describe "getUserMultiplierM" $ do
-  let testMap = fromList [(1, UserData 12), (2,UserData 2), (1235, UserData 42)]
+  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
   let eval x = evalTest x testMap
-  context "when got `Just user`" $ context "when user is present in DB" $
-    it "gets echo multiplier for user" $ do
-      eval (getUserMultiplierM (Just $ TestUser 1)) `shouldBe` 12
-      eval (getUserMultiplierM (Just $ TestUser 2)) `shouldBe` 2
-      eval (getUserMultiplierM (Just $ TestUser 1235)) `shouldBe` 42
-  context "when got `Just user`" $ context "when user is not present in DB" $
-    it "gets default echo multiplier" $ do
-      eval (getUserMultiplierM (Just $ TestUser 1111)) `shouldBe` 1000
-      eval (getUserMultiplierM (Just $ TestUser 2222)) `shouldBe` 1000
+  context "when got `Just user`" $
+    context "when user is present in DB" $
+      it "gets echo multiplier for user" $ do
+        eval (getUserMultiplierM (Just $ TestUser 1)) `shouldBe` 12
+        eval (getUserMultiplierM (Just $ TestUser 2)) `shouldBe` 2
+        eval (getUserMultiplierM (Just $ TestUser 1235)) `shouldBe` 42
+  context "when got `Just user`" $
+    context "when user is not present in DB" $
+      it "gets default echo multiplier" $ do
+        eval (getUserMultiplierM (Just $ TestUser 1111)) `shouldBe` 1000
+        eval (getUserMultiplierM (Just $ TestUser 2222)) `shouldBe` 1000
   context "when got (Nothing :: Maybe user)" $
     it "gets default echo multiplier" $ do
       eval (getUserMultiplierM (Nothing :: Maybe TestUser)) `shouldBe` 1000
 
 setUserMultiplierSpec :: Spec
 setUserMultiplierSpec = describe "setUserMultiplier" $ do
-  let testMap = fromList [(1, UserData 12), (2,UserData 2), (1235, UserData 42)]
+  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
   let eval x = evalTest x testMap
   let check user n = setUserMultiplier user n >> getUserMultiplier user
   it "sets echo multiplier for user" $ do
@@ -121,5 +124,5 @@ orDefaultDataSpec = describe "orDefaultData" $ do
       eval (orDefaultData (pure $ Just $ UserData 12)) `shouldBe` UserData 12
       eval (orDefaultData (pure $ Just $ UserData 123)) `shouldBe` UserData 123
   context "when got `m (Nothing :: UserData)`" $
-    it "returns `m defaultUserData`" $ 
+    it "returns `m defaultUserData`" $
       eval (orDefaultData (pure Nothing)) `shouldBe` UserData 1000
