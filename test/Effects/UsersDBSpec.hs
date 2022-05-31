@@ -18,7 +18,7 @@ import Effects.UsersDB
 import Test.Hspec (Spec, context, describe, it, shouldBe)
 
 spec :: Spec
-spec = describe "Effects.BotReplies" $ do
+spec = do
   getUserDataMSpec
   getUserMultiplierSpec
   getUserMultiplierMSpec

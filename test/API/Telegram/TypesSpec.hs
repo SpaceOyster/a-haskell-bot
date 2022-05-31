@@ -22,7 +22,7 @@ import Test.Hspec
   )
 
 spec :: Spec
-spec = describe "API.Telegram.Types" $ do
+spec = do
   fromResponseSpec
 
 fromResponseSpec :: Spec

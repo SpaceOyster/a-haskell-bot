@@ -7,7 +7,7 @@ import Data.Text.Extended (Text, lazyDecodeUtf8, tshow)
 import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
-spec = describe "Data.Text.Extended" $ do
+spec = do
   tshowSpec
   lazyDecodeUtf8Spec
 

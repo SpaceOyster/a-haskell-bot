@@ -32,7 +32,7 @@ import Test.Hspec
   )
 
 spec :: Spec
-spec = describe "API.Telegram.Monad" $ do
+spec = do
   newStateFromMSpec
   rememberLastUpdateSpec
   evalTelegramTSpec

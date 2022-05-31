@@ -52,7 +52,7 @@ import Test.Hspec
   )
 
 spec :: Spec
-spec = describe "API.Telegram.Methods" $ do
+spec = do
   getUpdatesSpec
   answerCallbackQuerySpec
   copyMessageSpec

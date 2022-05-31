@@ -22,11 +22,10 @@ import Test.Hspec
 
 spec :: Spec
 spec = do
-  describe "Network.URI.Extended" $ do
-    stringifyQueryPairSpec
-    stringifyQueryListSpec
-    addQueryParamsSpec
-    addPathSpec
+  stringifyQueryPairSpec
+  stringifyQueryListSpec
+  addQueryParamsSpec
+  addPathSpec
 
 addPathSpec :: Spec
 addPathSpec = do

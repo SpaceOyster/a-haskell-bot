@@ -20,16 +20,15 @@ spec = describe "Effects.BotReplies" $ do
   getReplySpec
 
 insertUserDataSpec :: Spec
-insertUserDataSpec =
-  describe "insertUserData" $ do
-    it "replaces `%n` subsequences in Text with Users Echo multiplier" $ do
-      BR.insertUserData (UserData 3) "some text %n" `shouldBe` "some text 3"
-      BR.insertUserData (UserData 42) "some text %n" `shouldBe` "some text 42"
-      BR.insertUserData (UserData (-1)) "some text %n" `shouldBe` "some text -1"
-      BR.insertUserData (UserData 0) "some text %n" `shouldBe` "some text 0"
-      BR.insertUserData (UserData 17) "%n wha%ntever %n" `shouldBe` "17 wha17tever 17"
-    it "doesn't change Text if `%n` doesn't occur." $ do
-      BR.insertUserData (UserData 3) "some text" `shouldBe` "some text"
+insertUserDataSpec = do
+  it "replaces `%n` subsequences in Text with Users Echo multiplier" $ do
+    BR.insertUserData (UserData 3) "some text %n" `shouldBe` "some text 3"
+    BR.insertUserData (UserData 42) "some text %n" `shouldBe` "some text 42"
+    BR.insertUserData (UserData (-1)) "some text %n" `shouldBe` "some text -1"
+    BR.insertUserData (UserData 0) "some text %n" `shouldBe` "some text 0"
+    BR.insertUserData (UserData 17) "%n wha%ntever %n" `shouldBe` "17 wha17tever 17"
+  it "doesn't change Text if `%n` doesn't occur." $ do
+    BR.insertUserData (UserData 3) "some text" `shouldBe` "some text"
 
 newtype TestBotRepliesMonad a = TestBotRepliesMonad {unTestBotRepliesMonad :: Identity a}
   deriving (Functor, Applicative, Monad, Show, Eq)
