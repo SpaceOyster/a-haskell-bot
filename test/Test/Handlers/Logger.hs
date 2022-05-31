@@ -1,8 +1,8 @@
 module Test.Handlers.Logger where
 
-import Effects.Log as Log
-import qualified Handlers.Logger as Logger
 import Data.Text (Text)
+import Effects.Log as Log (Priority)
+import qualified Handlers.Logger as Logger
 
 new :: Logger.Handle
 new = Logger.Handle {Logger.getLog = noLog}
