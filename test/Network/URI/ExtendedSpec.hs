@@ -4,7 +4,21 @@ module Network.URI.ExtendedSpec
 where
 
 import Network.URI.Extended
+  ( QueryParam ((:=:)),
+    addPath,
+    addQueryParams,
+    parseURI,
+    stringifyQueryList,
+    stringifyQueryPair,
+  )
 import Test.Hspec
+  ( Spec,
+    context,
+    describe,
+    it,
+    shouldBe,
+    shouldReturn,
+  )
 
 spec :: Spec
 spec = do
@@ -30,7 +44,7 @@ addQueryParamsSpec = do
   describe "addQueryParams" $ do
     it "appends list of list of query parameters to URI" $ do
       let uriString = "https://some.uri/path/here"
-      let uriM = parseURI uriString -- TODO fix this crap should be URI instad of (Maybe URI)
+      let uriM = parseURI uriString -- TODO fix this crap should be URI instead of (Maybe URI)
       fmap (`addQueryParams` []) uriM `shouldBe` uriM
       fmap
         ( `addQueryParams`
