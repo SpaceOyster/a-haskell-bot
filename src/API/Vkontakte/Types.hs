@@ -91,7 +91,9 @@ attachmentToQuery a =
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
-      show mdoc_owner_id <> "_" <> show mdoc_id
+      show mdoc_owner_id
+        <> "_"
+        <> show mdoc_id
         <> maybe "" ('_' :) (T.unpack <$> mdoc_access_key)
 
 data CallbackEvent = CallbackEvent
@@ -259,7 +261,9 @@ extractUpdates (PollError c) =
 fromResponse :: (A.FromJSON a, MonadThrow m) => Response -> m a
 fromResponse (ErrorResponse err) =
   throwM . apiError $
-    "Responded with Error: " <> T.tshow (error_code err) <> ": "
+    "Responded with Error: "
+      <> T.tshow (error_code err)
+      <> ": "
       <> error_msg (err :: Error)
 fromResponse (ResponseWith v) =
   case A.fromJSON v of
