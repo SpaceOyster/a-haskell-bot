@@ -1,10 +1,10 @@
 module Test.App.Error
-  ( anyAPIError,
-    anyAppError,
-    anyBotError,
-    anyDBError,
-    anyHTTPError,
-    anyLoggerError,
+  ( anyAppError,
+    isAPIError,
+    isBotError,
+    isDBError,
+    isHTTPError,
+    isLoggerError,
   )
 where
 
@@ -14,22 +14,22 @@ import Test.Hspec (Selector)
 anyAppError :: Selector App.AppError
 anyAppError = const True
 
-anyAPIError :: Selector App.AppError
-anyAPIError (App.APIError _) = True
-anyAPIError _ = False
+isAPIError :: Selector App.AppError
+isAPIError (App.APIError _) = True
+isAPIError _ = False
 
-anyBotError :: Selector App.AppError
-anyBotError (App.BotError _) = True
-anyBotError _ = False
+isBotError :: Selector App.AppError
+isBotError (App.BotError _) = True
+isBotError _ = False
 
-anyHTTPError :: Selector App.AppError
-anyHTTPError (App.HTTPError _) = True
-anyHTTPError _ = False
+isHTTPError :: Selector App.AppError
+isHTTPError (App.HTTPError _) = True
+isHTTPError _ = False
 
-anyLoggerError :: Selector App.AppError
-anyLoggerError (App.LoggerError _) = True
-anyLoggerError _ = False
+isLoggerError :: Selector App.AppError
+isLoggerError (App.LoggerError _) = True
+isLoggerError _ = False
 
-anyDBError :: Selector App.AppError
-anyDBError (App.DBError _) = True
-anyDBError _ = False
+isDBError :: Selector App.AppError
+isDBError (App.DBError _) = True
+isDBError _ = False

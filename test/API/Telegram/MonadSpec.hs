@@ -19,7 +19,7 @@ import Control.Monad.Catch (MonadCatch (..))
 import Data.Maybe (fromJust)
 import qualified Effects.Log as Log
 import Network.URI (parseURI)
-import Test.App.Error as App (anyAPIError)
+import Test.App.Error as App (isAPIError)
 import Test.Hspec
   ( Spec,
     anyException,
@@ -112,7 +112,7 @@ initiateSpec = describe "initiate" $ do
     let uri2 = fromJust $ parseURI "https://api.telegram.org/botKEY/"
     initiate testConfig2 `shouldReturn` TGState 0 uri2 100
   context "when fails to parse api base URI" $ it "throws error" $ do
-    initiate (testConfig1 {key = "unparsable key"}) `shouldThrow` App.anyAPIError
+    initiate (testConfig1 {key = "unparsable key"}) `shouldThrow` App.isAPIError
 
 makeBaseURISpec :: Spec
 makeBaseURISpec = describe "makeBaseURI" $ do
@@ -120,7 +120,7 @@ makeBaseURISpec = describe "makeBaseURI" $ do
     makeBaseURI testConfig1 `shouldBe` parseURI "https://api.telegram.org/bot/"
     makeBaseURI testConfig2 `shouldBe` parseURI "https://api.telegram.org/botKEY/"
   context "when fails to parse api base URI" $ it "throws error" $ do
-    makeBaseURI (testConfig1 {key = "unparsable key"}) `shouldThrow` App.anyAPIError
+    makeBaseURI (testConfig1 {key = "unparsable key"}) `shouldThrow` App.isAPIError
 
 apiMethodSpec :: Spec
 apiMethodSpec = describe "makeBaseURI" $ do
