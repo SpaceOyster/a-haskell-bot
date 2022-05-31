@@ -27,6 +27,7 @@ import Test.Hspec
     it,
     shouldBe,
     shouldNotBe,
+    shouldReturn,
     shouldThrow,
   )
 
@@ -77,9 +78,9 @@ rememberLastUpdateSpec = describe "rememberLastUpdate" $ do
   it "returns unchanged [Update] list" $ do
     evalTelegramT testConfig1 (rememberLastUpdate []) `shouldBe` Just []
     evalTelegramT testConfig1 (rememberLastUpdate testUList1)
-      `shouldBe` Just testUList1
+      `shouldReturn` testUList1
     evalTelegramT testConfig1 (rememberLastUpdate testUList2)
-      `shouldBe` Just testUList2
+      `shouldReturn` testUList2
   context "given empty [Update]" $ it "doesn't change TGState" $ do
     evalTelegramT testConfig1 (rememberLastUpdate [] >> getTGState)
       `shouldBe` (evalTelegramT testConfig1 getTGState :: Maybe TGState)
@@ -87,9 +88,9 @@ rememberLastUpdateSpec = describe "rememberLastUpdate" $ do
       `shouldNotBe` (evalTelegramT testConfig1 getTGState :: Maybe TGState)
   context "given non empty [Update]" $ it "sets TGState {lastUpdate} to last Update id + 1" $ do
     evalTelegramT testConfig1 (rememberLastUpdate testUList1 >> lastUpdate <$> getTGState)
-      `shouldBe` Just (124 :: Integer)
+      `shouldReturn` (124 :: Integer)
     evalTelegramT testConfig1 (rememberLastUpdate testUList2 >> lastUpdate <$> getTGState)
-      `shouldBe` Just (322 :: Integer)
+      `shouldReturn` (322 :: Integer)
 
 evalTelegramTSpec :: Spec
 evalTelegramTSpec = describe "evalTelegramT" $ do
@@ -106,9 +107,9 @@ initiateSpec :: Spec
 initiateSpec = describe "initiate" $ do
   it "returns TGState initiated with Config" $ do
     let uri1 = fromJust $ parseURI "https://api.telegram.org/bot/"
-    initiate testConfig1 `shouldBe` Just (TGState 0 uri1 1)
+    initiate testConfig1 `shouldReturn` TGState 0 uri1 1
     let uri2 = fromJust $ parseURI "https://api.telegram.org/botKEY/"
-    initiate testConfig2 `shouldBe` Just (TGState 0 uri2 100)
+    initiate testConfig2 `shouldReturn` TGState 0 uri2 100
   context "when fails to parse api base URI" $ it "throws error" $ do
     initiate (testConfig1 {key = "unparsable key"}) `shouldThrow` anyException
 
