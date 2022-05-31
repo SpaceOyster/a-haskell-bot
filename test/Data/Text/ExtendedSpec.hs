@@ -1,9 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
+
 module Data.Text.ExtendedSpec (spec) where
 
-import Test.Hspec (Spec,describe, it, shouldBe)
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Text.Extended ( Text, lazyDecodeUtf8, tshow )
+import Data.Text.Extended (Text, lazyDecodeUtf8, tshow)
+import Test.Hspec (Spec, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "Data.Text.Extended" $ do
@@ -14,8 +15,8 @@ tshowSpec :: Spec
 tshowSpec = describe "tshow" $ do
   it "converts type of Show class to Text" $ do
     tshow (Just ("some" :: String)) `shouldBe` ("Just \"some\"" :: Text)
-    tshow (Just [1:: Integer,2,3,4]) `shouldBe` ("Just [1,2,3,4]" :: Text)
-    tshow [1:: Integer,2,3,4] `shouldBe` ("[1,2,3,4]" :: Text)
+    tshow (Just [1 :: Integer, 2, 3, 4]) `shouldBe` ("Just [1,2,3,4]" :: Text)
+    tshow [1 :: Integer, 2, 3, 4] `shouldBe` ("[1,2,3,4]" :: Text)
     tshow (1234 :: Integer) `shouldBe` ("1234" :: Text)
 
 lazyDecodeUtf8Spec :: Spec
