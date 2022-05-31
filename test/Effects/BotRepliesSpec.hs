@@ -4,14 +4,15 @@
 
 module Effects.BotRepliesSpec (spec) where
 
+import Data.Functor.Identity (Identity (Identity))
 import qualified Effects.BotReplies as BR
-    ( getReply,
-      insertUserData,
-      MonadBotReplies(..),
-      Replies(Replies, help, greeting, repeat, unknown, settingsSaved) )
-import Data.Functor.Identity (Identity(Identity))
+  ( MonadBotReplies (..),
+    Replies (Replies, greeting, help, repeat, settingsSaved, unknown),
+    getReply,
+    insertUserData,
+  )
 import Effects.UsersDB (UserData (UserData))
-import Test.Hspec ( describe, it, shouldBe, Spec ,context)
+import Test.Hspec (Spec, context, describe, it, shouldBe)
 
 spec :: Spec
 spec = describe "Effects.BotReplies" $ do
@@ -19,7 +20,7 @@ spec = describe "Effects.BotReplies" $ do
   getReplySpec
 
 insertUserDataSpec :: Spec
-insertUserDataSpec =  
+insertUserDataSpec =
   describe "insertUserData" $ do
     it "replaces `%n` subsequences in Text with Users Echo multiplier" $ do
       BR.insertUserData (UserData 3) "some text %n" `shouldBe` "some text 3"
@@ -45,12 +46,12 @@ instance BR.MonadBotReplies TestBotRepliesMonad where
         }
 
 getReplySpec :: Spec
-getReplySpec = describe "getReply" $ 
+getReplySpec = describe "getReply" $
   context "runs in context of MonadBotReplies" $ do
     it "gets on of reply messages from `Replies`" $
       do
-      BR.getReply BR.help `shouldBe` TestBotRepliesMonad (pure "help text")
-      BR.getReply BR.greeting `shouldBe` TestBotRepliesMonad (pure "greeting text")
-      BR.getReply BR.repeat `shouldBe` TestBotRepliesMonad (pure "repeat text")
-      BR.getReply BR.unknown `shouldBe` TestBotRepliesMonad (pure "unknown text")
-      BR.getReply BR.settingsSaved `shouldBe` TestBotRepliesMonad (pure "settingsSaved text")
+        BR.getReply BR.help `shouldBe` TestBotRepliesMonad (pure "help text")
+        BR.getReply BR.greeting `shouldBe` TestBotRepliesMonad (pure "greeting text")
+        BR.getReply BR.repeat `shouldBe` TestBotRepliesMonad (pure "repeat text")
+        BR.getReply BR.unknown `shouldBe` TestBotRepliesMonad (pure "unknown text")
+        BR.getReply BR.settingsSaved `shouldBe` TestBotRepliesMonad (pure "settingsSaved text")
