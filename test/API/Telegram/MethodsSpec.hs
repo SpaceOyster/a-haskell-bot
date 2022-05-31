@@ -38,6 +38,7 @@ import qualified Effects.BotReplies as BR
 import Effects.HTTP as HTTP (Request (POST))
 import Effects.Log as Log (MonadLog (..))
 import Network.URI as URI (parseURI)
+import Test.App.Error as App (anyAPIError)
 import qualified Test.Handlers.HTTP as HTTP
 import qualified Test.Handlers.Logger as Logger
 import qualified Test.Handlers.UsersDB as DB
@@ -110,11 +111,11 @@ getUpdatesSpec = describe "getUpdates" $ do
   it "throws on Error" $ do
     let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
     modelHTTPReply testConfig1 errBS getUpdates
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
   it "throws on unexpected Response" $ do
     let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
     modelHTTPReply testConfig1 unexpextedRes getUpdates
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
 
 answerCallbackQuerySpec :: Spec
 answerCallbackQuerySpec = describe "answerCallbackQuerySpec" $ do
@@ -125,11 +126,11 @@ answerCallbackQuerySpec = describe "answerCallbackQuerySpec" $ do
   it "throws on Error" $ do
     let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
     modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
   it "throws on unexpected Response" $ do
     let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
     modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
 
 copyMessageSpec :: Spec
 copyMessageSpec = describe "copyMessageSpec" $ do
@@ -148,11 +149,11 @@ copyMessageSpec = describe "copyMessageSpec" $ do
   it "throws on Error" $ do
     let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
     modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
   it "throws on unexpected Response" $ do
     let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
     modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
 
 sendMessageSpec :: Spec
 sendMessageSpec = describe "sendMessageSpec" $ do
@@ -174,11 +175,11 @@ sendMessageSpec = describe "sendMessageSpec" $ do
   it "throws on Error" $ do
     let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
     modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
   it "throws on unexpected Response" $ do
     let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
     modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
 
 sendInlineKeyboardSpec :: Spec
 sendInlineKeyboardSpec = describe "sendInlineKeyboardSpec" $ do
@@ -188,11 +189,11 @@ sendInlineKeyboardSpec = describe "sendInlineKeyboardSpec" $ do
   it "throws on Error" $ do
     let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
     modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
   it "throws on unexpected Response" $ do
     let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
     modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
-      `shouldThrow` anyException
+      `shouldThrow` App.anyAPIError
   where
     kbd1 =
       InlineKeyboardMarkup
