@@ -11,6 +11,7 @@ import API.Telegram.Types as TG
     fromResponse,
   )
 import Data.Aeson as Aeson (ToJSON (toJSON))
+import Test.App.Error as App (anyAPIError)
 import Test.Hspec
   ( Spec,
     anyException,
@@ -36,10 +37,10 @@ fromResponseSpec = describe "fromResponse" $ do
   context "when json can't be parsed to expected data type" $
     it "throws error" $ do
       (fromResponse (ResponseWith $ Aeson.toJSON True) :: IO Integer)
-        `shouldThrow` anyException
+        `shouldThrow` App.anyAPIError
       (fromResponse (ResponseWith $ Aeson.toJSON ['a', 'b']) :: IO Bool)
-        `shouldThrow` anyException
+        `shouldThrow` App.anyAPIError
   context "when Telegram API responded with error" $
     it "throws error" $ do
       (fromResponse (ErrorResponse $ TG.Error 101 "sommin bad happn :(") :: IO Bool)
-        `shouldThrow` anyException
+        `shouldThrow` App.anyAPIError
