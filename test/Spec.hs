@@ -1,11 +1,11 @@
 module Spec where
 
-import qualified Effects.BotRepliesSpec (spec)
-import qualified Network.URI.ExtendedSpec (spec)
-import qualified Effects.UsersDBSpec (spec)
-import qualified Data.Text.ExtendedSpec (spec)
-import Test.Hspec ( hspec, Spec )
 import qualified API.TelegramSpec (spec)
+import qualified Data.Text.ExtendedSpec (spec)
+import qualified Effects.BotRepliesSpec (spec)
+import qualified Effects.UsersDBSpec (spec)
+import qualified Network.URI.ExtendedSpec (spec)
+import Test.Hspec (Spec, hspec)
 
 main :: IO ()
 main = hspec spec
