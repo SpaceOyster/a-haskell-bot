@@ -34,6 +34,14 @@ instance Arbitrary CleanString where
   arbitrary = do
     let allowedChars = unreservedURIChars
     CleanString <$> listOf (elements allowedChars)
+
+newtype NonEmptyCleanString = NonEmptyCleanString {getNonEmptyCleanString :: String}
+  deriving (Show)
+
+instance Arbitrary NonEmptyCleanString where
+  arbitrary = do
+    let allowedChars = unreservedURIChars
+    NonEmptyCleanString <$> listOf1 (elements allowedChars)
 addPathSpec :: Spec
 addPathSpec = do
   describe "addPath" $ do
