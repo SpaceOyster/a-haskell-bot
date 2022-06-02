@@ -35,5 +35,5 @@ stringifyQueryPair ("" :=: _vM) = fail "Key is empty"
 stringifyQueryPair (k :=: "") = fail $ "Value is empty for " <> show k
 stringifyQueryPair (k :=: v)
   | all isUnescapedInURIComponent k =
-    pure . (k <>) . ('=' :) . escapeURIString isUnescapedInURIComponent $ v
-  | otherwise = fail $ "key has unescaped chars " <> show k
+      pure . (k <>) . ('=' :) . escapeURIString isUnescapedInURIComponent $ v
+  | otherwise = fail $ "key has forbidden chars " <> show k
