@@ -42,6 +42,13 @@ instance Arbitrary NonEmptyCleanString where
   arbitrary = do
     let allowedChars = unreservedURIChars
     NonEmptyCleanString <$> listOf1 (elements allowedChars)
+
+newtype DirtyString = DirtyString {getDirtyString :: String}
+  deriving (Show)
+
+instance Arbitrary DirtyString where
+  arbitrary = DirtyString <$> arbitrary `suchThat` (not . all isUnescapedInURIComponent)
+
 addPathSpec :: Spec
 addPathSpec = do
   describe "addPath" $ do
