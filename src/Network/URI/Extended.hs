@@ -1,19 +1,21 @@
 module Network.URI.Extended
-  ( module Network.URI
-  , addPath
-  , addQueryParams
-  , stringifyQueryList
-  , stringifyQueryPair
-  , QueryParam(..)
-  ) where
+  ( module Network.URI,
+    addPath,
+    addQueryParams,
+    stringifyQueryList,
+    stringifyQueryPair,
+    QueryParam (..),
+  )
+where
 
 import Data.List (intercalate)
 import Network.URI
 
 infixr 0 :=:
 
-data QueryParam =
-  String :=: String
+data QueryParam
+  = String :=: String
+  deriving (Show)
 
 addPath :: URI -> String -> URI
 addPath uri p = uri {uriPath = uriPath uri <> p}
