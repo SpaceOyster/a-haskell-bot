@@ -117,7 +117,8 @@ test-suite a-haskell-bot-test
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      a-haskell-bot
+      QuickCheck
+    , a-haskell-bot
     , aeson
     , base >=4.7 && <5
     , bytestring

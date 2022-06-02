@@ -60,3 +60,4 @@ tests:
     dependencies:
     - a-haskell-bot
     - hspec
+    - QuickCheck
