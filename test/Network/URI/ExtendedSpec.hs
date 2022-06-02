@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -fno-warn-orphans #-}
+
 module Network.URI.ExtendedSpec
   ( spec,
   )
@@ -48,6 +50,13 @@ newtype DirtyString = DirtyString {getDirtyString :: String}
 
 instance Arbitrary DirtyString where
   arbitrary = DirtyString <$> arbitrary `suchThat` (not . all isUnescapedInURIComponent)
+
+
+instance Arbitrary QueryParam where
+  arbitrary = do
+    key <- getNonEmptyCleanString <$> arbitrary
+    value <- getNonEmptyCleanString <$> arbitrary
+    pure (key :=: value)
 
 addPathSpec :: Spec
 addPathSpec = do
