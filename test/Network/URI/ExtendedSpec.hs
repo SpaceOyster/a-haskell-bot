@@ -5,6 +5,8 @@ module Network.URI.ExtendedSpec
   )
 where
 
+import Data.Char (isSpace)
+import Data.Maybe (isJust)
 import Network.URI.Extended
 import Test.Hspec
 import Test.QuickCheck
@@ -106,20 +108,30 @@ stringifyQueryListSpec = do
       stringifyQueryList ["key" :=: "1", "key" :=: "2"]
         `shouldBe` "key=1&key=2"
 
+notEmpty :: [a] -> Bool
+notEmpty = not . null
+
+notOnlySpaceChars :: [Char] -> Bool
+notOnlySpaceChars = not . all isSpace
+
 stringifyQueryPairSpec :: Spec
-stringifyQueryPairSpec = do
-  describe "stringifyQueryPair" $ do
-    context "Runs in context of MonadFail" $ do
-      it "turns (key, Just value) pair into URI query string" $ do
-        stringifyQueryPair ("key" :=: "value") `shouldReturn` "key=value"
-      it "properly escapes characters of value" $ do
-        stringifyQueryPair ("key" :=: "value with space")
-          `shouldReturn` "key=value%20with%20space"
-      it "fails when key string has unescaped characters" $ do
-        stringifyQueryPair ("unescaped key" :=: "whatever") `shouldBe` Nothing
-      it "fails when key is empty string" $ do
-        stringifyQueryPair ("" :=: "whatever") `shouldBe` Nothing
-      it "fails when value is empty string" $ do
-        stringifyQueryPair ("whatever" :=: "") `shouldBe` Nothing
-      it "fails when value is not present at all: (key, Nothing)" $ do
-        stringifyQueryPair ("key" :=: "") `shouldBe` Nothing
+stringifyQueryPairSpec =
+  describe "stringifyQueryPair" $ context "Runs in context of MonadFail" $ do
+    it "turns `key :=: value` pair into URI query string" $ do
+      property $ \(key :=: value) ->
+        notEmpty key && notOnlySpaceChars value ==> do
+          stringifyQueryPair (key :=: value)
+            `shouldSatisfy` maybe True (all isUnescapedInURI)
+    it "properly escapes characters of value" $ do
+      property $ \(key, DirtyString value) -> do
+        (stringifyQueryPair (key :=: value) :: Maybe String)
+          `shouldSatisfy` maybe True (all isAllowedInURI)
+    it "fails when key string has characters other than alphanumeric or one of \"-_.~\"" $ do
+      property $ \(DirtyString key, value) -> do
+        stringifyQueryPair (key :=: value) `shouldBe` Nothing
+    it "fails when key is empty string" $ do
+      property $ \value ->
+        stringifyQueryPair ("" :=: value) `shouldBe` Nothing
+    it "fails when value is empty string" $ do
+      property $ \key ->
+        stringifyQueryPair (key :=: "") `shouldBe` Nothing
