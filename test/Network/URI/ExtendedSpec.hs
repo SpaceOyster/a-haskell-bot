@@ -5,6 +5,7 @@ where
 
 import Network.URI.Extended
 import Test.Hspec
+import Test.QuickCheck
 
 spec :: Spec
 spec = do
@@ -13,6 +14,26 @@ spec = do
   addQueryParamsSpec
   addPathSpec
 
+alphaChars :: [Char]
+alphaChars = ['a' .. 'z'] <> ['A' .. 'Z']
+
+numChars :: [Char]
+numChars = ['0' .. '9']
+
+alphaNumChars :: [Char]
+alphaNumChars = alphaChars <> numChars
+
+
+unreservedURIChars :: [Char]
+unreservedURIChars = alphaNumChars <> "-_.~"
+
+newtype CleanString = CleanString {getCleanString :: String}
+  deriving (Show)
+
+instance Arbitrary CleanString where
+  arbitrary = do
+    let allowedChars = unreservedURIChars
+    CleanString <$> listOf (elements allowedChars)
 addPathSpec :: Spec
 addPathSpec = do
   describe "addPath" $ do
