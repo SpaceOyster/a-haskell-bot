@@ -4,21 +4,7 @@ module Network.URI.ExtendedSpec
 where
 
 import Network.URI.Extended
-  ( QueryParam ((:=:)),
-    addPath,
-    addQueryParams,
-    parseURI,
-    stringifyQueryList,
-    stringifyQueryPair,
-  )
 import Test.Hspec
-  ( Spec,
-    context,
-    describe,
-    it,
-    shouldBe,
-    shouldReturn,
-  )
 
 spec :: Spec
 spec = do
