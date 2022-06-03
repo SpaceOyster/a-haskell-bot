@@ -91,22 +91,16 @@ addQueryParamsSpec = do
         `shouldBe` parseURI (uriString <> "?key=value&key3=value%203")
 
 stringifyQueryListSpec :: Spec
-stringifyQueryListSpec = do
-  describe "stringifyQueryList" $ do
-    it "transforms [QueryParam] into correct query string" $ do
-      let qparams =
-            [ "key1" :=: "value 1",
-              "key2" :=: "",
-              "key3" :=: "value 3",
-              "" :=: "value 4",
-              "invalid key" :=: "value5"
-            ]
-      stringifyQueryList qparams `shouldBe` "key1=value%201&key3=value%203"
-    it "transforms empty [QueryParam] into empty string" $ do
-      stringifyQueryList [] `shouldBe` ""
-    it "doesn't eliminate duplicate keys" $ do
-      stringifyQueryList ["key" :=: "1", "key" :=: "2"]
-        `shouldBe` "key=1&key=2"
+stringifyQueryListSpec = describe "stringifyQueryList" $ do
+  it "transforms [QueryParam] into correct query string" $ do
+    property $ \(NonEmpty qparams) ->
+      stringifyQueryList qparams `shouldSatisfy` all isUnescapedInURI
+  it "transforms empty [QueryParam] into empty string" $ do
+    stringifyQueryList [] `shouldBe` ""
+  it "doesn't eliminate duplicate keys" $
+    property $ \(key1 :=: value1) ->
+      stringifyQueryList [key1 :=: value1, key1 :=: value1]
+        `shouldNotBe` stringifyQueryList [key1 :=: value1]
 
 notEmpty :: [a] -> Bool
 notEmpty = not . null
