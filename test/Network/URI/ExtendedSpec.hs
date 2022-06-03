@@ -28,7 +28,6 @@ numChars = ['0' .. '9']
 alphaNumChars :: [Char]
 alphaNumChars = alphaChars <> numChars
 
-
 unreservedURIChars :: [Char]
 unreservedURIChars = alphaNumChars <> "-_.~"
 
@@ -54,13 +53,27 @@ newtype DirtyString = DirtyString {getDirtyString :: String}
 instance Arbitrary DirtyString where
   arbitrary = DirtyString <$> arbitrary `suchThat` (not . all isUnescapedInURIComponent)
 
-
 instance Arbitrary QueryParam where
   arbitrary = do
     key <- getNonEmptyCleanString <$> arbitrary
     value <- getNonEmptyCleanString <$> arbitrary
     pure (key :=: value)
 
+instance Arbitrary URI where
+  arbitrary = do
+    uriScheme <- (<> ":") . getCleanString <$> arbitrary
+    uriAuthority <- arbitrary
+    uriPath <- ('/' :) . getCleanString <$> arbitrary
+    uriQuery <- ('?' :) . getCleanString <$> arbitrary
+    uriFragment <- ('#' :) . getCleanString <$> arbitrary
+    pure $
+      URI
+        { uriScheme,
+          uriAuthority,
+          uriPath,
+          uriQuery,
+          uriFragment
+        }
 
 instance Arbitrary URIAuth where
   arbitrary = do
