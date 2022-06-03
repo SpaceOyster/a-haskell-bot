@@ -9,8 +9,37 @@ where
 import Data.Char (isSpace)
 import Data.Maybe (isJust)
 import Network.URI.Extended
+  ( QueryParam (..),
+    URI (..),
+    URIAuth (..),
+    addPath,
+    addQueryParams,
+    isAllowedInURI,
+    isUnescapedInURI,
+    isUnescapedInURIComponent,
+    stringifyQueryList,
+    stringifyQueryPair,
+  )
 import Test.Hspec
+  ( Spec,
+    context,
+    describe,
+    it,
+    shouldBe,
+    shouldNotBe,
+    shouldSatisfy,
+  )
 import Test.QuickCheck
+  ( Arbitrary (arbitrary),
+    NonEmptyList (NonEmpty),
+    Testable (property),
+    chooseInteger,
+    elements,
+    listOf,
+    listOf1,
+    suchThat,
+    (==>),
+  )
 
 spec :: Spec
 spec = do
