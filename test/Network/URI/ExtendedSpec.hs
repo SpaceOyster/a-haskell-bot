@@ -94,23 +94,14 @@ addPathSpec = do
       fmap (`addPath` "") uriM `shouldBe` uriM
 
 addQueryParamsSpec :: Spec
-addQueryParamsSpec = do
-  describe "addQueryParams" $ do
-    it "appends list of list of query parameters to URI" $ do
-      let uriString = "https://some.uri/path/here"
-      let uriM = parseURI uriString -- TODO fix this crap should be URI instead of (Maybe URI)
-      fmap (`addQueryParams` []) uriM `shouldBe` uriM
-      fmap
-        ( `addQueryParams`
-            [ "key" :=: "value",
-              "key2" :=: "",
-              "key3" :=: "value 3",
-              "" :=: "value 4",
-              "invalid key" :=: "value5"
-            ]
-        )
-        uriM
-        `shouldBe` parseURI (uriString <> "?key=value&key3=value%203")
+addQueryParamsSpec = describe "addQueryParams" $ do
+  it "appends list of list of query parameters to URI" $ do
+    property $ \(uri, NonEmpty qps) -> do
+      let prefix = if null (uriQuery uri) then '?' else '&'
+      addQueryParams uri qps `shouldBe` uri {uriQuery = uriQuery uri <> (prefix : stringifyQueryList qps)}
+  it "doesn't change uri if query parameters list is empty" $ do
+    property $ \uri -> do
+      addQueryParams uri [] `shouldBe` uri
 
 stringifyQueryListSpec :: Spec
 stringifyQueryListSpec = describe "stringifyQueryList" $ do
