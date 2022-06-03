@@ -25,12 +25,6 @@ spec = do
   setUserMultiplierSpec
   orDefaultDataSpec
 
-instance Show UserData where
-  show (UserData x) = "UserData { getEchoMultiplier = " <> show x <> " }"
-
-instance Eq UserData where
-  (UserData a) == (UserData b) = a == b
-
 newtype TestUser = TestUser {unTestUser :: Integer}
   deriving (Show, Eq)
 

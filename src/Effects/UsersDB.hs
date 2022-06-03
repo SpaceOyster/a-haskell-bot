@@ -12,6 +12,7 @@ import Data.Maybe (fromMaybe)
 newtype UserData = UserData
   { getEchoMultiplier :: Int
   }
+  deriving (Show, Eq)
 
 class Monad m => MonadUsersDB m where
   defaultUserData :: m UserData
