@@ -1,3 +1,4 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Network.URI.ExtendedSpec
@@ -59,6 +60,14 @@ instance Arbitrary QueryParam where
     key <- getNonEmptyCleanString <$> arbitrary
     value <- getNonEmptyCleanString <$> arbitrary
     pure (key :=: value)
+
+
+instance Arbitrary URIAuth where
+  arbitrary = do
+    uriUserInfo <- ("//" <>) . (<> "@") . getCleanString <$> arbitrary
+    uriRegName <- getCleanString <$> arbitrary
+    uriPort <- (':' :) . show <$> chooseInteger (0, 65535)
+    pure $ URIAuth {uriUserInfo, uriRegName, uriPort}
 
 addPathSpec :: Spec
 addPathSpec = do
