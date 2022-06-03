@@ -83,15 +83,13 @@ instance Arbitrary URIAuth where
     pure $ URIAuth {uriUserInfo, uriRegName, uriPort}
 
 addPathSpec :: Spec
-addPathSpec = do
+addPathSpec =
   describe "addPath" $ do
-    let uriString = "https://some.uri/path/here"
-    let uriM = parseURI uriString
     it "appends string to URI path" $ do
-      fmap (`addPath` "/whatever") uriM
-        `shouldBe` parseURI (uriString <> "/whatever")
+      property $ \(uri, str) ->
+        addPath uri str `shouldBe` uri {uriPath = uriPath uri <> str}
     it "does nothing to URI when second argument is empty string" $ do
-      fmap (`addPath` "") uriM `shouldBe` uriM
+      property $ \uri -> uri `addPath` "" `shouldBe` uri
 
 addQueryParamsSpec :: Spec
 addQueryParamsSpec = describe "addQueryParams" $ do
