@@ -16,6 +16,7 @@ import Effects.UsersDB
     setUserMultiplier,
   )
 import Test.Hspec (Spec, context, describe, it, shouldBe)
+import Test.QuickCheck (Arbitrary (arbitrary), Testable (property))
 
 spec :: Spec
 spec = do
@@ -30,6 +31,9 @@ newtype TestUser = TestUser {unTestUser :: Integer}
 
 instance Hashable TestUser where
   hash = unTestUser
+
+instance Arbitrary TestUser where
+  arbitrary = TestUser <$> arbitrary
 
 type TestDB = Map Integer UserData
 
