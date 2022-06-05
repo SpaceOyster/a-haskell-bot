@@ -3,12 +3,25 @@
 
 module Effects.UsersDBSpec (spec) where
 
-import Control.Monad.State (State, evalState, get, gets, put)
-import Data.Hashable as H (Hashable (hash))
-import Data.Map as Map (Map, alter, empty, fromList, insert, lookup)
+import Control.Monad.State
+  ( MonadState (get, put),
+    State,
+    StateT (StateT),
+    evalState,
+    gets,
+  )
+import Data.Hashable as H (Hashable (..))
+import Data.Map as Map
+  ( Map,
+    alter,
+    delete,
+    empty,
+    insert,
+    lookup,
+  )
 import Effects.UsersDB
   ( MonadUsersDB (..),
-    UserData (UserData),
+    UserData (..),
     getUserDataM,
     getUserMultiplier,
     getUserMultiplierM,
@@ -58,19 +71,18 @@ instance MonadUsersDB TestMonadUsersDB where
 
 getUserDataMSpec :: Spec
 getUserDataMSpec = describe "getUserDataM" $ do
-  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
-  let eval x = evalTest x testMap
   context "when got `Just user`" $ do
-    it "gets `Just UserData` for user" $ do
-      eval (getUserDataM (Just $ TestUser 1)) `shouldBe` Just (UserData 12)
-      eval (getUserDataM (Just $ TestUser 2)) `shouldBe` Just (UserData 2)
-      eval (getUserDataM (Just $ TestUser 1235)) `shouldBe` Just (UserData 42)
-    it "gets Nothing if user is not present in DB" $ do
-      eval (getUserDataM (Just $ TestUser 1111)) `shouldBe` Nothing
-      eval (getUserDataM (Just $ TestUser 2222)) `shouldBe` Nothing
-  context "when got (Nothing :: Maybe user)" $ do
-    it "gets Nothing" $ do
-      eval (getUserDataM (Nothing :: Maybe TestUser)) `shouldBe` Nothing
+    it "gets `Just UserData` for user" $
+      property $ \(user, usersMap, userData) -> do
+        let usersMap' = Map.insert (hash user) userData usersMap
+        evalTest (getUserDataM $ Just (user :: TestUser)) usersMap' `shouldBe` Just userData
+    it "gets Nothing if user is not present in DB" $
+      property $ \user ->
+        evalTest (getUserDataM $ Just (user :: TestUser)) Map.empty `shouldBe` Nothing
+  context "when got (Nothing :: Maybe user)" $
+    it "gets Nothing" $
+      property $ \usersMap ->
+        evalTest (getUserDataM (Nothing :: Maybe TestUser)) usersMap `shouldBe` Nothing
 
 getUserMultiplierSpec :: Spec
 getUserMultiplierSpec = describe "getUserMultiplier" $ do
