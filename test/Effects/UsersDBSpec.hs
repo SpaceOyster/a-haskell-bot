@@ -35,6 +35,9 @@ instance Hashable TestUser where
 instance Arbitrary TestUser where
   arbitrary = TestUser <$> arbitrary
 
+instance Arbitrary UserData where
+  arbitrary = UserData <$> arbitrary
+
 type TestDB = Map Integer UserData
 
 newtype TestMonadUsersDB a = TestMonadUsersDB {unTestMonadUsersDB :: State TestDB a}
