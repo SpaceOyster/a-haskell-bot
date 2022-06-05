@@ -100,22 +100,23 @@ getUserMultiplierSpec = describe "getUserMultiplier" $ do
 
 getUserMultiplierMSpec :: Spec
 getUserMultiplierMSpec = describe "getUserMultiplierM" $ do
-  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
-  let eval x = evalTest x testMap
-  context "when got `Just user`" $
+  context "when got `Just user`" $ do
     context "when user is present in DB" $
-      it "gets echo multiplier for user" $ do
-        eval (getUserMultiplierM (Just $ TestUser 1)) `shouldBe` 12
-        eval (getUserMultiplierM (Just $ TestUser 2)) `shouldBe` 2
-        eval (getUserMultiplierM (Just $ TestUser 1235)) `shouldBe` 42
-  context "when got `Just user`" $
+      it "gets echo multiplier for user" $
+        property $ \(user, usersMap, userData) -> do
+          let usersMap' = Map.insert (hash user) userData usersMap
+          evalTest (getUserMultiplierM $ Just (user :: TestUser)) usersMap' `shouldBe` getEchoMultiplier userData
     context "when user is not present in DB" $
-      it "gets default echo multiplier" $ do
-        eval (getUserMultiplierM (Just $ TestUser 1111)) `shouldBe` 1000
-        eval (getUserMultiplierM (Just $ TestUser 2222)) `shouldBe` 1000
+      it "gets default echo multiplier" $
+        property $ \(user, usersMap) -> do
+          let usersMap' = Map.delete (hash user) usersMap
+          evalTest (getUserMultiplierM $ Just (user :: TestUser)) usersMap'
+            `shouldBe` evalTest (getEchoMultiplier <$> defaultUserData) usersMap'
   context "when got (Nothing :: Maybe user)" $
-    it "gets default echo multiplier" $ do
-      eval (getUserMultiplierM (Nothing :: Maybe TestUser)) `shouldBe` 1000
+    it "gets default echo multiplier" $
+      property $ \usersMap ->
+        evalTest (getUserMultiplierM (Nothing :: Maybe TestUser)) usersMap
+          `shouldBe` evalTest (getEchoMultiplier <$> defaultUserData) usersMap
 
 setUserMultiplierSpec :: Spec
 setUserMultiplierSpec = describe "setUserMultiplier" $ do
