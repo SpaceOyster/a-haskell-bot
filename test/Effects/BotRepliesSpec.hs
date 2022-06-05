@@ -5,6 +5,7 @@
 module Effects.BotRepliesSpec (spec) where
 
 import Data.Functor.Identity (Identity (Identity))
+import Data.Text.Extended as T (intercalate, pack, tshow)
 import qualified Effects.BotReplies as BR
   ( MonadBotReplies (..),
     Replies (Replies, greeting, help, repeat, settingsSaved, unknown),
@@ -13,6 +14,7 @@ import qualified Effects.BotReplies as BR
   )
 import Effects.UsersDB (UserData (UserData))
 import Test.Hspec (Spec, context, describe, it, shouldBe)
+import Test.QuickCheck (Testable (property))
 
 spec :: Spec
 spec = describe "Effects.BotReplies" $ do
@@ -21,14 +23,16 @@ spec = describe "Effects.BotReplies" $ do
 
 insertUserDataSpec :: Spec
 insertUserDataSpec = do
-  it "replaces `%n` subsequences in Text with Users Echo multiplier" $ do
-    BR.insertUserData (UserData 3) "some text %n" `shouldBe` "some text 3"
-    BR.insertUserData (UserData 42) "some text %n" `shouldBe` "some text 42"
-    BR.insertUserData (UserData (-1)) "some text %n" `shouldBe` "some text -1"
-    BR.insertUserData (UserData 0) "some text %n" `shouldBe` "some text 0"
-    BR.insertUserData (UserData 17) "%n wha%ntever %n" `shouldBe` "17 wha17tever 17"
-  it "doesn't change Text if `%n` doesn't occur." $ do
-    BR.insertUserData (UserData 3) "some text" `shouldBe` "some text"
+  it "replaces `%n` subsequences in Text with Users Echo multiplier" $
+    property $ \(multiplier, stringSegments) -> do
+      let textSegments = T.pack . filter (== '%') <$> (stringSegments :: [String])
+      let str = T.intercalate "%n" textSegments
+      let expexted = T.intercalate (T.tshow multiplier) textSegments
+      BR.insertUserData (UserData multiplier) str `shouldBe` expexted
+  it "doesn't change Text if `%n` doesn't occur." $
+    property $ \(multiplier, someString) -> do
+      let someText = T.pack someString
+      BR.insertUserData (UserData multiplier) someText `shouldBe` someText
 
 newtype TestBotRepliesMonad a = TestBotRepliesMonad {unTestBotRepliesMonad :: Identity a}
   deriving (Functor, Applicative, Monad, Show, Eq)
