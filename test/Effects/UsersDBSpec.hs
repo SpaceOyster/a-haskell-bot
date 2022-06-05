@@ -120,13 +120,10 @@ getUserMultiplierMSpec = describe "getUserMultiplierM" $ do
 
 setUserMultiplierSpec :: Spec
 setUserMultiplierSpec = describe "setUserMultiplier" $ do
-  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
-  let eval x = evalTest x testMap
   let check user n = setUserMultiplier user n >> getUserMultiplier user
-  it "sets echo multiplier for user" $ do
-    eval (check (TestUser 1) 100) `shouldBe` 100
-    eval (check (TestUser 111) 100) `shouldBe` 100
-    eval (check (TestUser 123) 123) `shouldBe` 123
+  it "sets echo multiplier for user" $
+    property $ \(user, usersMap, multiplier) ->
+      evalTest (check (user :: TestUser) multiplier) usersMap `shouldBe` multiplier
 
 orDefaultDataSpec :: Spec
 orDefaultDataSpec = describe "orDefaultData" $ do
