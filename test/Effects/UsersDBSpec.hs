@@ -86,17 +86,17 @@ getUserDataMSpec = describe "getUserDataM" $ do
 
 getUserMultiplierSpec :: Spec
 getUserMultiplierSpec = describe "getUserMultiplier" $ do
-  let testMap = fromList [(1, UserData 12), (2, UserData 2), (1235, UserData 42)]
-  let eval x = evalTest x testMap
   context "when user is present in DB" $
-    it "gets echo multiplier for user" $ do
-      eval (getUserMultiplier (TestUser 1)) `shouldBe` 12
-      eval (getUserMultiplier (TestUser 2)) `shouldBe` 2
-      eval (getUserMultiplier (TestUser 1235)) `shouldBe` 42
+    it "gets echo multiplier for user" $
+      property $ \(user, usersMap, userData) -> do
+        let usersMap' = Map.insert (hash user) userData usersMap
+        evalTest (getUserMultiplier (user :: TestUser)) usersMap' `shouldBe` getEchoMultiplier userData
   context "when user is not present in DB" $
-    it "gets default echo multiplier" $ do
-      eval (getUserMultiplier (TestUser 1111)) `shouldBe` 1000
-      eval (getUserMultiplier (TestUser 2222)) `shouldBe` 1000
+    it "gets default echo multiplier" $
+      property $ \(user, usersMap) -> do
+        let usersMap' = Map.delete (hash user) usersMap
+        evalTest (getUserMultiplier (user :: TestUser)) usersMap'
+          `shouldBe` evalTest (getEchoMultiplier <$> defaultUserData) usersMap'
 
 getUserMultiplierMSpec :: Spec
 getUserMultiplierMSpec = describe "getUserMultiplierM" $ do
