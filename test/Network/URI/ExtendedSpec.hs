@@ -7,7 +7,6 @@ module Network.URI.ExtendedSpec
 where
 
 import Data.Char (isSpace)
-import Data.Maybe (isJust)
 import Network.URI.Extended
   ( QueryParam (..),
     URI (..),
