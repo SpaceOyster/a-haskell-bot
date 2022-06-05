@@ -127,13 +127,13 @@ setUserMultiplierSpec = describe "setUserMultiplier" $ do
 
 orDefaultDataSpec :: Spec
 orDefaultDataSpec = describe "orDefaultData" $ do
-  let testMap = Map.empty
-  let eval x = evalTest x testMap
   context "when got `m (Just UserData)`" $
-    it "returns `m UserData`" $ do
-      eval (orDefaultData (pure $ Just $ UserData 1)) `shouldBe` UserData 1
-      eval (orDefaultData (pure $ Just $ UserData 12)) `shouldBe` UserData 12
-      eval (orDefaultData (pure $ Just $ UserData 123)) `shouldBe` UserData 123
+    it "returns `m UserData`" $
+      property $ \(user, usersMap, userData) -> do
+        let usersMap' = Map.insert (hash (user :: TestUser)) userData usersMap
+        evalTest (orDefaultData (pure $ Just userData)) usersMap'
+          `shouldBe` evalTest (pure userData) usersMap'
   context "when got `m (Nothing :: UserData)`" $
     it "returns `m defaultUserData`" $
-      eval (orDefaultData (pure Nothing)) `shouldBe` UserData 1000
+      evalTest (orDefaultData (pure Nothing)) Map.empty
+        `shouldBe` evalTest defaultUserData Map.empty
