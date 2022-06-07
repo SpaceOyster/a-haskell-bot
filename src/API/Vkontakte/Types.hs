@@ -69,7 +69,7 @@ data Attachment
 instance A.FromJSON Attachment where
   parseJSON =
     A.withObject "FromJSON API.Vkontakte Attachment" $ \o -> do
-      A.String media_type <- o A..: "type"
+      media_type <- o A..: "type"
       case media_type of
         "sticker" -> StickerA <$> o A..: media_type
         "photo" -> Photo <$> o A..: media_type
@@ -79,15 +79,13 @@ instance A.FromJSON Attachment where
         _ -> fail "Expected Attachment"
 
 attachmentToQuery :: Attachment -> URI.QueryParam
-attachmentToQuery (StickerA s) = "sticker_id" URI.:=: show $ sticker_id s
 attachmentToQuery a =
-  "attachment"
-    URI.:=: case a of
-      Photo m -> "photo" <> mediaToQuery m
-      Audio m -> "audio" <> mediaToQuery m
-      Video m -> "video" <> mediaToQuery m
-      Doc m -> "doc" <> mediaToQuery m
-      StickerA s -> "sticker_id=" <> show (sticker_id s)
+  case a of
+    Photo m -> "attachment" URI.:=: "photo" <> mediaToQuery m
+    Audio m -> "attachment" URI.:=: "audio" <> mediaToQuery m
+    Video m -> "attachment" URI.:=: "video" <> mediaToQuery m
+    Doc m -> "attachment" URI.:=: "doc" <> mediaToQuery m
+    StickerA s -> "sticker_id" URI.:=: show $ sticker_id s
   where
     mediaToQuery :: MediaDoc -> String
     mediaToQuery MediaDoc {..} =
