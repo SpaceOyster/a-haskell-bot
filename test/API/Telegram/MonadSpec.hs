@@ -3,34 +3,35 @@
 module API.Telegram.MonadSpec (spec) where
 
 import API.Telegram.Monad
-  ( Config (Config, key),
+  ( Config (key, timeout_seconds),
     MonadTelegram (getTGState),
-    TGState (TGState, lastUpdate),
+    TGState (..),
+    TelegramT,
     apiMethod,
-    defaultTGState,
     evalTelegramT,
     initiate,
     makeBaseURI,
     newStateFromM,
     rememberLastUpdate,
+    tgAPIURI,
   )
-import API.Telegram.Types (Update (Update))
+import API.Telegram.Types (Update (update_id))
 import Control.Monad.Catch (MonadCatch (..))
-import Data.Maybe (fromJust)
 import qualified Effects.Log as Log
-import Network.URI (parseURI)
+import Network.URI (URI (uriPath))
 import Test.App.Error as App (isAPIError)
+import Test.Arbitrary.String (CleanString (CleanString))
+import Test.Arbitrary.Telegram.Types ()
 import Test.Hspec
   ( Spec,
-    anyException,
     context,
     describe,
-    it,
     shouldBe,
-    shouldNotBe,
     shouldReturn,
     shouldThrow,
   )
+import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck (NonEmptyList (NonEmpty))
 
 spec :: Spec
 spec = do
@@ -40,18 +41,6 @@ spec = do
   initiateSpec
   makeBaseURISpec
   apiMethodSpec
-
-testUList1 :: [Update]
-testUList1 = [Update 123 Nothing Nothing]
-
-testUList2 :: [Update]
-testUList2 = [Update 123 Nothing Nothing, Update 321 Nothing Nothing]
-
-testConfig1 :: Config
-testConfig1 = Config "" 0
-
-testConfig2 :: Config
-testConfig2 = Config "KEY" 100
 
 instance Log.MonadLog Maybe where
   doLog _ _ = pure ()
@@ -65,67 +54,60 @@ instance Log.MonadLog IO where
 newStateFromMSpec :: Spec
 newStateFromMSpec = describe "newStateFromM" $ do
   context "given nonempty [Update]" $
-    it "returns (Just newTGState)" $ do
-      newStateFromM [Update 123 Nothing Nothing] defaultTGState
-        `shouldBe` Just (defaultTGState {lastUpdate = 124})
-      newStateFromM [Update 123 Nothing Nothing, Update 321 Nothing Nothing] defaultTGState
-        `shouldBe` Just (defaultTGState {lastUpdate = 322})
+    prop "returns (Just newTGState)" $ \(tgState, NonEmpty updates) ->
+      newStateFromM updates tgState
+        `shouldBe` Just (tgState {lastUpdate = update_id (last updates) + 1})
   context "given empty [Update]" $
-    it "returns Nothing" $ do
-      newStateFromM [] defaultTGState `shouldBe` Nothing
+    prop "returns Nothing" $ \tgState ->
+      newStateFromM [] tgState `shouldBe` Nothing
 
 rememberLastUpdateSpec :: Spec
 rememberLastUpdateSpec = describe "rememberLastUpdate" $ do
-  it "returns unchanged [Update] list" $ do
-    evalTelegramT testConfig1 (rememberLastUpdate []) `shouldBe` Just []
-    evalTelegramT testConfig1 (rememberLastUpdate testUList1)
-      `shouldReturn` testUList1
-    evalTelegramT testConfig1 (rememberLastUpdate testUList2)
-      `shouldReturn` testUList2
-  context "given empty [Update]" $ it "doesn't change TGState" $ do
-    evalTelegramT testConfig1 (rememberLastUpdate [] >> getTGState)
-      `shouldBe` (evalTelegramT testConfig1 getTGState :: Maybe TGState)
-    evalTelegramT testConfig1 (rememberLastUpdate testUList1 >> getTGState)
-      `shouldNotBe` (evalTelegramT testConfig1 getTGState :: Maybe TGState)
-  context "given non empty [Update]" $ it "sets TGState {lastUpdate} to last Update id + 1" $ do
-    evalTelegramT testConfig1 (rememberLastUpdate testUList1 >> lastUpdate <$> getTGState)
-      `shouldReturn` (124 :: Integer)
-    evalTelegramT testConfig1 (rememberLastUpdate testUList2 >> lastUpdate <$> getTGState)
-      `shouldReturn` (322 :: Integer)
+  prop "returns unchanged [Update] list" $ \(tgConfig, updates) ->
+    evalTelegramT tgConfig (rememberLastUpdate updates) `shouldReturn` updates
+  context "given empty [Update]" $
+    prop "doesn't change TGState" $ \tgConfig ->
+      evalTelegramT tgConfig (rememberLastUpdate [] >> getTGState)
+        `shouldBe` (evalTelegramT tgConfig getTGState :: Maybe TGState)
+  context "given non empty [Update]" $
+    prop "sets TGState {lastUpdate} to last Update id + 1" $
+      \(tgConfig, NonEmpty updates) ->
+        evalTelegramT tgConfig (rememberLastUpdate updates >> lastUpdate <$> getTGState)
+          `shouldReturn` update_id (last updates) + 1
 
 evalTelegramTSpec :: Spec
 evalTelegramTSpec = describe "evalTelegramT" $ do
-  it "initiates TGState with config" $ do
-    evalTelegramT testConfig1 getTGState
-      `shouldBe` (initiate testConfig1 :: Maybe TGState)
-    evalTelegramT testConfig2 getTGState
-      `shouldBe` (initiate testConfig2 :: Maybe TGState)
-  context "after state initiation" $ it "runs TelegramT transformer" $ do
-    evalTelegramT testConfig1 (pure "some") `shouldBe` Just "some"
-    evalTelegramT testConfig2 (pure (1 + 1 :: Integer)) `shouldBe` Just 2
+  prop "initiates TGState with config" $ \tgConfig ->
+    evalTelegramT tgConfig getTGState
+      `shouldBe` (initiate tgConfig :: Maybe TGState)
+  context "after state initiation" $
+    prop "runs TelegramT transformer" $ \tgConfig ->
+      evalTelegramT tgConfig (pure "whatever") `shouldBe` Just "whatever"
 
 initiateSpec :: Spec
 initiateSpec = describe "initiate" $ do
-  it "returns TGState initiated with Config" $ do
-    let uri1 = fromJust $ parseURI "https://api.telegram.org/bot/"
-    initiate testConfig1 `shouldReturn` TGState 0 uri1 1
-    let uri2 = fromJust $ parseURI "https://api.telegram.org/botKEY/"
-    initiate testConfig2 `shouldReturn` TGState 0 uri2 100
-  context "when fails to parse api base URI" $ it "throws error" $ do
-    initiate (testConfig1 {key = "unparsable key"}) `shouldThrow` App.isAPIError
+  prop "returns TGState initiated with Config" $ \tgConfig -> do
+    let uri = tgAPIURI {uriPath = uriPath tgAPIURI <> key tgConfig <> "/"}
+    let newTimeout = min 100 (max 1 $ timeout_seconds tgConfig)
+    let expected = TGState {lastUpdate = 0, apiURI = uri, timeout = newTimeout}
+    initiate tgConfig `shouldReturn` expected
 
 makeBaseURISpec :: Spec
 makeBaseURISpec = describe "makeBaseURI" $ do
-  it "returns api base URI, generated with api key from config" $ do
-    makeBaseURI testConfig1 `shouldBe` parseURI "https://api.telegram.org/bot/"
-    makeBaseURI testConfig2 `shouldBe` parseURI "https://api.telegram.org/botKEY/"
-  context "when fails to parse api base URI" $ it "throws error" $ do
-    makeBaseURI (testConfig1 {key = "unparsable key"}) `shouldThrow` App.isAPIError
+  prop "returns api base URI, generated with api key from config" $
+    \tgConfig -> do
+      let uri = tgAPIURI {uriPath = uriPath tgAPIURI <> key tgConfig <> "/"}
+      makeBaseURI tgConfig `shouldBe` uri
 
 apiMethodSpec :: Spec
 apiMethodSpec = describe "makeBaseURI" $ do
-  it "returns URI for specified api method String" $ do
-    evalTelegramT testConfig1 (apiMethod "someMethod")
-      `shouldBe` parseURI "https://api.telegram.org/bot/someMethod"
-    evalTelegramT testConfig2 (apiMethod "someMethod")
-      `shouldBe` parseURI "https://api.telegram.org/botKEY/someMethod"
+  prop "returns URI for specified api method String" $
+    \(tgConfig, CleanString method) ->
+      evalTelegramT tgConfig (apiMethod method)
+        `shouldBe` evalTelegramT tgConfig (testAction method)
+  where
+    testAction :: String -> TelegramT Maybe URI
+    testAction method = do
+      st <- getTGState
+      let uri = apiURI st
+      pure $ uri {uriPath = uriPath uri <> method}
