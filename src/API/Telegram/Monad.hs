@@ -82,15 +82,10 @@ initiate cfg = do
 initiate_ :: (MonadThrow m, Log.MonadLog m) => Config -> m TGState
 initiate_ cfg = do
   Log.logInfo $ "Initiating Telegram API handle with: " <> T.tshow cfg
-  apiURI <- makeBaseURI cfg
+  let apiURI = makeBaseURI cfg
   let timeout = min 100 (max 1 $ timeout_seconds cfg)
   pure $ defaultTGState {apiURI, timeout}
 
-makeBaseURI :: MonadThrow m => Config -> m URI.URI
-makeBaseURI Config {key} =
-  maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
-  where
-    ex = throwM $ apiError "Unable to parse Telegram API URL"
 tgAPIURI :: URI.URI
 tgAPIURI =
   URI.URI
@@ -107,6 +102,9 @@ tgAPIURI =
       URI.uriFragment = ""
     }
 
+makeBaseURI :: Config -> URI.URI
+makeBaseURI cfg =
+  tgAPIURI {URI.uriPath = URI.uriPath tgAPIURI <> key cfg <> "/"}
 
 apiMethod :: MonadTelegram m => String -> m URI.URI
 apiMethod method = do
