@@ -29,7 +29,8 @@ import Effects.UsersDB
     setUserMultiplier,
   )
 import Test.Hspec (Spec, context, describe, it, shouldBe)
-import Test.QuickCheck (Arbitrary (arbitrary), Testable (property))
+import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck (Arbitrary (arbitrary))
 
 spec :: Spec
 spec = do
@@ -72,28 +73,29 @@ instance MonadUsersDB TestMonadUsersDB where
 getUserDataMSpec :: Spec
 getUserDataMSpec = describe "getUserDataM" $ do
   context "when got `Just user`" $ do
-    it "gets `Just UserData` for user" $
-      property $ \(user, usersMap, userData) -> do
+    prop "gets `Just UserData` for user" $
+      \(user, usersMap, userData) -> do
         let usersMap' = Map.insert (hash user) userData usersMap
         evalTest (getUserDataM $ Just (user :: TestUser)) usersMap' `shouldBe` Just userData
-    it "gets Nothing if user is not present in DB" $
-      property $ \user ->
+    prop "gets Nothing if user is not present in DB" $
+      \user ->
         evalTest (getUserDataM $ Just (user :: TestUser)) Map.empty `shouldBe` Nothing
   context "when got (Nothing :: Maybe user)" $
-    it "gets Nothing" $
-      property $ \usersMap ->
+    prop "gets Nothing" $
+      \usersMap ->
         evalTest (getUserDataM (Nothing :: Maybe TestUser)) usersMap `shouldBe` Nothing
 
 getUserMultiplierSpec :: Spec
 getUserMultiplierSpec = describe "getUserMultiplier" $ do
   context "when user is present in DB" $
-    it "gets echo multiplier for user" $
-      property $ \(user, usersMap, userData) -> do
+    prop "gets echo multiplier for user" $
+      \(user, usersMap, userData) -> do
         let usersMap' = Map.insert (hash user) userData usersMap
-        evalTest (getUserMultiplier (user :: TestUser)) usersMap' `shouldBe` getEchoMultiplier userData
+        evalTest (getUserMultiplier (user :: TestUser)) usersMap'
+          `shouldBe` getEchoMultiplier userData
   context "when user is not present in DB" $
-    it "gets default echo multiplier" $
-      property $ \(user, usersMap) -> do
+    prop "gets default echo multiplier" $
+      \(user, usersMap) -> do
         let usersMap' = Map.delete (hash user) usersMap
         evalTest (getUserMultiplier (user :: TestUser)) usersMap'
           `shouldBe` evalTest (getEchoMultiplier <$> defaultUserData) usersMap'
@@ -102,34 +104,35 @@ getUserMultiplierMSpec :: Spec
 getUserMultiplierMSpec = describe "getUserMultiplierM" $ do
   context "when got `Just user`" $ do
     context "when user is present in DB" $
-      it "gets echo multiplier for user" $
-        property $ \(user, usersMap, userData) -> do
+      prop "gets echo multiplier for user" $
+        \(user, usersMap, userData) -> do
           let usersMap' = Map.insert (hash user) userData usersMap
-          evalTest (getUserMultiplierM $ Just (user :: TestUser)) usersMap' `shouldBe` getEchoMultiplier userData
+          evalTest (getUserMultiplierM $ Just (user :: TestUser)) usersMap'
+            `shouldBe` getEchoMultiplier userData
     context "when user is not present in DB" $
-      it "gets default echo multiplier" $
-        property $ \(user, usersMap) -> do
+      prop "gets default echo multiplier" $
+        \(user, usersMap) -> do
           let usersMap' = Map.delete (hash user) usersMap
           evalTest (getUserMultiplierM $ Just (user :: TestUser)) usersMap'
             `shouldBe` evalTest (getEchoMultiplier <$> defaultUserData) usersMap'
   context "when got (Nothing :: Maybe user)" $
-    it "gets default echo multiplier" $
-      property $ \usersMap ->
+    prop "gets default echo multiplier" $
+      \usersMap ->
         evalTest (getUserMultiplierM (Nothing :: Maybe TestUser)) usersMap
           `shouldBe` evalTest (getEchoMultiplier <$> defaultUserData) usersMap
 
 setUserMultiplierSpec :: Spec
 setUserMultiplierSpec = describe "setUserMultiplier" $ do
   let check user n = setUserMultiplier user n >> getUserMultiplier user
-  it "sets echo multiplier for user" $
-    property $ \(user, usersMap, multiplier) ->
+  prop "sets echo multiplier for user" $
+    \(user, usersMap, multiplier) ->
       evalTest (check (user :: TestUser) multiplier) usersMap `shouldBe` multiplier
 
 orDefaultDataSpec :: Spec
 orDefaultDataSpec = describe "orDefaultData" $ do
   context "when got `m (Just UserData)`" $
-    it "returns `m UserData`" $
-      property $ \(user, usersMap, userData) -> do
+    prop "returns `m UserData`" $
+      \(user, usersMap, userData) -> do
         let usersMap' = Map.insert (hash (user :: TestUser)) userData usersMap
         evalTest (orDefaultData (pure $ Just userData)) usersMap'
           `shouldBe` evalTest (pure userData) usersMap'
