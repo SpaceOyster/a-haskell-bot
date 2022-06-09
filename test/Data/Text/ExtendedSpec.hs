@@ -3,8 +3,9 @@
 module Data.Text.ExtendedSpec (spec) where
 
 import qualified Data.ByteString.Lazy.Char8 as L8
-import Data.Text.Extended (Text, lazyDecodeUtf8, tshow)
-import Test.Hspec (Spec, describe, it, shouldBe)
+import Data.Text.Extended as T (Text, lazyDecodeUtf8, pack, tshow)
+import Test.Hspec (Spec, context, describe, it, shouldBe)
+import Test.QuickCheck (Testable (property))
 
 spec :: Spec
 spec = do
@@ -21,6 +22,10 @@ tshowSpec = describe "tshow" $ do
 
 lazyDecodeUtf8Spec :: Spec
 lazyDecodeUtf8Spec = describe "lazyDecodeUtf8" $ do
-  it "converts lazy Char8.ByteString to Text" $ do
-    lazyDecodeUtf8 ("Some Text" :: L8.ByteString) `shouldBe` ("Some Text" :: Text)
-    lazyDecodeUtf8 ("" :: L8.ByteString) `shouldBe` ("" :: Text)
+  context "backslash sequences aren't tested" $
+    it "converts lazy Char8.ByteString to Text" $ do
+      property $ \someString -> do
+        let someString' = filter (== '\\') someString
+        let someByteString = L8.pack someString'
+        let someText = T.pack someString'
+        lazyDecodeUtf8 someByteString `shouldBe` someText
