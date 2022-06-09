@@ -91,6 +91,22 @@ makeBaseURI Config {key} =
   maybe ex pure . URI.parseURI $ "https://api.telegram.org/bot" <> key <> "/"
   where
     ex = throwM $ apiError "Unable to parse Telegram API URL"
+tgAPIURI :: URI.URI
+tgAPIURI =
+  URI.URI
+    { URI.uriScheme = "https:",
+      URI.uriAuthority =
+        Just $
+          URI.URIAuth
+            { URI.uriUserInfo = "",
+              URI.uriRegName = "api.telegram.org",
+              URI.uriPort = ""
+            },
+      URI.uriPath = "/bot",
+      URI.uriQuery = "",
+      URI.uriFragment = ""
+    }
+
 
 apiMethod :: MonadTelegram m => String -> m URI.URI
 apiMethod method = do
