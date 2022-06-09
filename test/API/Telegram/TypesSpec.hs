@@ -6,21 +6,24 @@ module API.Telegram.TypesSpec
 where
 
 import API.Telegram.Types as TG
-  ( Error (Error),
+  ( CallbackQuery (..),
+    Message (..),
     Response (ErrorResponse, ResponseWith),
+    Update (..),
+    User,
     fromResponse,
   )
 import Data.Aeson as Aeson (ToJSON (toJSON))
 import Test.App.Error as App (isAPIError)
+import Test.Arbitrary.Telegram.Types ()
 import Test.Hspec
   ( Spec,
-    anyException,
     context,
     describe,
-    it,
     shouldReturn,
     shouldThrow,
   )
+import Test.Hspec.QuickCheck (prop)
 
 spec :: Spec
 spec = do
@@ -29,18 +32,30 @@ spec = do
 fromResponseSpec :: Spec
 fromResponseSpec = describe "fromResponse" $ do
   context "when Telegram API responded with json" $
-    it "extracts data of Aeson.ToJSON class from API.Telegram.Response" $ do
-      fromResponse (ResponseWith $ Aeson.toJSON ([1, 2, 3, 4] :: [Integer]))
-        `shouldReturn` ([1, 2, 3, 4] :: [Integer])
-      fromResponse (ResponseWith $ Aeson.toJSON True)
-        `shouldReturn` True
+    prop "extracts data of Aeson.ToJSON class from API.Telegram.Response" $
+      \(tgMsg, tgCB, tgUpd, tgUpds) -> do
+        let tgMsgJSON = Aeson.toJSON (tgMsg :: TG.Message)
+        let tgCBJSON = Aeson.toJSON (tgCB :: TG.CallbackQuery)
+        let tgUpdJSON = Aeson.toJSON (tgUpd :: TG.Update)
+        let tgUpdsJSON = Aeson.toJSON (tgUpds :: [TG.Update])
+        fromResponse (ResponseWith tgMsgJSON) `shouldReturn` tgMsg
+        fromResponse (ResponseWith tgCBJSON) `shouldReturn` tgCB
+        fromResponse (ResponseWith tgUpdJSON) `shouldReturn` tgUpd
+        fromResponse (ResponseWith tgUpdsJSON) `shouldReturn` tgUpds
   context "when json can't be parsed to expected data type" $
-    it "throws error" $ do
-      (fromResponse (ResponseWith $ Aeson.toJSON True) :: IO Integer)
+    prop "throws error" $ \(tgMsg, tgCB, tgUpd, tgUpds) -> do
+      let tgMsgJSON = Aeson.toJSON (tgMsg :: TG.Message)
+      let tgCBJSON = Aeson.toJSON (tgCB :: TG.CallbackQuery)
+      let tgUpdJSON = Aeson.toJSON (tgUpd :: TG.Update)
+      let tgUpdsJSON = Aeson.toJSON (tgUpds :: [TG.Update])
+      (fromResponse $ ResponseWith tgMsgJSON :: IO TG.User)
         `shouldThrow` App.isAPIError
-      (fromResponse (ResponseWith $ Aeson.toJSON ['a', 'b']) :: IO Bool)
+      (fromResponse $ ResponseWith tgCBJSON :: IO TG.User)
+        `shouldThrow` App.isAPIError
+      (fromResponse $ ResponseWith tgUpdJSON :: IO TG.User)
+        `shouldThrow` App.isAPIError
+      (fromResponse $ ResponseWith tgUpdsJSON :: IO TG.User)
         `shouldThrow` App.isAPIError
   context "when Telegram API responded with error" $
-    it "throws error" $ do
-      (fromResponse (ErrorResponse $ TG.Error 101 "sommin bad happn :(") :: IO Bool)
-        `shouldThrow` App.isAPIError
+    prop "throws error" $ \tgError ->
+      (fromResponse $ ErrorResponse tgError :: IO Bool) `shouldThrow` App.isAPIError
