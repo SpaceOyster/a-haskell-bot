@@ -27,9 +27,11 @@ import Data.Aeson
     fromJSON,
     genericParseJSON,
     genericToJSON,
+    object,
     withObject,
     (.:),
     (.:?),
+    (.=),
   )
 import qualified Data.Aeson.Types as A
   ( Options (fieldLabelModifier),
@@ -49,7 +51,7 @@ data Message = Message
     date :: Integer,
     text :: Maybe T.Text
   }
-  deriving (Eq,Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 data BotCommand = BotCommand
   { command :: T.Text,
@@ -64,7 +66,7 @@ data CallbackQuery = CallbackQuery
     inline_message_id :: Maybe T.Text,
     query_data :: Maybe T.Text
   }
-  deriving (Eq,Show)
+  deriving (Eq, Show)
 
 instance FromJSON CallbackQuery where
   parseJSON =
@@ -75,6 +77,16 @@ instance FromJSON CallbackQuery where
       inline_message_id <- o .:? "inline_message_id"
       query_data <- o .:? "data"
       pure $ CallbackQuery {..}
+
+instance ToJSON CallbackQuery where
+  toJSON CallbackQuery {..} =
+    object
+      [ "id" .= cq_id,
+        "from" .= from,
+        "message" .= message,
+        "inline_message_id" .= inline_message_id,
+        "data" .= query_data
+      ]
 
 newtype User = User
   { user_id :: Integer
@@ -93,10 +105,13 @@ instance H.Hashable User where
 newtype Chat = Chat
   { chat_id :: Integer
   }
-  deriving (Eq, Show)
+  deriving (Eq, Show, Generic)
 
 instance FromJSON Chat where
   parseJSON = withObject "Chat" (fmap Chat . (.: "id"))
+
+instance ToJSON Chat where
+  toJSON = genericToJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
 
 newtype InlineKeyboardMarkup = InlineKeyboardMarkup
   { inline_keyboard :: [[InlineKeyboardButton]]
@@ -114,13 +129,13 @@ data Update = Update
     message :: Maybe Message,
     callback_query :: Maybe CallbackQuery
   }
-  deriving (Show, Generic, FromJSON, Eq)
+  deriving (Show, Generic, FromJSON, ToJSON, Eq)
 
 data Error = Error
   { error_code :: Int,
     description :: T.Text
   }
-  deriving (Show, Generic, FromJSON)
+  deriving (Show, Generic, FromJSON, ToJSON)
 
 data Response
   = ErrorResponse Error
@@ -135,15 +150,25 @@ instance FromJSON Response where
         then ErrorResponse <$> parseJSON (A.Object o)
         else ResponseWith <$> o .: "result"
 
+instance ToJSON Response where
+  toJSON (ErrorResponse Error {..}) =
+    object
+      [ "ok" .= False,
+        "error_code" .= error_code,
+        "description" .= description
+      ]
+  toJSON (ResponseWith v) = object ["ok" .= True, "result" .= v]
+
 fromResponse :: (FromJSON a, MonadThrow m) => Response -> m a
 fromResponse (ErrorResponse err) =
   throwM . apiError $
-    "Responded with Error: " <> T.tshow (error_code err) <> ": "
+    "Responded with Error: "
+      <> T.tshow (error_code err)
+      <> ": "
       <> description (err :: Error)
 fromResponse (ResponseWith v) =
   case fromJSON v of
     A.Success a -> pure a
     A.Error _ ->
       throwM . apiError $
-        "Responded with unexpected result: "
-          <> T.lazyDecodeUtf8 (encode v)
+        "Responded with unexpected result: " <> T.lazyDecodeUtf8 (encode v)
