@@ -109,6 +109,8 @@ test-suite a-haskell-bot-test
       Effects.UsersDBSpec
       Network.URI.ExtendedSpec
       Test.App.Error
+      Test.Arbitrary.String
+      Test.Arbitrary.URI
       Test.Handlers.HTTP
       Test.Handlers.Logger
       Test.Handlers.UsersDB

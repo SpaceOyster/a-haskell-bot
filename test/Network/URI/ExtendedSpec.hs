@@ -1,4 +1,3 @@
-{-# LANGUAGE NamedFieldPuns #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Network.URI.ExtendedSpec
@@ -10,15 +9,18 @@ import Data.Char (isSpace)
 import Network.URI.Extended
   ( QueryParam (..),
     URI (..),
-    URIAuth (..),
     addPath,
     addQueryParams,
     isAllowedInURI,
     isUnescapedInURI,
-    isUnescapedInURIComponent,
     stringifyQueryList,
     stringifyQueryPair,
   )
+import Test.Arbitrary.String
+  ( DirtyString (DirtyString),
+    NonEmptyCleanString (getNonEmptyCleanString),
+  )
+import Test.Arbitrary.URI ()
 import Test.Hspec
   ( Spec,
     context,
@@ -32,11 +34,6 @@ import Test.QuickCheck
   ( Arbitrary (arbitrary),
     NonEmptyList (NonEmpty),
     Testable (property),
-    chooseInteger,
-    elements,
-    listOf,
-    listOf1,
-    suchThat,
     (==>),
   )
 
@@ -47,68 +44,11 @@ spec = do
   addQueryParamsSpec
   addPathSpec
 
-alphaChars :: [Char]
-alphaChars = ['a' .. 'z'] <> ['A' .. 'Z']
-
-numChars :: [Char]
-numChars = ['0' .. '9']
-
-alphaNumChars :: [Char]
-alphaNumChars = alphaChars <> numChars
-
-unreservedURIChars :: [Char]
-unreservedURIChars = alphaNumChars <> "-_.~"
-
-newtype CleanString = CleanString {getCleanString :: String}
-  deriving (Show)
-
-instance Arbitrary CleanString where
-  arbitrary = do
-    let allowedChars = unreservedURIChars
-    CleanString <$> listOf (elements allowedChars)
-
-newtype NonEmptyCleanString = NonEmptyCleanString {getNonEmptyCleanString :: String}
-  deriving (Show)
-
-instance Arbitrary NonEmptyCleanString where
-  arbitrary = do
-    let allowedChars = unreservedURIChars
-    NonEmptyCleanString <$> listOf1 (elements allowedChars)
-
-newtype DirtyString = DirtyString {getDirtyString :: String}
-  deriving (Show)
-
-instance Arbitrary DirtyString where
-  arbitrary = DirtyString <$> arbitrary `suchThat` (not . all isUnescapedInURIComponent)
-
 instance Arbitrary QueryParam where
   arbitrary = do
     key <- getNonEmptyCleanString <$> arbitrary
     value <- getNonEmptyCleanString <$> arbitrary
     pure (key :=: value)
-
-instance Arbitrary URI where
-  arbitrary = do
-    uriScheme <- (<> ":") . getCleanString <$> arbitrary
-    uriAuthority <- arbitrary
-    uriPath <- ('/' :) . getCleanString <$> arbitrary
-    uriQuery <- ('?' :) . getCleanString <$> arbitrary
-    uriFragment <- ('#' :) . getCleanString <$> arbitrary
-    pure $
-      URI
-        { uriScheme,
-          uriAuthority,
-          uriPath,
-          uriQuery,
-          uriFragment
-        }
-
-instance Arbitrary URIAuth where
-  arbitrary = do
-    uriUserInfo <- ("//" <>) . (<> "@") . getCleanString <$> arbitrary
-    uriRegName <- getCleanString <$> arbitrary
-    uriPort <- (':' :) . show <$> chooseInteger (0, 65535)
-    pure $ URIAuth {uriUserInfo, uriRegName, uriPort}
 
 addPathSpec :: Spec
 addPathSpec =
