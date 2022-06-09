@@ -19,7 +19,6 @@ import API.Telegram.Types (Update (update_id))
 import Control.Monad.Catch (MonadCatch (..))
 import qualified Effects.Log as Log
 import Network.URI (URI (uriPath))
-import Test.App.Error as App (isAPIError)
 import Test.Arbitrary.String (CleanString (CleanString))
 import Test.Arbitrary.Telegram.Types ()
 import Test.Hspec
@@ -28,7 +27,6 @@ import Test.Hspec
     describe,
     shouldBe,
     shouldReturn,
-    shouldThrow,
   )
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck (NonEmptyList (NonEmpty))
