@@ -31,7 +31,7 @@ insertUserDataSpec = do
       BR.insertUserData (UserData multiplier) str `shouldBe` expexted
   it "doesn't change Text if `%n` doesn't occur." $
     property $ \(multiplier, someString) -> do
-      let someText = T.pack someString
+      let someText = T.pack $ filter (== '%') someString
       BR.insertUserData (UserData multiplier) someText `shouldBe` someText
 
 newtype TestBotRepliesMonad a = TestBotRepliesMonad {unTestBotRepliesMonad :: Identity a}
