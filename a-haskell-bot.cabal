@@ -110,6 +110,8 @@ test-suite a-haskell-bot-test
       Network.URI.ExtendedSpec
       Test.App.Error
       Test.Arbitrary.String
+      Test.Arbitrary.Telegram.Types
+      Test.Arbitrary.Text
       Test.Arbitrary.URI
       Test.Handlers.HTTP
       Test.Handlers.Logger
