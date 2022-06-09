@@ -14,7 +14,7 @@ import qualified Effects.BotReplies as BR
   )
 import Effects.UsersDB (UserData (UserData))
 import Test.Hspec (Spec, context, describe, it, shouldBe)
-import Test.QuickCheck (Testable (property))
+import Test.Hspec.QuickCheck (prop)
 
 spec :: Spec
 spec = describe "Effects.BotReplies" $ do
@@ -23,14 +23,14 @@ spec = describe "Effects.BotReplies" $ do
 
 insertUserDataSpec :: Spec
 insertUserDataSpec = do
-  it "replaces `%n` subsequences in Text with Users Echo multiplier" $
-    property $ \(multiplier, stringSegments) -> do
+  prop "replaces `%n` subsequences in Text with Users Echo multiplier" $
+    \(multiplier, stringSegments) -> do
       let textSegments = T.pack . filter (== '%') <$> (stringSegments :: [String])
       let str = T.intercalate "%n" textSegments
       let expexted = T.intercalate (T.tshow multiplier) textSegments
       BR.insertUserData (UserData multiplier) str `shouldBe` expexted
-  it "doesn't change Text if `%n` doesn't occur." $
-    property $ \(multiplier, someString) -> do
+  prop "doesn't change Text if `%n` doesn't occur." $
+    \(multiplier, someString) -> do
       let someText = T.pack $ filter (== '%') someString
       BR.insertUserData (UserData multiplier) someText `shouldBe` someText
 
