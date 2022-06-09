@@ -3,7 +3,7 @@
 
 module Test.Arbitrary.Telegram.Types where
 
-import API.Telegram.Monad (Config (..), TGState (..))
+import API.Telegram.Monad (Config (..), TGState (..), tgAPIURI)
 import API.Telegram.Types as TG
   ( CallbackQuery (..),
     Chat (Chat),
