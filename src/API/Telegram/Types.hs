@@ -49,7 +49,8 @@ data Message = Message
     from :: Maybe User,
     chat :: Chat,
     date :: Integer,
-    text :: Maybe T.Text
+    text :: Maybe T.Text,
+    reply_markup :: Maybe InlineKeyboardMarkup
   }
   deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
@@ -116,13 +117,13 @@ instance ToJSON Chat where
 newtype InlineKeyboardMarkup = InlineKeyboardMarkup
   { inline_keyboard :: [[InlineKeyboardButton]]
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data InlineKeyboardButton = InlineKeyboardButton
   { text :: T.Text,
     callback_data :: T.Text
   }
-  deriving (Show, Generic, ToJSON)
+  deriving (Eq, Show, Generic, ToJSON, FromJSON)
 
 data Update = Update
   { update_id :: Integer,

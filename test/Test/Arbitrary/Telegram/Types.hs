@@ -27,6 +27,7 @@ instance Arbitrary TG.Message where
     chat <- arbitrary
     date <- arbitrary
     text <- fmap getAnyText <$> arbitrary
+    reply_markup <- arbitrary
     pure TG.Message {..}
 
 instance Arbitrary TG.CallbackQuery where
