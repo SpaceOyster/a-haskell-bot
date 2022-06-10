@@ -40,7 +40,7 @@ import Data.Maybe (fromJust)
 import qualified Effects.BotReplies as BR
 import Effects.HTTP as HTTP (Request (POST))
 import Effects.Log as Log (MonadLog (..))
-import Network.URI as URI (parseURI)
+import Network.URI as URI (URI (uriPath), parseURI)
 import Test.App.Error as App (isAPIError)
 import Test.Arbitrary.Telegram.Types ()
 import Test.Arbitrary.Text (AnyText (AnyText), ShortCleanText (ShortCleanText))
@@ -231,18 +231,17 @@ sendInlineKeyboardSpec = describe "sendInlineKeyboardSpec" $ do
 
 getUpdatesSpec_ :: Spec
 getUpdatesSpec_ = describe "getUpdates_" $ do
-  it "returns Effects.HTTP.Request for \"getUpdates\" Telegram API method" $ do
-    evalTelegramT testConfig1 getUpdates_ `shouldReturn` HTTP.POST uri1 json1
-    evalTelegramT testConfig2 getUpdates_ `shouldReturn` HTTP.POST uri2 json2
-  where
-    uri1 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY1/getUpdates"
-    json1 = "{\"offset\":0,\"timeout\":100}"
-    uri2 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY2/getUpdates"
-    json2 = "{\"offset\":0,\"timeout\":22}"
+  prop "returns Effects.HTTP.Request for \"getUpdates\" Telegram API method" $
+    \(tgConfig, tgState) -> do
+      let apiURI_ = TG.apiURI tgState
+          uri = apiURI_ {URI.uriPath = URI.uriPath apiURI_ <> "getUpdates"}
+          json =
+            encode $
+              object
+                [ "offset" .= TG.lastUpdate tgState,
+                  "timeout" .= TG.timeout tgState
+                ]
+      evalTelegramT tgConfig (putTGState tgState >> getUpdates_) `shouldReturn` HTTP.POST uri json
 
 answerCallbackQuerySpec_ :: Spec
 answerCallbackQuerySpec_ = describe "answerCallbackQuerySpec_" $
