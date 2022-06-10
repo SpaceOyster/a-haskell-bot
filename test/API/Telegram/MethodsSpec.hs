@@ -1,4 +1,5 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
@@ -19,12 +20,13 @@ import API.Telegram.Methods as TG
   )
 import API.Telegram.Monad (Config (..), TelegramT (..), evalTelegramT)
 import API.Telegram.Types as TG
-  ( Chat (Chat),
+  ( Chat (Chat, chat_id),
     Error,
     InlineKeyboardButton (InlineKeyboardButton),
     InlineKeyboardMarkup (InlineKeyboardMarkup),
-    Message (Message, chat, date, from, message_id, text),
+    Message (Message, chat, date, from, message_id, reply_markup, text),
     Update,
+    User,
   )
 import App.Env as App
   ( Env (Env, envBotReplies, envHTTP, envLogger, envUsersDB),
@@ -41,6 +43,7 @@ import Effects.Log as Log (MonadLog (..))
 import Network.URI as URI (parseURI)
 import Test.App.Error as App (isAPIError)
 import Test.Arbitrary.Telegram.Types ()
+import Test.Arbitrary.Text (AnyText (AnyText), ShortCleanText (ShortCleanText))
 import qualified Test.Handlers.HTTP as HTTP
 import qualified Test.Handlers.Logger as Logger
 import qualified Test.Handlers.UsersDB as DB
@@ -158,27 +161,37 @@ copyMessageSpec = describe "copyMessageSpec" $ do
 sendMessageSpec :: Spec
 sendMessageSpec = describe "sendMessageSpec" $ do
   context "given Chat ID and Text, sends text message" $
-    it "returns Message on success" $ do
-      let result = "{\"ok\":true,\"result\":{\"chat\":{\"id\":123},\"date\":12,\"message_id\":1,\"text\":\"whatever text\"}}"
-          chatID = 123
-          text1 = "whatever text1"
-          testMsg =
-            Message
-              { message_id = 1,
-                from = Nothing,
-                chat = Chat 123,
-                date = 12,
-                text = Just "whatever text"
+    prop "returns Message on success" $ \(tgConfig, AnyText msgText) -> do
+      chat <- generate (arbitrary :: Gen TG.Chat)
+      message_id <- generate (arbitrary :: Gen Integer)
+      date <- generate (arbitrary :: Gen Integer)
+      reply_markup <- generate (arbitrary :: Gen (Maybe TG.InlineKeyboardMarkup))
+      from <- generate (arbitrary :: Gen (Maybe TG.User))
+      let tgMsg =
+            TG.Message
+              { message_id,
+                from,
+                chat,
+                date,
+                TG.text = Just msgText,
+                reply_markup
               }
-      modelHTTPReply testConfig1 result (sendMessage chatID text1)
-        `shouldReturn` testMsg
-  it "throws on Error" $ do
-    let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
-    modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
+          response =
+            encode . object $
+              ["ok" .= True, "result" .= (tgMsg :: TG.Message)]
+      modelHTTPReply tgConfig response (sendMessage (TG.chat_id chat) msgText)
+        `shouldReturn` (tgMsg :: TG.Message)
+  prop "throws on Error" $ \(tgConfig, err) -> do
+    chatId <- generate (arbitrary :: Gen Integer)
+    AnyText msgText <- generate arbitrary
+    let response = encode (err :: TG.Error)
+    modelHTTPReply tgConfig response (sendMessage chatId msgText)
       `shouldThrow` App.isAPIError
-  it "throws on unexpected Response" $ do
-    let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
-    modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
+  prop "throws on unexpected Response" $ \(tgConfig, randomResponse) -> do
+    chatId <- generate (arbitrary :: Gen Integer)
+    AnyText msgText <- generate arbitrary
+    let response = L8.pack randomResponse
+    modelHTTPReply tgConfig response (sendMessage chatId msgText)
       `shouldThrow` App.isAPIError
 
 sendInlineKeyboardSpec :: Spec
