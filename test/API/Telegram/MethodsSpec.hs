@@ -20,10 +20,11 @@ import API.Telegram.Methods
 import API.Telegram.Monad (Config (..), TelegramT (..), evalTelegramT)
 import API.Telegram.Types as TG
   ( Chat (Chat),
+    Error,
     InlineKeyboardButton (InlineKeyboardButton),
     InlineKeyboardMarkup (InlineKeyboardMarkup),
     Message (Message, chat, date, from, message_id, text),
-    Update (Update),
+    Update,
   )
 import App.Env as App
   ( Env (Env, envBotReplies, envHTTP, envLogger, envUsersDB),
@@ -31,26 +32,27 @@ import App.Env as App
 import App.Monad as App (App, AppEnv, evalApp)
 import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.Reader (MonadIO (..))
-import Data.Aeson as Aeson (encode)
-import Data.ByteString.Lazy.Char8 as L8 (ByteString)
+import Data.Aeson as Aeson (encode, object, (.=))
+import Data.ByteString.Lazy.Char8 as L8 (ByteString, pack)
 import Data.Maybe (fromJust)
 import qualified Effects.BotReplies as BR
 import Effects.HTTP as HTTP (Request (POST))
 import Effects.Log as Log (MonadLog (..))
 import Network.URI as URI (parseURI)
 import Test.App.Error as App (isAPIError)
+import Test.Arbitrary.Telegram.Types ()
 import qualified Test.Handlers.HTTP as HTTP
 import qualified Test.Handlers.Logger as Logger
 import qualified Test.Handlers.UsersDB as DB
 import Test.Hspec
   ( Spec,
-    anyException,
     context,
     describe,
     it,
     shouldReturn,
     shouldThrow,
   )
+import Test.Hspec.QuickCheck (prop)
 
 spec :: Spec
 spec = do
@@ -101,20 +103,17 @@ instance Log.MonadLog IO where
 
 getUpdatesSpec :: Spec
 getUpdatesSpec = describe "getUpdates" $ do
-  it "returns [Updates] on success" $ do
-    let result1 = "{\"ok\":true,\"result\":[]}"
-        result2 = "{\"ok\":true,\"result\":[{\"update_id\":1},{\"update_id\":123}]}"
-    modelHTTPReply testConfig1 result1 getUpdates
-      `shouldReturn` ([] :: [Update])
-    modelHTTPReply testConfig1 result2 getUpdates
-      `shouldReturn` [Update 1 Nothing Nothing, Update 123 Nothing Nothing]
-  it "throws on Error" $ do
-    let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
-    modelHTTPReply testConfig1 errBS getUpdates
+  prop "returns [Updates] on success" $ \(tgConfig, updates) -> do
+    let response = encode $ object ["ok" .= True, "result" .= updates]
+    modelHTTPReply tgConfig response getUpdates
+      `shouldReturn` (updates :: [Update])
+  prop "throws on Error" $ \(tgConfig, err) -> do
+    let response = encode (err :: TG.Error)
+    modelHTTPReply tgConfig response getUpdates
       `shouldThrow` App.isAPIError
-  it "throws on unexpected Response" $ do
-    let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
-    modelHTTPReply testConfig1 unexpextedRes getUpdates
+  prop "throws on unexpected Response" $ \(tgConfig, randomResponse) -> do
+    let response = L8.pack randomResponse
+    modelHTTPReply tgConfig response getUpdates
       `shouldThrow` App.isAPIError
 
 answerCallbackQuerySpec :: Spec
