@@ -8,14 +8,15 @@ import API.Telegram.Types as TG
   ( CallbackQuery (..),
     Chat (Chat),
     Error (..),
+    InlineKeyboardButton (..),
     Message (..),
     Update (..),
     User (User),
   )
 import Network.URI (URI (uriPath))
 import Test.Arbitrary.String (CleanString (getCleanString))
-import Test.Arbitrary.Text (AnyText (getAnyText))
 import Test.QuickCheck (Arbitrary (arbitrary))
+import Test.Arbitrary.Text (AnyText (getAnyText), ShortCleanText (getShortCleanText))
 
 instance Arbitrary TG.Message where
   arbitrary = do
@@ -47,6 +48,12 @@ instance Arbitrary TG.Update where
     message <- arbitrary
     callback_query <- arbitrary
     pure TG.Update {..}
+
+instance Arbitrary InlineKeyboardButton where
+  arbitrary = do
+    text <- getShortCleanText <$> arbitrary
+    callback_data <- getShortCleanText <$> arbitrary
+    pure TG.InlineKeyboardButton {..}
 
 instance Arbitrary TG.Error where
   arbitrary = do
