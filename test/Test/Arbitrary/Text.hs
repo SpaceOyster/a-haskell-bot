@@ -20,6 +20,12 @@ newtype CleanText = CleanText {getCleanText :: Text}
 instance Arbitrary CleanText where
   arbitrary = CleanText . T.pack . getCleanString <$> arbitrary
 
+newtype ShortCleanText = ShortCleanText {getShortCleanText :: Text}
+  deriving (Show)
+
+instance Arbitrary ShortCleanText where
+  arbitrary = ShortCleanText . T.pack . getCleanString <$> arbitrary
+
 newtype NonEmptyCleanText = NonEmptyCleanText {getNonEmptyCleanText :: Text}
   deriving (Show)
 
