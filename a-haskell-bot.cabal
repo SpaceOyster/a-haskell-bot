@@ -104,6 +104,9 @@ test-suite a-haskell-bot-test
       API.Telegram.MethodsSpec
       API.Telegram.MonadSpec
       API.Telegram.TypesSpec
+      API.Vkontakte.MethodsSpec
+      API.Vkontakte.MonadSpec
+      API.Vkontakte.TypesSpec
       Data.Text.ExtendedSpec
       Effects.BotRepliesSpec
       Effects.UsersDBSpec
