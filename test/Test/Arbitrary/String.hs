@@ -6,6 +6,7 @@ import Test.QuickCheck
     elements,
     listOf,
     listOf1,
+    resize,
     suchThat,
   )
 
@@ -28,6 +29,11 @@ instance Arbitrary CleanString where
   arbitrary = do
     let allowedChars = unreservedURIChars
     CleanString <$> listOf (elements allowedChars)
+
+newtype ShortCleanString = ShortCleanString {getShortCleanString :: String}
+
+instance Arbitrary ShortCleanString where
+  arbitrary = ShortCleanString <$> resize 10 arbitrary
 
 newtype NonEmptyCleanString = NonEmptyCleanString {getNonEmptyCleanString :: String}
   deriving (Show)
