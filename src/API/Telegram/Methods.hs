@@ -34,7 +34,7 @@ import API.Telegram.Types as Types
   )
 import App.Error (apiError)
 import Control.Monad.Catch (MonadThrow (..))
-import Data.Aeson as A (FromJSON, decode, encode, object, (.=))
+import Data.Aeson as A (FromJSON, ToJSON, decode, encode, object, (.=))
 import qualified Data.Text.Extended as T
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
@@ -60,7 +60,7 @@ answerCallbackQuery ::
 answerCallbackQuery c = runMethod (AnswerCallbackQuery c)
 
 newtype MessageID = MessageID {message_id :: Integer}
-  deriving (Eq, Show, Generic, FromJSON)
+  deriving (Eq, Show, Generic, FromJSON, ToJSON)
 
 copyMessage ::
   (MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m) =>
