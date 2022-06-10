@@ -275,20 +275,15 @@ copyMessageSpec_ = describe "copyMessageSpec_" $
 sendMessageSpec_ :: Spec
 sendMessageSpec_ = describe "sendMessageSpec_" $
   context "given chat_id and Text" $
-    it "returns Effects.HTTP.Request for \"sendMessage\" Telegram API method" $ do
-      evalTelegramT testConfig1 (sendMessage_ 11 "some text1")
-        `shouldReturn` HTTP.POST uri1 json1
-      evalTelegramT testConfig2 (sendMessage_ 22 "some text2")
-        `shouldReturn` HTTP.POST uri2 json2
-  where
-    uri1 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY1/sendMessage"
-    json1 = "{\"text\":\"some text1\",\"chat_id\":11}"
-    uri2 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY2/sendMessage"
-    json2 = "{\"text\":\"some text2\",\"chat_id\":22}"
+    prop "returns Effects.HTTP.Request for \"sendMessage\" Telegram API method" $
+      \(tgConfig, tgState, TG.Chat chatId, AnyText msgText) -> do
+        let apiURI_ = TG.apiURI tgState
+            uri = apiURI_ {URI.uriPath = URI.uriPath apiURI_ <> "sendMessage"}
+            json =
+              encode $
+                object ["text" .= msgText, "chat_id" .= chatId]
+        evalTelegramT tgConfig (putTGState tgState >> sendMessage_ chatId msgText)
+          `shouldReturn` HTTP.POST uri json
 
 sendInlineKeyboardSpec_ :: Spec
 sendInlineKeyboardSpec_ = describe "sendInlineKeyboardSpec_" $
