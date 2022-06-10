@@ -118,17 +118,17 @@ getUpdatesSpec = describe "getUpdates" $ do
 
 answerCallbackQuerySpec :: Spec
 answerCallbackQuerySpec = describe "answerCallbackQuerySpec" $ do
-  it "returns True on success" $ do
-    let result = "{\"ok\":true,\"result\":true}"
-    modelHTTPReply testConfig1 result (answerCallbackQuery "query")
+  prop "returns True on success" $ \tgConfig -> do
+    let response = "{\"ok\":true,\"result\":true}"
+    modelHTTPReply tgConfig response (answerCallbackQuery "query")
       `shouldReturn` True
-  it "throws on Error" $ do
-    let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
-    modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
+  prop "throws on Error" $ \(tgConfig, err) -> do
+    let response = encode (err :: TG.Error)
+    modelHTTPReply tgConfig response (answerCallbackQuery "query")
       `shouldThrow` App.isAPIError
-  it "throws on unexpected Response" $ do
-    let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
-    modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
+  prop "throws on unexpected Response" $ \(tgConfig, randomResponse) -> do
+    let response = L8.pack randomResponse
+    modelHTTPReply tgConfig response (answerCallbackQuery "query")
       `shouldThrow` App.isAPIError
 
 copyMessageSpec :: Spec
