@@ -6,7 +6,7 @@
 module API.Telegram.Monad where
 
 import API.Telegram.Types (Update (update_id))
-import App.Error (AppError, apiError)
+import App.Error (AppError)
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.State (MonadState, StateT, evalStateT, get, put)
 import Control.Monad.Trans (MonadTrans)
