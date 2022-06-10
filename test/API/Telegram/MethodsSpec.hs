@@ -4,8 +4,8 @@
 
 module API.Telegram.MethodsSpec (spec) where
 
-import API.Telegram.Methods
-  ( MessageID (MessageID),
+import API.Telegram.Methods as TG
+  ( MessageID,
     answerCallbackQuery,
     answerCallbackQuery_,
     copyMessage,
@@ -53,6 +53,7 @@ import Test.Hspec
     shouldThrow,
   )
 import Test.Hspec.QuickCheck (prop)
+import Test.QuickCheck (Gen, arbitrary, generate, resize)
 
 spec :: Spec
 spec = do
@@ -133,25 +134,25 @@ answerCallbackQuerySpec = describe "answerCallbackQuerySpec" $ do
 
 copyMessageSpec :: Spec
 copyMessageSpec = describe "copyMessageSpec" $ do
-  it "returns JSON with only `message_id :: Integer` field" $ do
-    let result = "{\"ok\":true,\"result\":{\"message_id\":123}}"
-        testMsg =
-          Message
-            { message_id = 1,
-              from = Nothing,
-              chat = Chat 321,
-              date = 12,
-              text = Just "whatever"
-            }
-    modelHTTPReply testConfig1 result (copyMessage testMsg)
-      `shouldReturn` MessageID 123
-  it "throws on Error" $ do
-    let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
-    modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
+  prop "returns JSON with only `message_id :: Integer` field" $
+    \(tgConfig, tgMsg) -> do
+      resultMsgId <- generate $ resize 10 (arbitrary :: Gen MessageID)
+      let result =
+            encode . object $
+              [ "ok" .= True,
+                "result" .= resultMsgId
+              ]
+      modelHTTPReply tgConfig result (copyMessage tgMsg)
+        `shouldReturn` resultMsgId
+  prop "throws on Error" $ \(tgConfig, err) -> do
+    tgMsg <- generate (arbitrary :: Gen TG.Message)
+    let response = encode (err :: TG.Error)
+    modelHTTPReply tgConfig response (copyMessage tgMsg)
       `shouldThrow` App.isAPIError
-  it "throws on unexpected Response" $ do
-    let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
-    modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
+  prop "throws on unexpected Response" $ \(tgConfig, randomResponse) -> do
+    tgMsg <- generate (arbitrary :: Gen TG.Message)
+    let response = L8.pack randomResponse
+    modelHTTPReply tgConfig response (copyMessage tgMsg)
       `shouldThrow` App.isAPIError
 
 sendMessageSpec :: Spec
