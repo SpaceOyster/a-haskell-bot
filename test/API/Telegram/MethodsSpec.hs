@@ -246,20 +246,13 @@ getUpdatesSpec_ = describe "getUpdates_" $ do
 answerCallbackQuerySpec_ :: Spec
 answerCallbackQuerySpec_ = describe "answerCallbackQuerySpec_" $
   context "given callback query id" $
-    it "returns Effects.HTTP.Request for \"answerCallbackQuery\" Telegram API method" $ do
-      evalTelegramT testConfig1 (answerCallbackQuery_ "queryID42")
-        `shouldReturn` HTTP.POST uri1 json1
-      evalTelegramT testConfig2 (answerCallbackQuery_ "queryID17")
-        `shouldReturn` HTTP.POST uri2 json2
-  where
-    uri1 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY1/answerCallbackQuery"
-    json1 = "{\"callback_query_id\":\"queryID42\"}"
-    uri2 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY2/answerCallbackQuery"
-    json2 = "{\"callback_query_id\":\"queryID17\"}"
+    prop "returns Effects.HTTP.Request for \"answerCallbackQuery\" Telegram API method" $
+      \(tgConfig, tgState, ShortCleanText cbQuery) -> do
+        let apiURI_ = TG.apiURI tgState
+            uri = apiURI_ {URI.uriPath = URI.uriPath apiURI_ <> "answerCallbackQuery"}
+            json = encode $ object ["callback_query_id" .= cbQuery]
+        evalTelegramT tgConfig (putTGState tgState >> answerCallbackQuery_ cbQuery)
+          `shouldReturn` HTTP.POST uri json
 
 copyMessageSpec_ :: Spec
 copyMessageSpec_ = describe "copyMessageSpec_" $
