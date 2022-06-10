@@ -257,38 +257,20 @@ answerCallbackQuerySpec_ = describe "answerCallbackQuerySpec_" $
 copyMessageSpec_ :: Spec
 copyMessageSpec_ = describe "copyMessageSpec_" $
   context "given a Message" $
-    it "returns Effects.HTTP.Request for \"copyMessage\" Telegram API method" $ do
-      evalTelegramT testConfig1 (copyMessage_ msg1)
-        `shouldReturn` HTTP.POST uri1 json1
-      evalTelegramT testConfig2 (copyMessage_ msg2)
-        `shouldReturn` HTTP.POST uri2 json2
-  where
-    uri1 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY1/copyMessage"
-    chat1 = Chat 11
-    msg1 =
-      Message
-        { message_id = 123,
-          from = Nothing,
-          chat = chat1,
-          date = 321,
-          text = Just "text1"
-        }
-    json1 = "{\"from_chat_id\":11,\"message_id\":123,\"chat_id\":11}"
-    uri2 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY2/copyMessage"
-    chat2 = Chat 222
-    msg2 =
-      Message
-        { message_id = 432,
-          from = Nothing,
-          chat = chat2,
-          date = 321,
-          text = Just "text1"
-        }
-    json2 = "{\"from_chat_id\":222,\"message_id\":432,\"chat_id\":222}"
+    prop "returns Effects.HTTP.Request for \"copyMessage\" Telegram API method" $
+      \(tgConfig, tgState, tgMsg) -> do
+        let apiURI_ = TG.apiURI tgState
+            uri = apiURI_ {URI.uriPath = URI.uriPath apiURI_ <> "copyMessage"}
+            chatId = TG.chat_id (TG.chat tgMsg)
+            json =
+              encode $
+                object
+                  [ "from_chat_id" .= chatId,
+                    "message_id" .= TG.message_id tgMsg,
+                    "chat_id" .= chatId
+                  ]
+        evalTelegramT tgConfig (putTGState tgState >> copyMessage_ tgMsg)
+          `shouldReturn` HTTP.POST uri json
 
 sendMessageSpec_ :: Spec
 sendMessageSpec_ = describe "sendMessageSpec_" $
