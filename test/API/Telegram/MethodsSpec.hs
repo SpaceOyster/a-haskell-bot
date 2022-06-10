@@ -18,12 +18,11 @@ import API.Telegram.Methods as TG
     sendMessage,
     sendMessage_,
   )
-import API.Telegram.Monad (Config (..), TelegramT (..), evalTelegramT)
+import API.Telegram.Monad as TG (Config (..), TGState (..), TelegramT (..), evalTelegramT, putTGState)
 import API.Telegram.Types as TG
   ( Chat (Chat, chat_id),
     Error,
-    InlineKeyboardButton (InlineKeyboardButton),
-    InlineKeyboardMarkup (InlineKeyboardMarkup),
+    InlineKeyboardMarkup,
     Message (Message, chat, date, from, message_id, reply_markup, text),
     Update,
     User,
@@ -36,11 +35,10 @@ import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.Reader (MonadIO (..))
 import Data.Aeson as Aeson (encode, object, (.=))
 import Data.ByteString.Lazy.Char8 as L8 (ByteString, pack)
-import Data.Maybe (fromJust)
 import qualified Effects.BotReplies as BR
 import Effects.HTTP as HTTP (Request (POST))
 import Effects.Log as Log (MonadLog (..))
-import Network.URI as URI (URI (uriPath), parseURI)
+import Network.URI as URI (URI (uriPath))
 import Test.App.Error as App (isAPIError)
 import Test.Arbitrary.Telegram.Types ()
 import Test.Arbitrary.Text (AnyText (AnyText), ShortCleanText (ShortCleanText))
@@ -51,7 +49,6 @@ import Test.Hspec
   ( Spec,
     context,
     describe,
-    it,
     shouldReturn,
     shouldThrow,
   )
@@ -70,12 +67,6 @@ spec = do
   copyMessageSpec_
   sendMessageSpec_
   sendInlineKeyboardSpec_
-
-testConfig1 :: Config
-testConfig1 = Config "KEY1" 100
-
-testConfig2 :: Config
-testConfig2 = Config "KEY2" 22
 
 emptyReplies :: BR.Replies
 emptyReplies = BR.Replies "" "" "" "" ""
@@ -288,27 +279,16 @@ sendMessageSpec_ = describe "sendMessageSpec_" $
 sendInlineKeyboardSpec_ :: Spec
 sendInlineKeyboardSpec_ = describe "sendInlineKeyboardSpec_" $
   context "given chat_id, prompt text and keyboard markup" $
-    it "returns Effects.HTTP.Request for \"sendInlineKeyboard\" Telegram API method" $ do
-      evalTelegramT testConfig1 (sendInlineKeyboard_ 111 "some text1" kbd1)
-        `shouldReturn` HTTP.POST uri1 json1
-      evalTelegramT testConfig2 (sendInlineKeyboard_ 222 "some text2" kbd2)
-        `shouldReturn` HTTP.POST uri2 json2
-  where
-    uri1 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY1/sendMessage"
-    kbd1 =
-      InlineKeyboardMarkup
-        [ [InlineKeyboardButton "abc" "abc1", InlineKeyboardButton "123" "1231"],
-          [InlineKeyboardButton "some" "some"]
-        ]
-    json1 = "{\"text\":\"some text1\",\"chat_id\":111,\"reply_markup\":" <> Aeson.encode kbd1 <> "}"
-    uri2 =
-      fromJust $
-        URI.parseURI "https://api.telegram.org/botKEY2/sendMessage"
-    kbd2 =
-      InlineKeyboardMarkup
-        [ [InlineKeyboardButton "32" "322"],
-          [InlineKeyboardButton "abc" "abc1", InlineKeyboardButton "some" "some"]
-        ]
-    json2 = "{\"text\":\"some text2\",\"chat_id\":222,\"reply_markup\":" <> Aeson.encode kbd2 <> "}"
+    prop "returns Effects.HTTP.Request for \"sendInlineKeyboard\" Telegram API method" $ do
+      \(tgConfig, tgState, TG.Chat chatId, AnyText msgText, kbdMarkup) -> do
+        let apiURI_ = TG.apiURI tgState
+            uri = apiURI_ {URI.uriPath = URI.uriPath apiURI_ <> "sendMessage"}
+            json =
+              encode $
+                object
+                  [ "text" .= msgText,
+                    "chat_id" .= chatId,
+                    "reply_markup" .= (kbdMarkup :: TG.InlineKeyboardMarkup)
+                  ]
+        evalTelegramT tgConfig (putTGState tgState >> sendInlineKeyboard_ chatId msgText kbdMarkup)
+          `shouldReturn` HTTP.POST uri json
