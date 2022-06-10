@@ -197,31 +197,37 @@ sendMessageSpec = describe "sendMessageSpec" $ do
 sendInlineKeyboardSpec :: Spec
 sendInlineKeyboardSpec = describe "sendInlineKeyboardSpec" $ do
   context "given Chat ID, Text and KeyboardLayout, sends inline keyboard message" $
-    it "returns Message on success" $ do
-      modelHTTPReply testConfig1 result1 (sendInlineKeyboard 111 "prompt" kbd1) `shouldReturn` msg1
-  it "throws on Error" $ do
-    let errBS = "{\"error_code\":501,\"description\":\"something bad happened\"}"
-    modelHTTPReply testConfig1 errBS (answerCallbackQuery "query")
+    prop "returns Message on success" $
+      \(tgConfig, chatId, AnyText promptText, kbdMarkup) -> do
+        message_id <- generate (arbitrary :: Gen Integer)
+        date <- generate (arbitrary :: Gen Integer)
+        from <- generate (arbitrary :: Gen (Maybe TG.User))
+        let resultMsg =
+              TG.Message
+                { message_id,
+                  from,
+                  TG.chat = Chat chatId,
+                  date,
+                  TG.text = Just promptText,
+                  TG.reply_markup = Just kbdMarkup
+                }
+            response = encode . object $ ["ok" .= True, "result" .= resultMsg]
+        modelHTTPReply tgConfig response (sendInlineKeyboard chatId promptText kbdMarkup)
+          `shouldReturn` resultMsg
+  prop "throws on Error" $ \(tgConfig, err) -> do
+    chatId <- generate (arbitrary :: Gen Integer)
+    AnyText promptText <- generate arbitrary
+    kbdMarkup <- generate (arbitrary :: Gen InlineKeyboardMarkup)
+    let response = encode (err :: TG.Error)
+    modelHTTPReply tgConfig response (sendInlineKeyboard chatId promptText kbdMarkup)
       `shouldThrow` App.isAPIError
-  it "throws on unexpected Response" $ do
-    let unexpextedRes = "{\"ok\":true,\"result\":\"whatever\"}"
-    modelHTTPReply testConfig1 unexpextedRes (answerCallbackQuery "query")
+  prop "throws on unexpected Response" $ \(tgConfig, randomResponse) -> do
+    chatId <- generate (arbitrary :: Gen Integer)
+    AnyText promptText <- generate arbitrary
+    kbdMarkup <- generate (arbitrary :: Gen InlineKeyboardMarkup)
+    let response = L8.pack randomResponse
+    modelHTTPReply tgConfig response (sendInlineKeyboard chatId promptText kbdMarkup)
       `shouldThrow` App.isAPIError
-  where
-    kbd1 =
-      InlineKeyboardMarkup
-        [ [InlineKeyboardButton "abc" "abc1", InlineKeyboardButton "123" "1231"],
-          [InlineKeyboardButton "some" "some"]
-        ]
-    result1 = "{\"ok\":true,\"result\":{\"message_id\":1,\"date\":12,\"text\":\"some text1\",\"chat\":{\"id\":111},\"reply_markup\":" <> Aeson.encode kbd1 <> "}}"
-    msg1 =
-      Message
-        { message_id = 1,
-          from = Nothing,
-          chat = Chat 111,
-          date = 12,
-          text = Just "some text1"
-        }
 
 getUpdatesSpec_ :: Spec
 getUpdatesSpec_ = describe "getUpdates_" $ do
