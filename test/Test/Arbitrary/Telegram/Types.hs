@@ -3,6 +3,7 @@
 
 module Test.Arbitrary.Telegram.Types where
 
+import API.Telegram.Methods (MessageID (..))
 import API.Telegram.Monad (Config (..), TGState (..), tgAPIURI)
 import API.Telegram.Types as TG
   ( CallbackQuery (..),
@@ -78,3 +79,6 @@ instance Arbitrary TGState where
     let apiURI = tgAPIURI {uriPath = uriPath tgAPIURI <> key <> "/"}
     timeout <- arbitrary
     pure TGState {..}
+
+instance Arbitrary MessageID where
+  arbitrary = MessageID <$> arbitrary
