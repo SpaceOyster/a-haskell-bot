@@ -109,7 +109,7 @@ initiate_ ::
   m VKState
 initiate_ cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
-  apiURI <- makeBaseURI cfg
+  let apiURI = makeBaseURI cfg
   let wait = min 90 (max 1 $ wait_seconds (cfg :: Config))
   putVKState $ emptyVKState {apiURI, wait}
   initiatePollServer
@@ -119,18 +119,6 @@ apiMethod method qps = do
   st <- getVKState
   pure $ flip URI.addQueryParams qps . URI.addPath (apiURI st) $ T.unpack method
 
-makeBaseURI :: MonadThrow m => Config -> m URI.URI
-makeBaseURI Config {..} =
-  maybe ex pure . URI.parseURI . mconcat $
-    [ "https://api.vk.com/method/?v=",
-      v,
-      "&access_token=",
-      key,
-      "&group_id=",
-      show group_id
-    ]
-  where
-    ex = throwM $ apiError "Unable to parse Vkontakte API URL"
 vkAPIURI :: URI.URI
 vkAPIURI =
   URI.URI
@@ -147,6 +135,14 @@ vkAPIURI =
       URI.uriFragment = ""
     }
 
+makeBaseURI :: Config -> URI.URI
+makeBaseURI Config {..} =
+  URI.addQueryParams
+    vkAPIURI
+    [ "v" URI.:=: v,
+      "access_token" URI.:=: key,
+      "group_id" URI.:=: show group_id
+    ]
 
 initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m VKState
 initiatePollServer = do
@@ -174,7 +170,8 @@ getLongPollServer = do
 makePollURI :: MonadThrow m => PollServer -> m URI.URI
 makePollURI PollServer {key, server} = do
   maybe ex pure . URI.parseURI $
-    T.unpack server <> "?act=a_check&key="
+    T.unpack server
+      <> "?act=a_check&key="
       <> T.unpack key
   where
     ex = throwM $ apiError "Unable to parse Vkontakte long poll URL"
