@@ -131,6 +131,22 @@ makeBaseURI Config {..} =
     ]
   where
     ex = throwM $ apiError "Unable to parse Vkontakte API URL"
+vkAPIURI :: URI.URI
+vkAPIURI =
+  URI.URI
+    { URI.uriScheme = "https:",
+      URI.uriAuthority =
+        Just $
+          URI.URIAuth
+            { URI.uriUserInfo = "",
+              URI.uriRegName = "api.vk.com",
+              URI.uriPort = ""
+            },
+      URI.uriPath = "/method/",
+      URI.uriQuery = "",
+      URI.uriFragment = ""
+    }
+
 
 initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m VKState
 initiatePollServer = do
