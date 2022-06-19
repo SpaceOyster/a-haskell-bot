@@ -230,9 +230,8 @@ data Response
 instance A.FromJSON Response where
   parseJSON =
     A.withObject "FromJSON API.Vkontakte.Response" $ \o -> do
-      errO <- o A..:? "error" A..!= mempty
       asum
-        [ ErrorResponse <$> A.parseJSON (A.Object errO),
+        [ ErrorResponse <$> o A..: "error",
           ResponseWith <$> o A..: "response"
         ]
 
