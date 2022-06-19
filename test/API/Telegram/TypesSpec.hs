@@ -43,7 +43,7 @@ fromResponseSpec = describe "fromResponse" $ do
         fromResponse (ResponseWith tgUpdJSON) `shouldReturn` tgUpd
         fromResponse (ResponseWith tgUpdsJSON) `shouldReturn` tgUpds
   context "when json can't be parsed to expected data type" $
-    prop "throws error" $ \(tgMsg, tgCB, tgUpd, tgUpds) -> do
+    prop "throws APIError" $ \(tgMsg, tgCB, tgUpd, tgUpds) -> do
       let tgMsgJSON = Aeson.toJSON (tgMsg :: TG.Message)
       let tgCBJSON = Aeson.toJSON (tgCB :: TG.CallbackQuery)
       let tgUpdJSON = Aeson.toJSON (tgUpd :: TG.Update)
@@ -57,5 +57,5 @@ fromResponseSpec = describe "fromResponse" $ do
       (fromResponse $ ResponseWith tgUpdsJSON :: IO TG.User)
         `shouldThrow` App.isAPIError
   context "when Telegram API responded with error" $
-    prop "throws error" $ \tgError ->
+    prop "throws APIError" $ \tgError ->
       (fromResponse $ ErrorResponse tgError :: IO Bool) `shouldThrow` App.isAPIError
