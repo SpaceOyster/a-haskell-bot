@@ -116,6 +116,7 @@ test-suite a-haskell-bot-test
       Test.Arbitrary.Telegram.Types
       Test.Arbitrary.Text
       Test.Arbitrary.URI
+      Test.Arbitrary.Vkontakte.Types
       Test.Handlers.HTTP
       Test.Handlers.Logger
       Test.Handlers.UsersDB
