@@ -13,6 +13,7 @@ module API.Vkontakte.Methods
     getUpdates_,
     sendMessageEventAnswer_,
     sendMessageWith,
+    sendTextMessage_,
     copyMessage_,
     sendKeyboard_,
   )
