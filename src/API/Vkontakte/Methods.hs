@@ -1,5 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
@@ -68,9 +69,7 @@ getUpdates ::
   (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
   m [GroupEvent]
 getUpdates = do
-  st <- getVKState
-  Log.logDebug $ "last recieved Update TS: " <> T.tshow (lastTS st)
-  req <- getUpdates_ st
+  req <- getUpdates_
   json <- HTTP.sendRequest req
   Log.logDebug $ "Got response from Poll server: " <> T.lazyDecodeUtf8 json
   res <- maybe (ex json) rememberLastUpdate $ A.decode json
@@ -106,8 +105,10 @@ sendKeyboard ::
   m A.Value
 sendKeyboard peer_id prompt kbd = runMethod (SendKeyboard peer_id prompt kbd)
 
-getUpdates_ :: (MonadVkontakte m) => VKState -> m HTTP.Request
-getUpdates_ VKState {..} =
+getUpdates_ :: (MonadVkontakte m, Log.MonadLog m) => m HTTP.Request
+getUpdates_ = do
+  VKState {lastTS, wait, pollURI} <- getVKState
+  Log.logDebug $ "last recieved Update TS: " <> T.tshow lastTS
   pure . HTTP.GET . URI.addQueryParams pollURI $
     [ "ts" URI.:=: T.unpack lastTS,
       "wait" URI.:=: show wait
