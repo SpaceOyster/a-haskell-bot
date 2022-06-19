@@ -30,7 +30,7 @@ data VKState = VKState
     apiURI :: URI.URI,
     wait :: Int
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 class (Monad m) => MonadVkontakte m where
   getVKState :: m VKState
