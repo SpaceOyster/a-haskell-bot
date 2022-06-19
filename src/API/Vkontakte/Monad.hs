@@ -87,10 +87,10 @@ evalVkontakteT ::
   Config ->
   VkontakteT m a ->
   m a
-evalVkontakteT cfg t = flip evalStateT emptyVKState $
+evalVkontakteT cfg action = flip evalStateT emptyVKState $
   unVkontakteT $ do
     st <- initiate cfg
-    put st >> t
+    put st >> action
 
 initiate ::
   (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
