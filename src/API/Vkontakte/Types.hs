@@ -37,26 +37,32 @@ data Message = Message
     msg_keyboard :: Maybe Keyboard,
     msg_is_cropped :: Maybe Bool
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance A.FromJSON Message where
   parseJSON = A.genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 4}
+
+instance A.ToJSON Message where
+  toJSON = A.genericToJSON A.defaultOptions {A.fieldLabelModifier = drop 4}
 
 data MediaDoc = MediaDoc
   { mdoc_id :: Integer,
     mdoc_owner_id :: Integer,
     mdoc_access_key :: Maybe T.Text
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance A.FromJSON MediaDoc where
   parseJSON = A.genericParseJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
+
+instance A.ToJSON MediaDoc where
+  toJSON = A.genericToJSON A.defaultOptions {A.fieldLabelModifier = drop 5}
 
 data Sticker = Sticker
   { product_id :: Integer,
     sticker_id :: Integer
   }
-  deriving (Show, Generic, A.FromJSON)
+  deriving (Eq, Show, Generic, A.FromJSON, A.ToJSON)
 
 data Attachment
   = Photo MediaDoc
@@ -64,7 +70,7 @@ data Attachment
   | Video MediaDoc
   | Doc MediaDoc
   | StickerA Sticker
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance A.FromJSON Attachment where
   parseJSON =
@@ -77,6 +83,16 @@ instance A.FromJSON Attachment where
         "video" -> Video <$> o A..: media_type
         "doc" -> Doc <$> o A..: media_type
         _ -> fail "Expected Attachment"
+
+instance A.ToJSON Attachment where
+  toJSON att = case att of
+    Photo md -> helper "photo" md
+    Audio md -> helper "audio" md
+    Video md -> helper "video" md
+    Doc md -> helper "doc" md
+    StickerA st -> helper "sticker" st
+    where
+      helper typ atchm = A.object ["type" A..= typ, typ A..= atchm]
 
 attachmentToQuery :: Attachment -> URI.QueryParam
 attachmentToQuery a =
@@ -101,12 +117,12 @@ data CallbackEvent = CallbackEvent
     payload :: A.Value,
     conversation_message_id :: Integer
   }
-  deriving (Show, Generic, A.FromJSON)
+  deriving (Eq, Show, Generic, A.FromJSON, A.ToJSON)
 
 data GroupEvent
   = MessageNew Message
   | MessageEvent CallbackEvent
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance A.FromJSON GroupEvent where
   parseJSON =
@@ -117,25 +133,33 @@ instance A.FromJSON GroupEvent where
         "message_event" -> MessageEvent <$> o A..: "object"
         _ -> fail "Unknown GroupEvent type"
 
+instance A.ToJSON GroupEvent where
+  toJSON gEvnt = case gEvnt of
+    MessageNew mes -> helper "message_new" mes
+    MessageEvent ce -> helper "message_event" ce
+    where
+      helper :: (A.ToJSON a) => String -> a -> A.Value
+      helper typ obj = A.object ["type" A..= typ, "object" A..= obj]
+
 data Keyboard = Keyboard
   { one_time :: Bool,
     buttons :: [[KeyboardButton]],
     inline :: Bool
   }
-  deriving (Show, Generic, A.ToJSON, A.FromJSON)
+  deriving (Eq, Show, Generic, A.ToJSON, A.FromJSON)
 
 data KeyboardButton = KeyboardButton
   { action :: KeyboardAction,
     color :: ButtonColor
   }
-  deriving (Show, Generic, A.ToJSON, A.FromJSON)
+  deriving (Eq, Show, Generic, A.ToJSON, A.FromJSON)
 
 data ButtonColor
   = Primary
   | Secondary
   | Negative
   | Positive
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance A.ToJSON ButtonColor where
   toJSON = A.genericToJSON options
@@ -157,7 +181,7 @@ data KeyboardAction = KeyboardAction
     action_payload :: Maybe A.Value,
     action_link :: Maybe T.Text
   }
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance A.ToJSON KeyboardAction where
   toJSON = A.genericToJSON options
@@ -176,7 +200,7 @@ data KeyboardActionType
   | OpenLink
   | Location
   | Callback
-  deriving (Show, Generic)
+  deriving (Eq, Show, Generic)
 
 instance A.ToJSON KeyboardActionType where
   toJSON = A.genericToJSON options
@@ -197,22 +221,22 @@ data PollServer = PollServer
     server :: T.Text,
     ts :: T.Text
   }
-  deriving (Show, Generic, A.FromJSON)
+  deriving (Eq, Show, Generic, A.FromJSON, A.ToJSON)
 
 data Error = Error
   { error_code :: Integer,
     error_msg :: T.Text
   }
-  deriving (Show, Generic, A.FromJSON)
+  deriving (Eq, Show, Generic, A.FromJSON, A.ToJSON)
 
 data Poll = Poll
   { ts :: T.Text,
     updates :: [GroupEvent]
   }
-  deriving (Show, Generic, A.FromJSON)
+  deriving (Eq, Show, Generic, A.FromJSON, A.ToJSON)
 
 data PollResponse = PollResponse Poll | PollError Error
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance A.FromJSON PollResponse where
   parseJSON =
@@ -221,6 +245,10 @@ instance A.FromJSON PollResponse where
         [ PollError <$> o A..: "failed",
           PollResponse <$> A.parseJSON (A.Object o)
         ]
+
+instance A.ToJSON PollResponse where
+  toJSON (PollResponse p) = A.toJSON p
+  toJSON (PollError err) = A.object ["failed" A..= err]
 
 data Response
   = ErrorResponse Error
@@ -235,6 +263,10 @@ instance A.FromJSON Response where
           ResponseWith <$> o A..: "response"
         ]
 
+instance A.ToJSON Response where
+  toJSON (ResponseWith v) = A.object ["response" A..= v]
+  toJSON (ErrorResponse v) = A.object ["error" A..= v]
+
 data PollInitResponse
   = PollInitServer PollServer
   | PollInitError Error
@@ -247,6 +279,10 @@ instance A.FromJSON PollInitResponse where
         [ PollInitError <$> o A..: "error",
           PollInitServer <$> o A..: "response"
         ]
+
+instance A.ToJSON PollInitResponse where
+  toJSON (PollInitServer pollServer) = A.object ["response" A..= pollServer]
+  toJSON (PollInitError err) = A.object ["error" A..= err]
 
 extractUpdates :: (MonadThrow m) => PollResponse -> m [GroupEvent]
 extractUpdates (PollResponse poll) = pure $ updates poll
