@@ -116,16 +116,16 @@ getUpdates_ = do
 
 sendMessageEventAnswer_ :: (MonadVkontakte m) => CallbackEvent -> T.Text -> m HTTP.Request
 sendMessageEventAnswer_ CallbackEvent {..} prompt =
-  fmap HTTP.GET $
-    apiMethod "messages.sendMessageEventAnswer" $
+  HTTP.GET <$> apiMethod "messages.sendMessageEventAnswer" query
+  where
+    mkJSON :: T.Text -> A.Value
+    mkJSON p = A.object ["type" A..= ("show_snackbar" :: T.Text), "text" A..= p]
+    query =
       [ "event_id" URI.:=: T.unpack event_id,
         "user_id" URI.:=: show user_id,
         "peer_id" URI.:=: show peer_id,
         "event_data" URI.:=: L8.unpack . A.encode $ mkJSON prompt
       ]
-  where
-    mkJSON :: T.Text -> A.Value
-    mkJSON p = A.object ["type" A..= ("show_snackbar" :: T.Text), "text" A..= p]
 
 sendMessageWith ::
   (MonadVkontakte m) => Integer -> T.Text -> [URI.QueryParam] -> m HTTP.Request
