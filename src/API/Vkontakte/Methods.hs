@@ -10,6 +10,11 @@ module API.Vkontakte.Methods
     sendTextMessage,
     copyMessage,
     sendKeyboard,
+    getUpdates_,
+    sendMessageEventAnswer_,
+    sendMessageWith,
+    copyMessage_,
+    sendKeyboard_,
   )
 where
 
