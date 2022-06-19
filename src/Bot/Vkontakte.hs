@@ -1,4 +1,3 @@
-{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
@@ -44,7 +43,15 @@ import qualified Bot
 import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch (..), MonadThrow (..))
 import Control.Monad.Trans (MonadTrans, lift)
-import qualified Data.Aeson as A (FromJSON (..), ToJSON (..), parseJSON)
+import qualified Data.Aeson as A
+  ( FromJSON (..),
+    ToJSON (..),
+    object,
+    parseJSON,
+    withObject,
+    (.:),
+    (.=),
+  )
 import qualified Data.Aeson.Types as A (parseMaybe)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
@@ -52,7 +59,6 @@ import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Effects.UsersDB as DB
-import GHC.Generics (Generic)
 
 newtype VkontakteBot m a = VkontakteBot {unVkontakteBot :: VK.VkontakteT m a}
   deriving newtype
@@ -187,21 +193,23 @@ toBotEntity (VK.MessageNew m)
   | otherwise = pure $ Bot.EMessage m
 toBotEntity (VK.MessageEvent c) = pure $ Bot.ECallback c
 
-newtype CallbackQueryJSON = CallbackQueryJSON {unCallbackQueryJSON :: T.Text}
-  deriving stock (Generic)
-  deriving newtype (A.ToJSON, A.FromJSON)
+newtype QueryDataJSON = QueryDataJSON {unQueryDataJSON :: Bot.QueryData}
 
-wrapCallbackQuery :: Bot.QueryData -> CallbackQueryJSON
-wrapCallbackQuery = CallbackQueryJSON . Bot.encodeQuery
+instance A.ToJSON QueryDataJSON where
+  toJSON qdJSON = do
+    let qd = unQueryDataJSON qdJSON
+    case qd of
+      Bot.QDRepeat i -> A.object ["repeat" A..= i]
 
-unwrapCallbackQuery :: CallbackQueryJSON -> Maybe Bot.QueryData
-unwrapCallbackQuery = Bot.parseQuery . unCallbackQueryJSON
+instance A.FromJSON QueryDataJSON where
+  parseJSON = A.withObject "Bot.Vkontakte.QueryDataJSON" $ \o ->
+    QueryDataJSON . Bot.QDRepeat <$> o A..: "repeat"
 
 qualifyQuery :: (MonadThrow m) => VK.CallbackEvent -> m Bot.QueryData
 qualifyQuery cq = do
-  let cbJSON = A.parseMaybe A.parseJSON $ VK.payload cq
-  case cbJSON >>= unwrapCallbackQuery of
-    Just qdata -> pure qdata
+  let qdJSON = A.parseMaybe A.parseJSON $ VK.payload cq
+  case qdJSON of
+    Just qdata -> pure $ unQueryDataJSON qdata
     Nothing -> throwM $ botError $ "Unknown CallbackQuery type: " <> T.tshow cq
 
 respondToCallback ::
@@ -231,7 +239,7 @@ repeatKeyboard =
         { action_type = VK.Callback,
           action_label = Just $ T.tshow i,
           action_payload =
-            Just . A.toJSON $ wrapCallbackQuery (Bot.QDRepeat i),
+            Just . A.toJSON $ QueryDataJSON (Bot.QDRepeat i),
           action_link = Nothing
         }
 
