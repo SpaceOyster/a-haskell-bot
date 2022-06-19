@@ -3,8 +3,15 @@
 
 module Test.Arbitrary.URI where
 
-import Network.URI (URI (..), URIAuth (..))
-import Test.Arbitrary.String (CleanString (getCleanString))
+import Network.URI.Extended
+  ( QueryParam (..),
+    URI (..),
+    URIAuth (..),
+  )
+import Test.Arbitrary.String
+  ( CleanString (getCleanString),
+    NonEmptyCleanString (getNonEmptyCleanString),
+  )
 import Test.QuickCheck (Arbitrary (arbitrary), chooseInteger)
 
 instance Arbitrary URI where
@@ -29,3 +36,9 @@ instance Arbitrary URIAuth where
     uriRegName <- getCleanString <$> arbitrary
     uriPort <- (':' :) . show <$> chooseInteger (0, 65535)
     pure $ URIAuth {uriUserInfo, uriRegName, uriPort}
+
+instance Arbitrary QueryParam where
+  arbitrary = do
+    key <- getNonEmptyCleanString <$> arbitrary
+    value <- getNonEmptyCleanString <$> arbitrary
+    pure (key :=: value)

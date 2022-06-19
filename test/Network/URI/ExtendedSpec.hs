@@ -43,12 +43,6 @@ spec = do
   addQueryParamsSpec
   addPathSpec
 
-instance Arbitrary QueryParam where
-  arbitrary = do
-    key <- getNonEmptyCleanString <$> arbitrary
-    value <- getNonEmptyCleanString <$> arbitrary
-    pure (key :=: value)
-
 addPathSpec :: Spec
 addPathSpec =
   describe "addPath" $ do
