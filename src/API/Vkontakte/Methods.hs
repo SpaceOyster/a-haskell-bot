@@ -86,20 +86,20 @@ sendMessageEventAnswer ::
   (MonadVkontakte m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   CallbackEvent ->
   T.Text ->
-  m A.Value
+  m Integer
 sendMessageEventAnswer cbE prompt = runMethod (SendMessageEventAnswer cbE prompt)
 
 sendTextMessage ::
   (MonadVkontakte m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   Integer ->
   T.Text ->
-  m A.Value
+  m Integer
 sendTextMessage peer_id text = runMethod (SendTextMessage peer_id text)
 
 copyMessage ::
   (MonadVkontakte m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
   Message ->
-  m A.Value
+  m Integer
 copyMessage msg = runMethod (CopyMessage msg)
 
 sendKeyboard ::
@@ -107,7 +107,7 @@ sendKeyboard ::
   Integer ->
   T.Text ->
   Keyboard ->
-  m A.Value
+  m Integer
 sendKeyboard peer_id prompt kbd = runMethod (SendKeyboard peer_id prompt kbd)
 
 getUpdates_ :: (MonadVkontakte m, Log.MonadLog m) => m HTTP.Request
