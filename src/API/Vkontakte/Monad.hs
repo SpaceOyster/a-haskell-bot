@@ -147,10 +147,11 @@ makeBaseURI Config {..} =
 initiatePollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m VKState
 initiatePollServer = do
   st <- getVKState
-  ps@PollServer {ts} <- getLongPollServer
+  ps <- getLongPollServer
   pollURI <- makePollURI ps
-  let pollCreds = st {lastTS = ts, pollURI}
-  pure pollCreds
+  let lastTS = ts (ps :: PollServer)
+  let newVKState = st {lastTS, pollURI}
+  pure newVKState
 
 getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m PollServer
 getLongPollServer = do
