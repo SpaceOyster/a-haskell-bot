@@ -243,9 +243,8 @@ data PollInitResponse
 instance A.FromJSON PollInitResponse where
   parseJSON =
     A.withObject "FromJSON API.Vkontakte.PollInitResponse" $ \o -> do
-      errO <- o A..:? "error" A..!= mempty
       asum
-        [ PollInitError <$> A.parseJSON (A.Object errO),
+        [ PollInitError <$> o A..: "error",
           PollInitServer <$> o A..: "response"
         ]
 
