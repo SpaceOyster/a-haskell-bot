@@ -32,12 +32,13 @@ import App.Env as App
   )
 import App.Monad as App (App, AppEnv, evalApp)
 import Control.Monad.Catch (MonadCatch (..))
-import Control.Monad.Reader (MonadIO (..))
+import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson as Aeson (encode, object, (.=))
 import Data.ByteString.Lazy.Char8 as L8 (ByteString, pack)
 import qualified Effects.BotReplies as BR
 import Effects.HTTP as HTTP (Request (POST))
 import Effects.Log as Log (MonadLog (..))
+import qualified Handlers.HTTP as HTTP (Handle)
 import Network.URI as URI (URI (uriPath))
 import Test.App.Error as App (isAPIError)
 import Test.Arbitrary.Telegram.Types ()
@@ -71,21 +72,22 @@ spec = do
 emptyReplies :: BR.Replies
 emptyReplies = BR.Replies "" "" "" "" ""
 
-httpTestEnv :: (MonadIO m) => L8.ByteString -> m App.AppEnv
-httpTestEnv bs = do
+httpTestEnv :: (MonadIO m) => HTTP.Handle -> m App.AppEnv
+httpTestEnv http = do
   db <- DB.new
   pure
     Env
       { envLogger = Logger.new,
-        envHTTP = HTTP.new bs,
+        envHTTP = http,
         envUsersDB = db,
         envBotReplies = emptyReplies
       }
 
 modelHTTPReply :: (MonadIO m) => Config -> L8.ByteString -> TelegramT App a -> m a
-modelHTTPReply apiCfg replyBS action = do
-  env <- httpTestEnv replyBS
-  liftIO $ App.evalApp env $ evalTelegramT apiCfg action
+modelHTTPReply apiCfg replyBS action =
+  HTTP.modelHTTPReply replyBS $ \http -> do
+    env <- httpTestEnv http
+    liftIO $ App.evalApp env $ evalTelegramT apiCfg action
 
 instance Log.MonadLog Maybe where
   doLog _ _ = pure ()
