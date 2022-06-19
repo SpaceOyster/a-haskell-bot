@@ -129,10 +129,9 @@ sendMessageEventAnswer_ CallbackEvent {..} prompt =
 
 sendMessageWith ::
   (MonadVkontakte m) => Integer -> T.Text -> [URI.QueryParam] -> m HTTP.Request
-sendMessageWith peer_id text qps =
-  fmap HTTP.GET $
-    apiMethod "messages.send" $
-      ["peer_id" URI.:=: show peer_id, "message" URI.:=: T.unpack text] <> qps
+sendMessageWith peer_id text qps = HTTP.GET <$> apiMethod "messages.send" query
+  where
+    query = qps <> ["peer_id" URI.:=: show peer_id, "message" URI.:=: T.unpack text]
 
 sendTextMessage_ :: (MonadVkontakte m) => Integer -> T.Text -> m HTTP.Request
 sendTextMessage_ peer_id text = sendMessageWith peer_id text mempty
