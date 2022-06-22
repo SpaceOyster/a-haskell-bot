@@ -82,7 +82,7 @@ instance
   type CallbackQuery (TelegramBot m) = TG.CallbackQuery
 
   fetchUpdates ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+    (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m) =>
     TelegramBot m [Bot.Entity (TelegramBot m)]
   fetchUpdates = flip catch logError $ do
     Log.logInfo "fetching Updates"
@@ -94,7 +94,7 @@ instance
         pure []
 
   reactToCallback ::
-    (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
+    (MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
     TG.CallbackQuery ->
     TelegramBot m ()
   reactToCallback cq = flip catch logError $ do
@@ -134,7 +134,7 @@ instance
           ]
 
   execCommand ::
-    ( MonadThrow m,
+    ( MonadCatch m,
       Log.MonadLog m,
       HTTP.MonadHTTP m,
       DB.MonadUsersDB m,
