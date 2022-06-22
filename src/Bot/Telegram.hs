@@ -99,7 +99,8 @@ instance
     TelegramBot m ()
   reactToCallback cq = flip catch logError $ do
     qdata <- qualifyQuery cq
-    respondToCallback qdata cq
+    _ <- respondToCallback qdata cq
+    pure ()
     where
       logError e = Log.logWarning $ T.tshow (e :: AppError)
 
@@ -197,12 +198,12 @@ respondToCallback ::
   (TG.MonadTelegram m, MonadThrow m, HTTP.MonadHTTP m, Log.MonadLog m, DB.MonadUsersDB m) =>
   Bot.QueryData ->
   TG.CallbackQuery ->
-  m ()
+  m Bool
 respondToCallback (Bot.QDRepeat n) c = do
   let user = TG.from (c :: TG.CallbackQuery)
   Log.logInfo $ "Setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
-  _ <- TG.Methods.answerCallbackQuery $ TG.cq_id c
   DB.setUserMultiplier user n
+  TG.Methods.answerCallbackQuery $ TG.cq_id c
 
 repeatKeyboard :: TG.InlineKeyboardMarkup
 repeatKeyboard = TG.InlineKeyboardMarkup [button <$> [1 .. 5]]
