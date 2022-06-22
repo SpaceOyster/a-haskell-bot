@@ -92,7 +92,7 @@ data Entity api
 
 newtype QueryData
   = QDRepeat Int
-  deriving (Show)
+  deriving (Eq, Show)
 
 parseQuery :: T.Text -> Maybe QueryData
 parseQuery t = either (const Nothing) Just $ Parsec.parse queryParser "QueryData" t
