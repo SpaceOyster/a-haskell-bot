@@ -46,6 +46,7 @@ import qualified Bot
 import Control.Monad (replicateM_, void)
 import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.Trans (MonadTrans, lift)
+import Data.Foldable (asum)
 import Data.Function ((&))
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
@@ -180,17 +181,16 @@ getCommand TG.Message {text} =
     Nothing -> Bot.UnknownCommand
     Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
 
-toBotEntity ::
-  (MonadThrow m) =>
-  TG.Update ->
-  m (Bot.Entity (TelegramBot n))
-toBotEntity u@TG.Update {message, callback_query}
-  | Just cq <- callback_query = pure $ Bot.ECallback cq
-  | Just msg <- message =
+toBotEntity :: (MonadThrow m) => TG.Update -> m (Bot.Entity (TelegramBot n))
+toBotEntity u@TG.Update {message, callback_query} =
+  maybe throwErr pure . asum $
+    [Bot.ECallback <$> callback_query, qualify <$> message]
+  where
+    qualify msg =
       if isCommandE msg
-        then pure $ Bot.ECommand (getCommand msg) msg
-        else pure $ Bot.EMessage msg
-  | otherwise =
+        then Bot.ECommand (getCommand msg) msg
+        else Bot.EMessage msg
+    throwErr =
       throwM . botError $
         "Unknown Update Type. Update: " <> T.tshow (TG.update_id u)
 
