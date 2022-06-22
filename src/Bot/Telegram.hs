@@ -9,7 +9,14 @@
 
 module Bot.Telegram
   ( TG.Config (..),
+    TelegramBot (..),
     evalTelegramBot,
+    getCommand,
+    toBotEntity,
+    qualifyQuery,
+    respondToCallback,
+    repeatKeyboard,
+    isCommandE,
   )
 where
 
