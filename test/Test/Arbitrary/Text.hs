@@ -6,13 +6,19 @@ import Test.Arbitrary.String
     DirtyString (getDirtyString),
     NonEmptyCleanString (getNonEmptyCleanString),
   )
-import Test.QuickCheck (Arbitrary (arbitrary))
+import Test.QuickCheck (Arbitrary (arbitrary), NonEmptyList (getNonEmpty))
 
 newtype AnyText = AnyText {getAnyText :: Text}
   deriving (Show)
 
 instance Arbitrary AnyText where
   arbitrary = AnyText . T.pack <$> arbitrary
+
+newtype NonEmptyText = NonEmptyText {getNonEmptyText :: Text}
+  deriving (Show)
+
+instance Arbitrary NonEmptyText where
+  arbitrary = NonEmptyText . T.pack . getNonEmpty <$> arbitrary
 
 newtype CleanText = CleanText {getCleanText :: Text}
   deriving (Show)
