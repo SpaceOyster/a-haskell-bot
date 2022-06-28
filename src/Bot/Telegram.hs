@@ -48,6 +48,7 @@ import Control.Monad.Catch (MonadCatch, MonadThrow, catch, throwM)
 import Control.Monad.Trans (MonadTrans, lift)
 import Data.Foldable (asum)
 import Data.Function ((&))
+import Data.Maybe (fromMaybe)
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
@@ -177,9 +178,9 @@ instance
 
 getCommand :: TG.Message -> Bot.BotCommand
 getCommand TG.Message {text} =
-  case text of
-    Nothing -> Bot.UnknownCommand
-    Just t -> Bot.parseCommand . T.takeWhile (/= ' ') . T.tail $ t
+  fromMaybe Bot.UnknownCommand (text >>= parse)
+  where
+    parse = fmap (Bot.parseCommand . T.stripEnd) . T.stripPrefix "/"
 
 toBotEntity :: (MonadThrow m) => TG.Update -> m (Bot.Entity (TelegramBot n))
 toBotEntity u@TG.Update {message, callback_query} =
