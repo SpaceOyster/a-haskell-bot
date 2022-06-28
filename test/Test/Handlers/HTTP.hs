@@ -26,3 +26,11 @@ modelHTTPReplies :: (MonadIO m) => [L8.ByteString] -> (HTTP.Handle -> m a) -> m 
 modelHTTPReplies repliesBS run = do
   http <- newWithQueue repliesBS
   run http
+
+newWithReplyFunc :: (HTTP.Request -> L8.ByteString) -> HTTP.Handle
+newWithReplyFunc fun = HTTP.Handle {HTTP.sendRequest = pure . fun}
+
+modelHTTPReplyFunc :: (HTTP.Request -> L8.ByteString) -> (HTTP.Handle -> m a) -> m a
+modelHTTPReplyFunc fun run = do
+  let http = newWithReplyFunc fun
+  run http
