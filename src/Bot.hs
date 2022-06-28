@@ -62,7 +62,7 @@ data BotCommand
   | Help
   | Repeat
   | UnknownCommand
-  deriving (Show, Enum, Bounded)
+  deriving (Eq, Show, Enum, Bounded)
 
 describe :: BotCommand -> T.Text
 describe Start = "Greet User"
