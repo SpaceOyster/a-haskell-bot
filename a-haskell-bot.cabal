@@ -112,6 +112,7 @@ test-suite a-haskell-bot-test
       Effects.UsersDBSpec
       Network.URI.ExtendedSpec
       Test.App.Error
+      Test.Arbitrary.BotReplies
       Test.Arbitrary.JSON
       Test.Arbitrary.String
       Test.Arbitrary.Telegram.Types
