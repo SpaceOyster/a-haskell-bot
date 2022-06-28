@@ -6,8 +6,10 @@ import Data.IORef (modifyIORef', newIORef, readIORef)
 import Data.Sequence as Seq (fromList, index, length)
 import qualified Handlers.HTTP as HTTP
 
-newWithSingle :: L8.ByteString -> HTTP.Handle
-newWithSingle bs = HTTP.Handle {HTTP.sendRequest = pure . const bs}
+modelHTTPReply :: (MonadIO m) => L8.ByteString -> (HTTP.Handle -> m a) -> m a
+modelHTTPReply replyBS run = do
+  http <- newWithQueue [replyBS]
+  run http
 
 newWithQueue :: (MonadIO m) => [L8.ByteString] -> m HTTP.Handle
 newWithQueue bss = do
@@ -19,11 +21,6 @@ newWithQueue bss = do
         modifyIORef' nextReplyIndexRef ((`mod` len) . (+ 1))
         pure (Seq.index repliesSeq replyIndex)
   pure $ HTTP.Handle {HTTP.sendRequest = sendRequest}
-
-modelHTTPReply :: (MonadIO m) => L8.ByteString -> (HTTP.Handle -> m a) -> m a
-modelHTTPReply replyBS run = do
-  let http = newWithSingle replyBS
-  run http
 
 modelHTTPReplies :: (MonadIO m) => [L8.ByteString] -> (HTTP.Handle -> m a) -> m a
 modelHTTPReplies repliesBS run = do
