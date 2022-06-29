@@ -31,7 +31,6 @@ import App.Env as App
   ( Env (Env, envBotReplies, envHTTP, envLogger, envUsersDB),
   )
 import App.Monad as App (App, AppEnv, evalApp)
-import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson as Aeson (encode, object, (.=))
 import Data.ByteString.Lazy.Char8 as L8 (ByteString, pack)
@@ -88,12 +87,6 @@ modelHTTPReply apiCfg replyBS action =
   HTTP.modelHTTPReply replyBS $ \http -> do
     env <- httpTestEnv http
     liftIO $ App.evalApp env $ evalTelegramT apiCfg action
-
-instance Log.MonadLog Maybe where
-  doLog _ _ = pure ()
-
-instance MonadCatch Maybe where
-  catch x _h = x
 
 instance Log.MonadLog IO where
   doLog _ _ = pure ()
