@@ -16,7 +16,6 @@ import API.Telegram.Monad
     tgAPIURI,
   )
 import API.Telegram.Types (Update (update_id))
-import Control.Monad.Catch (MonadCatch (..))
 import qualified Effects.Log as Log
 import Network.URI (URI (uriPath))
 import Test.Arbitrary.String (CleanString (CleanString))
@@ -40,12 +39,6 @@ spec = do
   makeBaseURISpec
   apiMethodSpec
 
-instance Log.MonadLog Maybe where
-  doLog _ _ = pure ()
-
-instance MonadCatch Maybe where
-  catch x _h = x
-
 instance Log.MonadLog IO where
   doLog _ _ = pure ()
 
@@ -64,9 +57,10 @@ rememberLastUpdateSpec = describe "rememberLastUpdate" $ do
   prop "returns unchanged [Update] list" $ \(tgConfig, updates) ->
     evalTelegramT tgConfig (rememberLastUpdate updates) `shouldReturn` updates
   context "given empty [Update]" $
-    prop "doesn't change TGState" $ \tgConfig ->
+    prop "doesn't change TGState" $ \tgConfig -> do
+      expectedTGState <- evalTelegramT tgConfig getTGState
       evalTelegramT tgConfig (rememberLastUpdate [] >> getTGState)
-        `shouldBe` (evalTelegramT tgConfig getTGState :: Maybe TGState)
+        `shouldReturn` expectedTGState
   context "given non empty [Update]" $
     prop "sets TGState {lastUpdate} to last Update id + 1" $
       \(tgConfig, NonEmpty updates) ->
@@ -75,12 +69,13 @@ rememberLastUpdateSpec = describe "rememberLastUpdate" $ do
 
 evalTelegramTSpec :: Spec
 evalTelegramTSpec = describe "evalTelegramT" $ do
-  prop "initiates TGState with config" $ \tgConfig ->
+  prop "initiates TGState with config" $ \tgConfig -> do
+    expectedTGState <- initiate tgConfig
     evalTelegramT tgConfig getTGState
-      `shouldBe` (initiate tgConfig :: Maybe TGState)
+      `shouldReturn` expectedTGState
   context "after state initiation" $
     prop "runs TelegramT transformer" $ \tgConfig ->
-      evalTelegramT tgConfig (pure "whatever") `shouldBe` Just "whatever"
+      evalTelegramT tgConfig (pure "whatever") `shouldReturn` "whatever"
 
 initiateSpec :: Spec
 initiateSpec = describe "initiate" $ do
@@ -100,11 +95,12 @@ makeBaseURISpec = describe "makeBaseURI" $ do
 apiMethodSpec :: Spec
 apiMethodSpec = describe "makeBaseURI" $ do
   prop "returns URI for specified api method String" $
-    \(tgConfig, CleanString method) ->
+    \(tgConfig, CleanString method) -> do
+      expectedURI <- evalTelegramT tgConfig (testAction method)
       evalTelegramT tgConfig (apiMethod method)
-        `shouldBe` evalTelegramT tgConfig (testAction method)
+        `shouldReturn` expectedURI
   where
-    testAction :: String -> TelegramT Maybe URI
+    testAction :: String -> TelegramT IO URI
     testAction method = do
       st <- getTGState
       let uri = apiURI st
