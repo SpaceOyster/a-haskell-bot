@@ -10,7 +10,14 @@
 module Bot.Vkontakte
   ( VK.Config (..),
     evalVkontakteBot,
+    VkontakteBot (..),
     VK.VkontakteT (..),
+    getCommand,
+    isCommandE,
+    qualifyQuery,
+    repeatKeyboard,
+    respondToCallback,
+    toBotEntity,
   )
 where
 
