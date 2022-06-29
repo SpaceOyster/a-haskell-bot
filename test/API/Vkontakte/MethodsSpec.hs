@@ -43,12 +43,6 @@ spec = do
   sendTextMessageSpec
   sendTextMessageSpec_
 
-instance Log.MonadLog Maybe where
-  doLog _ _ = pure ()
-
-instance MonadCatch Maybe where
-  catch x _h = x
-
 instance Log.MonadLog IO where
   doLog _ _ = pure ()
 
