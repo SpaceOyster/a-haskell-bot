@@ -5,9 +5,38 @@
 module API.Vkontakte.MethodsSpec (spec) where
 
 import API.Vkontakte.Methods as VK
+  ( copyMessage,
+    copyMessage_,
+    getUpdates,
+    getUpdates_,
+    sendKeyboard,
+    sendKeyboard_,
+    sendMessageEventAnswer,
+    sendMessageEventAnswer_,
+    sendMessageWith,
+    sendTextMessage,
+    sendTextMessage_,
+  )
 import API.Vkontakte.Monad as VK
+  ( Config (wait_seconds),
+    MonadVkontakte (getVKState),
+    VKState (lastTS),
+    VkontakteT,
+    evalVkontakteT,
+    makeBaseURI,
+    makePollURI,
+  )
 import API.Vkontakte.Types as VK
+  ( Message (msg_attachments, msg_peer_id, msg_text),
+    Poll (ts, updates),
+    PollInitResponse (PollInitServer),
+    PollResponse (PollError, PollResponse),
+    PollServer (ts),
+    Response (ErrorResponse, ResponseWith),
+  )
 import App.Env as App
+  ( Env (Env, envBotReplies, envHTTP, envLogger, envUsersDB),
+  )
 import App.Monad as App (App, AppEnv, evalApp)
 import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.IO.Class (MonadIO (..))
@@ -19,15 +48,28 @@ import qualified Effects.HTTP as HTTP
 import qualified Effects.Log as Log
 import qualified Handlers.HTTP as HTTP (Handle)
 import qualified Network.URI.Extended as URI
-import Test.App.Error
-import Test.Arbitrary.Text
-import Test.Arbitrary.Vkontakte.Types
+import Test.App.Error (isAPIError)
+import Test.Arbitrary.Text (AnyText (AnyText))
+import Test.Arbitrary.Vkontakte.Types ()
 import qualified Test.Handlers.HTTP as HTTP
 import qualified Test.Handlers.Logger as Logger
 import qualified Test.Handlers.UsersDB as DB
 import Test.Hspec
-import Test.Hspec.QuickCheck
+  ( Spec,
+    context,
+    describe,
+    shouldBe,
+    shouldNotBe,
+    shouldReturn,
+    shouldThrow,
+  )
+import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck
+  ( Arbitrary (arbitrary),
+    NonEmptyList (NonEmpty),
+    Positive (getPositive),
+    generate,
+  )
 
 spec :: Spec
 spec = do
