@@ -38,7 +38,7 @@ attachmentToQuerySpec = describe "attachmentToQuery" $
 extractUpdatesSpec :: Spec
 extractUpdatesSpec = describe "attachmentToQuery" $ do
   context "when Poll server responded with updates" $
-    prop "returns [GroupEvent]" $ \poll@(Poll ts upds) ->
+    prop "returns [GroupEvent]" $ \poll@(Poll _ts upds) ->
       extractUpdates (PollResponse poll) `shouldReturn` upds
   context "when Poll server responded with error" $
     prop "throws apiError" $ \err ->
