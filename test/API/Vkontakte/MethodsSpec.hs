@@ -38,7 +38,6 @@ import App.Env as App
   ( Env (Env, envBotReplies, envHTTP, envLogger, envUsersDB),
   )
 import App.Monad as App (App, AppEnv, evalApp)
-import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson as A (encode, toJSON)
 import Data.ByteString.Lazy.Char8 as L8 (ByteString)
