@@ -18,7 +18,6 @@ import Network.URI.Extended
   )
 import Test.Arbitrary.String
   ( DirtyString (DirtyString),
-    NonEmptyCleanString (getNonEmptyCleanString),
   )
 import Test.Arbitrary.URI ()
 import Test.Hspec
@@ -31,8 +30,7 @@ import Test.Hspec
   )
 import Test.Hspec.QuickCheck (prop)
 import Test.QuickCheck
-  ( Arbitrary (arbitrary),
-    NonEmptyList (NonEmpty),
+  ( NonEmptyList (NonEmpty),
     (==>),
   )
 
