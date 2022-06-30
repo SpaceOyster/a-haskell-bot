@@ -10,7 +10,7 @@ import Network.URI.Extended as URI
 import Test.Arbitrary.JSON
 import Test.Arbitrary.String
 import Test.Arbitrary.Text
-import Test.Arbitrary.URI
+import Test.Arbitrary.URI ()
 import Test.QuickCheck
 
 instance Arbitrary VK.User where
