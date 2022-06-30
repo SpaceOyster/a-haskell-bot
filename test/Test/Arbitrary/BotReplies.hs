@@ -1,4 +1,5 @@
 {-# LANGUAGE RecordWildCards #-}
+{-# OPTIONS_GHC -fno-warn-name-shadowing #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Test.Arbitrary.BotReplies where
