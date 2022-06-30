@@ -14,7 +14,7 @@ import API.Telegram.Types as TG
     Error,
     InlineKeyboardMarkup (InlineKeyboardMarkup),
     Message (from, text),
-    Response (ErrorResponse, ResponseWith),
+    Response (ErrorResponse),
     Update (..),
   )
 import App.Env as App
@@ -32,17 +32,15 @@ import Bot.Telegram as TG
     respondToCallback,
     toBotEntity,
   )
-import Control.Monad.Catch (MonadCatch (..))
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson as A
   ( KeyValue ((.=)),
-    ToJSON (toJSON),
+    ToJSON,
     decode,
     encode,
     object,
   )
-import Data.ByteString.Lazy.Char8 as L8 (ByteString, pack)
-import Data.Char (toLower)
+import Data.ByteString.Lazy.Char8 as L8 (ByteString)
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
 import qualified Effects.HTTP as HTTP
@@ -238,11 +236,11 @@ execCommandSpec = describe "execCommand" $ do
     textFromReq (HTTP.POST _uri json) = A.decode json
     propForWith :: Bot.BotCommand -> (BR.Replies -> T.Text) -> (Config, Message, TG.Error) -> Expectation
     propForWith cmd repl = \(tgCfg, tgMsg, err) -> do
-      let pred repls = (Just (repl repls) ==)
-      let apiReply = responseWith tgMsg
-      let apiErr = errorResponse err
-      let httpFunc repls req =
-            if pred repls $ textFromReq req
+      let predicate repls = (Just (repl repls) ==)
+          apiReply = responseWith tgMsg
+          apiErr = errorResponse err
+          httpFunc repls req =
+            if predicate repls $ textFromReq req
               then apiReply
               else apiErr
       modelHTTPFuncWReplies tgCfg httpFunc (Bot.execCommand cmd tgMsg)
