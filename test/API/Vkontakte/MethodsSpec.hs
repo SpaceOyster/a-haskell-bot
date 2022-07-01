@@ -102,8 +102,15 @@ httpTestEnv http = do
       }
 
 modelHTTPReply :: (MonadIO m) => Config -> VK.PollServer -> L8.ByteString -> VkontakteT App a -> m a
-modelHTTPReply apiCfg pollServer replyBS action =
-  HTTP.modelHTTPReplies [encode (PollInitServer pollServer), replyBS] $ \http -> do
+modelHTTPReply apiCfg pollServer replyBS action = do
+  cfg' <- HTTP.defaultConfig
+  let procFuncs = const <$> [encode (PollInitServer pollServer), replyBS]
+  let cfg =
+        cfg'
+          { HTTP.processingFunctions = procFuncs,
+            HTTP.cycleMode = HTTP.CycleFrom 1
+          }
+  HTTP.withHandle cfg $ \http -> do
     env <- httpTestEnv http
     liftIO $ App.evalApp env $ evalVkontakteT apiCfg action
 
