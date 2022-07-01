@@ -119,7 +119,8 @@ instance
     VkontakteBot m ()
   reactToCallback cq = flip catch logError $ do
     qdata <- qualifyQuery cq
-    respondToCallback qdata cq
+    _ <- respondToCallback qdata cq
+    pure ()
     where
       logError e = Log.logWarning $ T.tshow (e :: AppError)
 
@@ -223,13 +224,13 @@ respondToCallback ::
   (VK.MonadVkontakte m, BR.MonadBotReplies m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m) =>
   Bot.QueryData ->
   VK.CallbackEvent ->
-  m ()
+  m Integer
 respondToCallback (Bot.QDRepeat n) c = do
   let user = VK.User $ VK.user_id c
   Log.logInfo $ "setting echo multiplier = " <> T.tshow n <> " for " <> T.tshow user
   prompt <- BR.getReply BR.settingsSaved
-  _ <- VK.Methods.sendMessageEventAnswer c prompt
   DB.setUserMultiplier user n
+  VK.Methods.sendMessageEventAnswer c prompt
 
 repeatKeyboard :: VK.Keyboard
 repeatKeyboard =
