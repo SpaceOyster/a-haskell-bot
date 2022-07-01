@@ -122,8 +122,8 @@ modelHTTPFunc apiCfg fun action = do
     env <- httpTestEnv http
     liftIO $ App.evalApp env $ evalTelegramBot apiCfg action
 
-modelHTTPFuncWReplies :: MonadIO m => Config -> (BR.Replies -> HTTP.Request -> ByteString) -> TelegramBot App a -> m a
-modelHTTPFuncWReplies apiCfg fun action = do
+modelHTTPRandReplies :: MonadIO m => Config -> (BR.Replies -> HTTP.Request -> ByteString) -> TelegramBot App a -> m a
+modelHTTPRandReplies apiCfg fun action = do
   botReplies <- liftIO $ generate arbitrary
   HTTP.modelHTTPReplyFunc (fun botReplies) $ \http -> do
     env' <- httpTestEnv http
@@ -243,7 +243,7 @@ execCommandSpec = describe "execCommand" $ do
             if predicate repls $ textFromReq req
               then apiReply
               else apiErr
-      modelHTTPFuncWReplies tgCfg httpFunc (Bot.execCommand cmd tgMsg)
+      modelHTTPRandReplies tgCfg httpFunc (Bot.execCommand cmd tgMsg)
         `shouldReturn` ()
 
 getCommandSpec :: Spec
