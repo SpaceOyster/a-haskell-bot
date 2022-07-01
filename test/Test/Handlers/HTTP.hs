@@ -15,7 +15,7 @@ type RequestProcessor = HTTP.Request -> L8.ByteString
 data Config = Config
   { hitCounter :: IORef Int,
     processingFunctions :: [HTTP.Request -> L8.ByteString],
-    cycleInBounds :: CycleMode
+    cycleMode :: CycleMode
   }
 
 defaultConfig :: MonadIO m => m Config
@@ -25,7 +25,7 @@ defaultConfig = do
     Config
       { hitCounter = hitCounterRef,
         processingFunctions = [const mempty],
-        cycleInBounds = CycleAll
+        cycleMode = CycleAll
       }
 
 data CycleMode = CycleFrom Int | CycleFromTo Int Int | CycleAll
@@ -40,7 +40,7 @@ new :: (MonadIO m) => Config -> m HTTP.Handle
 new Config {..} = do
   nextReplyIndexRef <- liftIO $ newIORef (0 :: Int)
   let procs = Seq.fromList processingFunctions
-      (a, b) = toBounds procs cycleInBounds
+      (a, b) = toBounds procs cycleMode
       modifyIndex i = if (i + 1) >= b then a else i + 1
       sendRequest = \req -> do
         replyIndex <- readIORef nextReplyIndexRef
@@ -81,7 +81,7 @@ modelHTTPRepliesWithCounter repliesBS run = do
         Config
           { hitCounter = hitCounterRef,
             processingFunctions = const <$> repliesBS,
-            cycleInBounds = CycleAll
+            cycleMode = CycleAll
           }
   http <- new cfg
   _ <- run http
