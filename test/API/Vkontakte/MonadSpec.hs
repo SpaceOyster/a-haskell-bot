@@ -7,9 +7,10 @@ module API.Vkontakte.MonadSpec (spec) where
 import API.Vkontakte.Monad as VK
   ( Config (group_id, key, v, wait_seconds),
     MonadVkontakte (getVKState),
-    VKState (VKState, apiURI, lastTS, pollURI, wait),
+    VKState (apiURI, lastTS, pollURI, wait),
     VkontakteT,
     apiMethod,
+    emptyVKState,
     evalVkontakteT,
     getLongPollServer,
     initiate,
@@ -24,7 +25,7 @@ import API.Vkontakte.Types as VK
   ( Poll (ts),
     PollInitResponse (PollInitError, PollInitServer),
     PollResponse (PollError, PollResponse),
-    PollServer (key, server, ts),
+    PollServer (key, server),
   )
 import App.Env as App
   ( Env (Env, envBotReplies, envHTTP, envLogger, envUsersDB),
@@ -89,9 +90,9 @@ httpTestEnv http = do
         envBotReplies = emptyReplies
       }
 
-modelHTTPReply :: (MonadIO m) => Config -> VK.PollServer -> L8.ByteString -> VkontakteT App a -> m a
-modelHTTPReply apiCfg pollServer replyBS action =
-  HTTP.modelHTTPReplies [encode (PollInitServer pollServer), replyBS] $ \http -> do
+modelHTTPReply :: (MonadIO m) => Config -> L8.ByteString -> VkontakteT App a -> m a
+modelHTTPReply apiCfg replyBS action =
+  HTTP.modelHTTPReply replyBS $ \http -> do
     env <- httpTestEnv http
     liftIO $ App.evalApp env $ evalVkontakteT apiCfg action
 
@@ -124,16 +125,12 @@ updateStateWithSpec = describe "updateStateWith" $ do
 
 initiateSpec :: Spec
 initiateSpec = describe "initiate" $
-  context "relies on access to Vkontakte API server" $
-    prop "returns initial VKState" $ \(vkConfig, pollServer) -> do
-      pollURI' <- makePollURI pollServer
-      modelPollServer vkConfig pollServer (initiate vkConfig)
-        `shouldReturn` VKState
-          { lastTS = ts (pollServer :: PollServer),
-            pollURI = pollURI',
-            apiURI = VK.makeBaseURI vkConfig,
-            wait = min 90 (max 1 $ wait_seconds (vkConfig :: Config))
-          }
+  prop "returns initial VKState" $ \(vkConfig, pollServer) -> do
+    modelPollServer vkConfig pollServer (initiate vkConfig)
+      `shouldReturn` VK.emptyVKState
+        { apiURI = VK.makeBaseURI vkConfig,
+          wait = min 90 (max 1 $ wait_seconds (vkConfig :: Config))
+        }
 
 apiMethodSpec :: Spec
 apiMethodSpec = describe "apiMethod" $
@@ -161,12 +158,17 @@ makeBaseURISpec = describe "makeBaseURI" $
       makeBaseURI cfg `shouldBe` expected
 
 initiatePollServerSpec :: Spec
-initiatePollServerSpec = describe "initiatePollServer" $
-  prop "initiates VKState{pollURI} record" $
+initiatePollServerSpec = describe "initiatePollServer" $ do
+  prop "returns new VKState with pollURI record initiated" $
     \(vkCfg, pollServer) -> do
       expectedPollURI <- makePollURI pollServer
       let check st = pure $ pollURI st == expectedPollURI
       (modelPollServer vkCfg pollServer initiatePollServer >>= check) `shouldReturn` True
+  prop "updates api state with new VKState" $
+    \(vkCfg, pollServer) -> do
+      expectedPollURI <- makePollURI pollServer
+      let check st = pure $ pollURI st == expectedPollURI
+      (modelPollServer vkCfg pollServer (initiatePollServer >> VK.getVKState) >>= check) `shouldReturn` True
 
 getLongPollServerSpec :: Spec
 getLongPollServerSpec = describe "getLongPollServer" $ do
@@ -174,12 +176,11 @@ getLongPollServerSpec = describe "getLongPollServer" $ do
     prop "returns PollServer credentials object" $
       \(vkCfg, pollServer) -> do
         let reply = A.encode $ PollInitServer pollServer
-        modelHTTPReply vkCfg pollServer reply getLongPollServer
-          `shouldReturn` pollServer
+        modelHTTPReply vkCfg reply getLongPollServer `shouldReturn` pollServer
   context "when API responded with Error" $
-    prop "throws apiError" $ \(vkCfg, pollServer, err) -> do
+    prop "throws apiError" $ \(vkCfg, err) -> do
       let reply = A.encode $ PollInitError err
-      modelHTTPReply vkCfg pollServer reply getLongPollServer
+      modelHTTPReply vkCfg reply getLongPollServer
         `shouldThrow` isAPIError
 
 makePollURISpec :: Spec

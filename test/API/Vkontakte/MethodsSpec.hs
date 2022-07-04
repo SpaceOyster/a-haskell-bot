@@ -23,6 +23,7 @@ import API.Vkontakte.Monad as VK
     VKState (lastTS),
     VkontakteT,
     evalVkontakteT,
+    initiatePollServer,
     makeBaseURI,
     makePollURI,
   )
@@ -101,10 +102,10 @@ httpTestEnv http = do
         envBotReplies = emptyReplies
       }
 
-modelHTTPReply :: (MonadIO m) => Config -> VK.PollServer -> L8.ByteString -> VkontakteT App a -> m a
-modelHTTPReply apiCfg pollServer replyBS action = do
+modelHTTPReply :: (MonadIO m) => Config -> L8.ByteString -> VkontakteT App a -> m a
+modelHTTPReply apiCfg replyBS action = do
   cfg' <- HTTP.defaultConfig
-  let procFuncs = const <$> [encode (PollInitServer pollServer), replyBS]
+  let procFuncs = const <$> [replyBS]
   let cfg =
         cfg'
           { HTTP.processingFunctions = procFuncs,
@@ -123,81 +124,81 @@ modelPollServer apiCfg pollServer action =
 getUpdatesSpec :: Spec
 getUpdatesSpec = describe "getUpdates" $ do
   prop "fetches [GroupEvent] from PollServer" $
-    \(vkCfg, pollServer, poll) -> do
+    \(vkCfg, poll) -> do
       let reply = A.encode $ VK.PollResponse poll
-      modelHTTPReply vkCfg pollServer reply getUpdates
+      modelHTTPReply vkCfg reply getUpdates
         `shouldReturn` VK.updates poll
   prop "updates VKState{lastTS} record" $
-    \(vkCfg, pollServer, poll) -> do
+    \(vkCfg, poll) -> do
       let reply = A.encode $ VK.PollResponse poll
-      modelHTTPReply vkCfg pollServer reply (getUpdates >> (lastTS <$> getVKState))
+      modelHTTPReply vkCfg reply (getUpdates >> (lastTS <$> getVKState))
         `shouldReturn` ts (poll :: VK.Poll)
   context "when Poll server responds with Error" $
-    prop "throws apiError" $ \(vkCfg, pollServer, err) -> do
+    prop "throws apiError" $ \(vkCfg, err) -> do
       let reply = A.encode $ VK.PollError err
-      modelHTTPReply vkCfg pollServer reply getUpdates
+      modelHTTPReply vkCfg reply getUpdates
         `shouldThrow` isAPIError
 
 sendMessageEventAnswerSpec :: Spec
 sendMessageEventAnswerSpec = describe "sendMessageEventAnswer" $ do
   context "when successfully responded to CallbackEvent" $
-    prop "returns 1" $ \(vkCfg, pollServer, cbEvent, AnyText prompt) -> do
+    prop "returns 1" $ \(vkCfg, cbEvent, AnyText prompt) -> do
       let reply = A.encode $ VK.ResponseWith $ A.toJSON (1 :: Integer)
-      modelHTTPReply vkCfg pollServer reply (sendMessageEventAnswer cbEvent prompt)
+      modelHTTPReply vkCfg reply (sendMessageEventAnswer cbEvent prompt)
         `shouldReturn` (1 :: Integer)
   context "when API responded with Error" $
     prop "throws apiError" $
-      \(vkCfg, pollServer, cbEvent, AnyText prompt, err) -> do
+      \(vkCfg, cbEvent, AnyText prompt, err) -> do
         let reply = A.encode $ VK.ErrorResponse err
-        modelHTTPReply vkCfg pollServer reply (sendMessageEventAnswer cbEvent prompt)
+        modelHTTPReply vkCfg reply (sendMessageEventAnswer cbEvent prompt)
           `shouldThrow` isAPIError
 
 sendTextMessageSpec :: Spec
 sendTextMessageSpec = describe "sendTextMessage" $ do
   context "when successfully sent text message" $
     prop "returns (message id :: Integer)" $
-      \(vkCfg, pollServer, AnyText msg, peerId) -> do
+      \(vkCfg, AnyText msg, peerId) -> do
         msgId <- getPositive <$> generate arbitrary
         let reply = A.encode $ VK.ResponseWith $ A.toJSON msgId
-        modelHTTPReply vkCfg pollServer reply (sendTextMessage peerId msg)
+        modelHTTPReply vkCfg reply (sendTextMessage peerId msg)
           `shouldReturn` msgId
   context "when API responded with Error" $
     prop "throws apiError" $
-      \(vkCfg, pollServer, AnyText msg, peerId, err) -> do
+      \(vkCfg, AnyText msg, peerId, err) -> do
         let reply = A.encode $ VK.ErrorResponse err
-        modelHTTPReply vkCfg pollServer reply (sendTextMessage peerId msg)
+        modelHTTPReply vkCfg reply (sendTextMessage peerId msg)
           `shouldThrow` isAPIError
 
 copyMessageSpec :: Spec
 copyMessageSpec = describe "copyMessage" $ do
   context "when successfully sent message copy" $
     prop "returns (message id :: Integer)" $
-      \(vkCfg, pollServer, vkMsg) -> do
+      \(vkCfg, vkMsg) -> do
         msgId <- getPositive <$> generate arbitrary
         let reply = A.encode $ VK.ResponseWith $ A.toJSON msgId
-        modelHTTPReply vkCfg pollServer reply (copyMessage vkMsg)
+        modelHTTPReply vkCfg reply (copyMessage vkMsg)
           `shouldReturn` msgId
   context "when API responded with Error" $
     prop "throws apiError" $
-      \(vkCfg, pollServer, vkMsg, err) -> do
+      \(vkCfg, vkMsg, err) -> do
         let reply = A.encode $ VK.ErrorResponse err
-        modelHTTPReply vkCfg pollServer reply (copyMessage vkMsg)
+        modelHTTPReply vkCfg reply (copyMessage vkMsg)
           `shouldThrow` isAPIError
 
 sendKeyboardSpec :: Spec
 sendKeyboardSpec = describe "sendKeyboard" $ do
   context "when successfully sent inline keyboard" $
     prop "returns (message id :: Integer)" $
-      \(vkCfg, pollServer, peerId, AnyText prompt, kbd) -> do
+      \(vkCfg, peerId, AnyText prompt, kbd) -> do
         msgId <- getPositive <$> generate arbitrary
         let reply = A.encode $ VK.ResponseWith $ A.toJSON msgId
-        modelHTTPReply vkCfg pollServer reply (sendKeyboard peerId prompt kbd)
+        modelHTTPReply vkCfg reply (sendKeyboard peerId prompt kbd)
           `shouldReturn` msgId
   context "when API responded with Error" $
     prop "throws apiError" $
-      \(vkCfg, pollServer, peerId, AnyText prompt, kbd, err) -> do
+      \(vkCfg, peerId, AnyText prompt, kbd, err) -> do
         let reply = A.encode $ VK.ErrorResponse err
-        modelHTTPReply vkCfg pollServer reply (sendKeyboard peerId prompt kbd)
+        modelHTTPReply vkCfg reply (sendKeyboard peerId prompt kbd)
           `shouldThrow` isAPIError
 
 getUpdatesSpec_ :: Spec
@@ -212,7 +213,7 @@ getUpdatesSpec_ = describe "getUpdates_" $ do
               [ "ts" URI.:=: T.unpack (ts (pollServer :: PollServer)),
                 "wait" URI.:=: show wait
               ]
-      modelPollServer vkCfg pollServer getUpdates_
+      modelPollServer vkCfg pollServer (VK.initiatePollServer >> getUpdates_)
         `shouldReturn` HTTP.GET expectedURI
 
 sendMessageEventAnswerSpec_ :: Spec
