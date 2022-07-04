@@ -83,7 +83,7 @@ updateStateWith (PollResponse poll) = \s -> s {lastTS = ts (poll :: Poll)}
 updateStateWith _ = id
 
 evalVkontakteT ::
-  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m) =>
+  (Monad m, MonadCatch m, MonadThrow m, Log.MonadLog m) =>
   Config ->
   VkontakteT m a ->
   m a
@@ -93,7 +93,7 @@ evalVkontakteT cfg action = flip evalStateT emptyVKState $
     put st >> action
 
 initiate ::
-  (MonadCatch m, MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
+  (MonadCatch m, MonadThrow m, Log.MonadLog m, MonadVkontakte m) =>
   Config ->
   m VKState
 initiate cfg = do
@@ -104,15 +104,16 @@ initiate cfg = do
     throwM (e :: AppError)
 
 initiate_ ::
-  (MonadThrow m, Log.MonadLog m, HTTP.MonadHTTP m, MonadVkontakte m) =>
+  (MonadThrow m, Log.MonadLog m, MonadVkontakte m) =>
   Config ->
   m VKState
 initiate_ cfg = do
   Log.logInfo "Initiating Vkontakte API handle"
   let apiURI = makeBaseURI cfg
   let wait = min 90 (max 1 $ wait_seconds (cfg :: Config))
-  putVKState $ emptyVKState {apiURI, wait}
-  initiatePollServer
+      vkState = emptyVKState {apiURI, wait}
+  putVKState vkState
+  pure vkState
 
 apiMethod :: (MonadVkontakte m) => T.Text -> [URI.QueryParam] -> m URI.URI
 apiMethod method qps = do
@@ -151,6 +152,7 @@ initiatePollServer = do
   pollURI <- makePollURI ps
   let lastTS = ts (ps :: PollServer)
   let newVKState = st {lastTS, pollURI}
+  putVKState newVKState
   pure newVKState
 
 getLongPollServer :: (MonadThrow m, HTTP.MonadHTTP m, MonadVkontakte m) => m PollServer

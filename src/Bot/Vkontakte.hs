@@ -33,6 +33,7 @@ import qualified API.Vkontakte.Monad as VK
     MonadVkontakte,
     VkontakteT (..),
     evalVkontakteT,
+    initiatePollServer,
   )
 import qualified API.Vkontakte.Types as VK
   ( ButtonColor (..),
@@ -86,7 +87,9 @@ evalVkontakteBot ::
   VK.Config ->
   VkontakteBot m a ->
   m a
-evalVkontakteBot cfg = VK.evalVkontakteT cfg . unVkontakteBot
+evalVkontakteBot cfg action = VK.evalVkontakteT cfg . unVkontakteBot $ do
+  _ <- VK.initiatePollServer
+  action
 
 instance
   (MonadThrow m, MonadCatch m, Log.MonadLog m, HTTP.MonadHTTP m, DB.MonadUsersDB m, BR.MonadBotReplies m) =>
