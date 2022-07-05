@@ -194,7 +194,10 @@ instance
           ]
 
 getCommand :: VK.Message -> Bot.BotCommand
-getCommand = Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text
+getCommand msg =
+  if T.null $ VK.msg_text msg
+    then Bot.UnknownCommand
+    else Bot.parseCommand . T.takeWhile (/= ' ') . T.tail . VK.msg_text $ msg
 
 toBotEntity :: (Monad m) => VK.GroupEvent -> m (Bot.Entity (VkontakteBot n))
 toBotEntity (VK.MessageNew m)
