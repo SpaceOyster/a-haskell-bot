@@ -12,6 +12,7 @@ module Bot.Vkontakte
     evalVkontakteBot,
     VkontakteBot (..),
     VK.VkontakteT (..),
+    QueryDataJSON (..),
     getCommand,
     isCommandE,
     qualifyQuery,
