@@ -10,11 +10,11 @@ import qualified Handlers.HTTP as HTTP
 
 type RequestProcessorIO = HTTP.Request -> IO L8.ByteString
 
-type RequestProcessor = HTTP.Request -> L8.ByteString
+type RequestProcessor = HTTP.Request -> IO L8.ByteString
 
 data Config = Config
   { hitCounter :: IORef Int,
-    processingFunctions :: [HTTP.Request -> L8.ByteString],
+    processingFunctions :: [RequestProcessor],
     cycleMode :: CycleMode
   }
 
@@ -42,34 +42,34 @@ new Config {..} = do
   let procs = Seq.fromList processingFunctions
       (a, b) = toBounds procs cycleMode
       modifyIndex i = if (i + 1) >= b then a else i + 1
-      sendRequest = \req -> do
+      sendRequest req = do
         replyIndex <- readIORef nextReplyIndexRef
         let processFun = Seq.index procs replyIndex
         modifyIORef' nextReplyIndexRef modifyIndex
         modifyIORef' hitCounter (+ 1)
-        pure $ processFun req
+        processFun req
   pure $ HTTP.Handle {HTTP.sendRequest = sendRequest}
 
-newWithQueue :: (MonadIO m) => [HTTP.Request -> L8.ByteString] -> m HTTP.Handle
+withHandle :: MonadIO m => Config -> (HTTP.Handle -> m a) -> m a
+withHandle cfg run = new cfg >>= run
+
+newWithQueue :: (MonadIO m) => [RequestProcessor] -> m HTTP.Handle
 newWithQueue fs = do
   cfg <- defaultConfig
   new cfg {processingFunctions = fs}
 
 modelHTTPReply :: (MonadIO m) => L8.ByteString -> (HTTP.Handle -> m a) -> m a
 modelHTTPReply replyBS run = do
-  http <- newWithQueue [const replyBS]
+  http <- newWithQueue [const $ pure replyBS]
   run http
 
 modelHTTPReplies :: (MonadIO m) => [L8.ByteString] -> (HTTP.Handle -> m a) -> m a
 modelHTTPReplies repliesBS run = do
-  http <- newWithQueue $ const <$> repliesBS
+  http <- newWithQueue $ const . pure <$> repliesBS
   run http
 
 modelHTTPReplyFunc ::
-  (MonadIO m) =>
-  (HTTP.Request -> L8.ByteString) ->
-  (HTTP.Handle -> m a) ->
-  m a
+  (MonadIO m) => RequestProcessor -> (HTTP.Handle -> m a) -> m a
 modelHTTPReplyFunc fun run = do
   http <- newWithQueue [fun]
   run http
@@ -80,9 +80,8 @@ modelHTTPRepliesWithCounter repliesBS run = do
   let cfg =
         Config
           { hitCounter = hitCounterRef,
-            processingFunctions = const <$> repliesBS,
+            processingFunctions = const . pure <$> repliesBS,
             cycleMode = CycleAll
           }
-  http <- new cfg
-  _ <- run http
+  _ <- withHandle cfg run
   liftIO $ readIORef hitCounterRef

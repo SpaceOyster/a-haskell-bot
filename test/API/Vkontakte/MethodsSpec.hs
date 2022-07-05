@@ -105,7 +105,7 @@ httpTestEnv http = do
 modelHTTPReply :: (MonadIO m) => Config -> L8.ByteString -> VkontakteT App a -> m a
 modelHTTPReply apiCfg replyBS action = do
   cfg' <- HTTP.defaultConfig
-  let procFuncs = const <$> [replyBS]
+  let procFuncs = const . pure <$> [replyBS]
   let cfg =
         cfg'
           { HTTP.processingFunctions = procFuncs,

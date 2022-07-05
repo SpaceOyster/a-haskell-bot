@@ -118,14 +118,14 @@ modelHTTPReply apiCfg replyBS action =
 
 modelHTTPFunc :: MonadIO m => Config -> (HTTP.Request -> ByteString) -> TelegramBot App a -> m a
 modelHTTPFunc apiCfg fun action = do
-  HTTP.modelHTTPReplyFunc fun $ \http -> do
+  HTTP.modelHTTPReplyFunc (pure . fun) $ \http -> do
     env <- httpTestEnv http
     liftIO $ App.evalApp env $ evalTelegramBot apiCfg action
 
 modelHTTPRandReplies :: MonadIO m => Config -> (BR.Replies -> HTTP.Request -> ByteString) -> TelegramBot App a -> m a
 modelHTTPRandReplies apiCfg fun action = do
   botReplies <- liftIO $ generate arbitrary
-  HTTP.modelHTTPReplyFunc (fun botReplies) $ \http -> do
+  HTTP.modelHTTPReplyFunc (pure . fun botReplies) $ \http -> do
     env' <- httpTestEnv http
     let env = env' {envBotReplies = botReplies}
     liftIO $ App.evalApp env $ evalTelegramBot apiCfg action
@@ -259,13 +259,13 @@ getCommandSpec = describe "getCommand" $ do
 
 toBotEntitySpec :: Spec
 toBotEntitySpec = describe "toBotEntity" $ do
-  context "when Update has CalbackQuery attached" $
+  context "when Update has CallbackQuery attached" $
     prop "qualifies Update as Bot.ECallback" $
       \(Positive updId, cQuery') -> do
         let cQuery = cQuery' :: TG.CallbackQuery
         let upd = Update {update_id = updId, message = Nothing, callback_query = Just cQuery}
         TG.toBotEntity upd `shouldReturn` Bot.ECallback cQuery
-  context "when Update has no CalbackQuery attached" $ do
+  context "when Update has no CallbackQuery attached" $ do
     context "and text begins with backslash" $
       prop "qualifies Update as Bot.ECommand" $
         \(Positive updId, NonEmptyText txt, msg') -> do
