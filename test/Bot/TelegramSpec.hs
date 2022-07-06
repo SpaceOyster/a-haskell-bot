@@ -34,12 +34,16 @@ import Bot.Telegram as TG
   )
 import Control.Monad.IO.Class (MonadIO (..))
 import Data.Aeson as A
-  ( KeyValue ((.=)),
+  ( FromJSON,
+    KeyValue ((.=)),
     ToJSON,
     decode,
     encode,
     object,
+    withObject,
+    (.:),
   )
+import Data.Aeson.Types as A (parseMaybe)
 import Data.ByteString.Lazy.Char8 as L8 (ByteString)
 import qualified Data.Text.Extended as T
 import qualified Effects.BotReplies as BR
@@ -122,8 +126,8 @@ modelHTTPFunc apiCfg fun action = do
     env <- httpTestEnv http
     liftIO $ App.evalApp env $ evalTelegramBot apiCfg action
 
-modelHTTPRandReplies :: MonadIO m => Config -> (BR.Replies -> HTTP.Request -> ByteString) -> TelegramBot App a -> m a
-modelHTTPRandReplies apiCfg fun action = do
+modelHTTPFuncWReplies :: MonadIO m => Config -> (BR.Replies -> HTTP.Request -> ByteString) -> TelegramBot App a -> m a
+modelHTTPFuncWReplies apiCfg fun action = do
   botReplies <- liftIO $ generate arbitrary
   HTTP.modelHTTPReplyFunc (pure . fun botReplies) $ \http -> do
     env' <- httpTestEnv http
@@ -220,30 +224,33 @@ execCommandSpec :: Spec
 execCommandSpec = describe "execCommand" $ do
   context "on Bot.Start command" $
     prop "sends text message greeting user" $
-      propForWith Bot.Start BR.greeting
+      propForWith Bot.Start (checkTxt BR.greeting)
   context "on Bot.Help command" $
     prop "sends text message with help prompt" $
-      propForWith Bot.Help BR.help
-  context "on Bot.Repeat command" $
+      propForWith Bot.Help (checkTxt BR.help)
+  context "on Bot.Repeat command" $ do
+    prop "sends message repeat prompt" $
+      propForWith Bot.Repeat (checkTxt BR.repeat)
     prop "sends message with inline keyboard" $
-      propForWith Bot.Repeat BR.repeat
+      propForWith Bot.Repeat checkKbd
   context "on Bot.UnknownCommand command" $
     prop "sends text message, that command is unknown" $
-      propForWith Bot.UnknownCommand BR.unknown
+      propForWith Bot.UnknownCommand (checkTxt BR.unknown)
   where
-    textFromReq :: HTTP.Request -> Maybe T.Text
-    textFromReq (HTTP.GET _) = Nothing
-    textFromReq (HTTP.POST _uri json) = A.decode json
-    propForWith :: Bot.BotCommand -> (BR.Replies -> T.Text) -> (Config, Message, TG.Error) -> Expectation
-    propForWith cmd repl = \(tgCfg, tgMsg, err) -> do
-      let predicate repls = (Just (repl repls) ==)
-          apiReply = responseWith tgMsg
-          apiErr = errorResponse err
-          httpFunc repls req =
-            if predicate repls $ textFromReq req
-              then apiReply
-              else apiErr
-      modelHTTPRandReplies tgCfg httpFunc (Bot.execCommand cmd tgMsg)
+    getFromReq :: A.FromJSON a => T.Text -> HTTP.Request -> Maybe a
+    getFromReq _ (HTTP.GET _) = Nothing
+    getFromReq t (HTTP.POST _uri json) =
+      A.decode json >>= A.parseMaybe (A.withObject (T.unpack t) (A..: t))
+    checkTxt :: (BR.Replies -> T.Text) -> BR.Replies -> HTTP.Request -> Bool
+    checkTxt repl repls req = (Just (repl repls) ==) $ getFromReq "text" req
+    checkKbd :: BR.Replies -> HTTP.Request -> Bool
+    checkKbd _ req = (Just repeatKeyboard ==) $ getFromReq "reply_markup" req
+    propForWith :: Bot.BotCommand -> (BR.Replies -> HTTP.Request -> Bool) -> (Config, Message) -> Expectation
+    propForWith cmd check = \(tgCfg, tgMsg) -> do
+      let apiReply = responseWith tgMsg
+          apiErr = error "didn't pass"
+          httpFunc repls req = if check repls req then apiReply else apiErr
+      modelHTTPFuncWReplies tgCfg httpFunc (Bot.execCommand cmd tgMsg)
         `shouldReturn` ()
 
 getCommandSpec :: Spec
