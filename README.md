@@ -25,6 +25,7 @@ a-haskell-bot telegram config.json
 
 ## Configuration
 ```json
+{
   "defaults": {
     "default-echo-multiplier": 1
   },
