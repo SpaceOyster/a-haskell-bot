@@ -60,7 +60,7 @@ instance Arbitrary VK.CallbackEvent where
     pure VK.CallbackEvent {..}
 
 instance Arbitrary VK.GroupEvent where
-  arbitrary = oneof [VK.MessageNew <$> arbitrary, VK.MessageEvent <$> arbitrary]
+  arbitrary = resize 10 $ oneof [VK.MessageNew <$> arbitrary, VK.MessageEvent <$> arbitrary]
 
 instance Arbitrary VK.KeyboardButton where
   arbitrary = VK.KeyboardButton <$> arbitrary <*> arbitrary
