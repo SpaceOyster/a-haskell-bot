@@ -180,8 +180,9 @@ reactToCallbackSpec = describe "reactToCallback" $ do
       modelHTTPCountr tgCfg repl (Bot.reactToCallback cQuery)
         `shouldReturn` 1
   context "if answering CallbackQuery fails" $
-    prop "logs error" $ \(tgCfg, cQuery, err) -> do
+    prop "logs error" $ \(tgCfg, cQuery', Positive n, err) -> do
       let reply = errorResponse err
+      let cQuery = cQuery' {TG.query_data = Just $ "repeat_" <> T.tshow (n :: Int)}
       modelHTTPReply tgCfg reply (Bot.reactToCallback cQuery)
         `shouldReturn` ()
   context "no matter how successfull communication with API was" $
