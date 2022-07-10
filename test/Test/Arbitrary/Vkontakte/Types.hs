@@ -4,14 +4,50 @@
 module Test.Arbitrary.Vkontakte.Types where
 
 import API.Vkontakte.Monad as VK
+  ( Config (..),
+    VKState (..),
+    vkAPIURI,
+  )
 import API.Vkontakte.Types as VK
-import Data.Text.Extended as T
+  ( Attachment (..),
+    ButtonColor (..),
+    CallbackEvent (..),
+    Error (..),
+    GroupEvent (..),
+    Keyboard (Keyboard),
+    KeyboardAction (..),
+    KeyboardActionType (..),
+    KeyboardButton (KeyboardButton),
+    MediaDoc (..),
+    Message (..),
+    Poll (..),
+    PollInitResponse (..),
+    PollResponse (..),
+    PollServer (..),
+    Response (..),
+    Sticker (Sticker),
+    User (User),
+  )
+import Data.Text.Extended as T (pack)
 import Network.URI.Extended as URI
-import Test.Arbitrary.JSON
+  ( QueryParam ((:=:)),
+    addQueryParams,
+  )
+import Test.Arbitrary.JSON (JSONObject (getJSONObject))
 import Test.Arbitrary.String
+  ( NonEmptyCleanString (getNonEmptyCleanString),
+  )
 import Test.Arbitrary.Text
+  ( AnyText (getAnyText),
+    NonEmptyCleanText (getNonEmptyCleanText),
+  )
 import Test.Arbitrary.URI ()
 import Test.QuickCheck
+  ( Arbitrary (arbitrary),
+    elements,
+    oneof,
+    resize,
+  )
 
 instance Arbitrary VK.User where
   arbitrary = VK.User <$> arbitrary
